@@ -7,8 +7,6 @@ import '../adaptive.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets.dart';
-import 'achievements.dart';
-import 'collection.dart';
 import 'daily.dart';
 import 'levels.dart';
 import 'play.dart';
@@ -75,8 +73,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final pages = [
       _HomeTab(app: app),
       const DailyScreen(),
-      const CollectionScreen(),
-      const AchievementsScreen(),
       const ProfileScreen(),
     ];
     final wide = Adaptive.of(context) == FormFactor.expanded;
@@ -90,8 +86,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         app.t('daily')
       ),
-      (const Icon(Icons.collections), app.t('collection')),
-      (const Icon(Icons.emoji_events), app.t('achievements')),
       (const Icon(Icons.person), app.t('profile')),
     ];
     return Scaffold(
@@ -138,7 +132,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(children: [
               ContentWidth.wide(child: CurrencyBar(app: app)),
               Expanded(
-                child: _tab == 2 ? pages[_tab] : ContentWidth(maxWidth: Adaptive.readableWidth + 120, child: pages[_tab]),
+                child: ContentWidth(maxWidth: Adaptive.readableWidth + 120, child: pages[_tab]),
               ),
             ]),
           ),
@@ -214,9 +208,6 @@ class _HomeTab extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           children: modes.map((m) => _ModeCard(app: app, mode: m)).toList(),
         ),
-        const SizedBox(height: 12),
-        Text(app.t('endless_unlocked_hint'),
-            textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

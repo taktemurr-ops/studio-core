@@ -63,6 +63,15 @@ class AppState extends ChangeNotifier {
 
   bool get needsOnboarding => !save.ageGateDone || save.adConsent.isEmpty;
 
+  /// Merkez uygulamada satın almaları ve reklam aralığını merkez yönetir.
+  bool hubManaged = false;
+
+  /// Merkez: geçiş reklamı şimdi gösterilebilir mi (tüm oyunlar için ortak süre).
+  bool Function()? adGate;
+
+  /// Merkez: geçiş reklamı gösterildi.
+  void Function()? onInterstitialShown;
+
   Future<void> afterStart() async {
     audio
       ..sound = save.sound
@@ -70,7 +79,7 @@ class AppState extends ChangeNotifier {
       ..haptics = save.haptics;
     analytics.enabled = save.analyticsConsent && !config.kidsMode && !session.emergency.analyticsDisabled;
     unawaited(audio.init().then((_) => audio.startMusic()));
-    unawaited(purchases.init(onPurchase));
+    if (!hubManaged) unawaited(purchases.init(onPurchase));
     if (!needsOnboarding) unawaited(_initAds());
     unawaited(analytics.log('session_start', {'level': save.currentLevel}));
     unawaited(analytics.flush(NoopSink()));
@@ -101,15 +110,21 @@ class AppState extends ChangeNotifier {
   }
 
   // ---- Onboarding / privacy ------------------------------------------------
-  Future<void> completeOnboarding({required int birthYear, required bool acceptAll}) async {
-    final age = DateTime.now().year - birthYear;
+  /// İlk açılış: yalnızca gizlilik tercihi (yaş sorulmaz; oyunlar genel
+  /// kitleye yöneliktir, çocuk oyunlarında [GameConfig.kidsMode] açıktır).
+  Future<void> completeOnboarding({required bool acceptAll}) async {
+    applyConsent(acceptAll);
+    await _initAds();
+  }
+
+  /// Tercihi kaydeder (merkez uygulama bunu her oyuna bir kez uygular).
+  void applyConsent(bool acceptAll) {
     save.ageGateDone = true;
-    save.underAge = config.kidsMode || age < 16;
+    save.underAge = config.kidsMode;
     save.adConsent = acceptAll && !save.underAge ? 'granted' : 'denied';
     save.analyticsConsent = acceptAll && !save.underAge;
     analytics.enabled = save.analyticsConsent;
     changed(saveNow: true);
-    await _initAds();
   }
 
   void setAnalyticsConsent(bool v) {
@@ -186,11 +201,14 @@ class AppState extends ChangeNotifier {
 
   Future<void> maybeInterstitial(LevelOutcome o) async {
     if (!o.showInterstitial || !ads.available) return;
+    final gate = adGate;
+    if (gate != null && !gate()) return;
     await audio.pauseAll();
     final shown = await ads.showInterstitial();
     await audio.resumeAll();
     if (shown) {
       session.adPolicy.markInterstitialShown(save, session.now());
+      onInterstitialShown?.call();
       changed();
     }
   }

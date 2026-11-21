@@ -1,3 +1,4 @@
+import '../core/strings.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -280,9 +281,7 @@ class _ArcadeStageState extends State<ArcadeStage>
   }
 
   String _t(List<String> l) {
-    const order = ['tr', 'en', 'de', 'es', 'fr'];
-    final i = order.indexOf(ctx.lang);
-    return i >= 0 && i < l.length ? l[i] : l[1];
+    return Strings.pick(l, ctx.lang);
   }
 
   @override

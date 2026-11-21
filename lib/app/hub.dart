@@ -8,6 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/game_session.dart';
+import '../core/monetization.dart';
 import '../core/save_store.dart';
 import '../core/strings.dart';
 import '../core/telemetry.dart';
@@ -49,9 +50,7 @@ class HubConfig {
   List<GameConfig> get allGames => [...games, for (final g in groups) ...g.games];
 
   String localized(List<String> l, String lang) {
-    const order = ['tr', 'en', 'de', 'es', 'fr'];
-    final i = order.indexOf(lang);
-    return l.length > i && i >= 0 ? l[i] : l[1];
+    return Strings.pick(l, lang);
   }
 }
 
@@ -85,6 +84,61 @@ class HubServices {
   final PurchaseService purchases;
   final AudioService audio;
   final Map<String, AppState> _states = {};
+
+  /// Merkez genelinde bir kez sorulan gizlilik tercihi: 'granted' / 'denied'.
+  String? consent;
+
+  /// Merkez genelindeki kalıcı satın almalar (reklamsız, premium).
+  Set<String> entitlements = {};
+
+  /// Şu an açık olan oyun: tüketilen ürünler (altın, ipucu) ona yazılır.
+  AppState? active;
+
+  /// Son geçiş reklamı (tüm oyunlar için ortak); en az 3 dakika ara.
+  int lastInterstitialMs = 0;
+  static const _adGap = Duration(minutes: 3);
+  bool _purchasesStarted = false;
+
+  Future<void> loadShared() async {
+    consent = await backend.read('hub.consent');
+    final e = await backend.read('hub.entitlements');
+    entitlements = e == null || e.isEmpty ? {} : e.split(',').toSet();
+    lastInterstitialMs = int.tryParse(await backend.read('hub.lastAd') ?? '') ?? 0;
+  }
+
+  void _applyEntitlements(AppState s) {
+    final save = s.save;
+    for (final id in Products.nonConsumable) {
+      if (entitlements.contains(id)) {
+        save.ownedProducts.add(id);
+      } else {
+        save.ownedProducts.remove(id);
+      }
+    }
+    save.premium = entitlements.contains(Products.premium);
+    save.removeAds = save.premium || entitlements.contains(Products.removeAds);
+  }
+
+  void _onPurchase(PurchaseEvent e) {
+    final target = active ?? (_states.isEmpty ? null : _states.values.first);
+    if (target == null) return;
+    target.onPurchase(e);
+    // Kalıcı ürünler merkezin her oyununa geçer.
+    entitlements = {for (final id in Products.nonConsumable) if (target.save.ownedProducts.contains(id)) id};
+    unawaited(backend.write('hub.entitlements', entitlements.join(',')));
+    for (final s in _states.values) {
+      _applyEntitlements(s);
+      if (!identical(s, target)) s.changed();
+    }
+  }
+
+  Future<void> setConsent(bool acceptAll) async {
+    consent = acceptAll ? 'granted' : 'denied';
+    await backend.write('hub.consent', consent!);
+    for (final s in _states.values) {
+      s.applyConsent(acceptAll);
+    }
+  }
 
   HubServices({
     required this.backend,
@@ -123,6 +177,20 @@ class HubServices {
       perf: perf,
     )..startup = report;
     _states[config.gameId] = state;
+    final c = consent;
+    if (c != null && !session.save.ageGateDone) state.applyConsent(c == 'granted');
+    state
+      ..hubManaged = true
+      ..adGate = (() => DateTime.now().millisecondsSinceEpoch - lastInterstitialMs >= _adGap.inMilliseconds)
+      ..onInterstitialShown = () {
+        lastInterstitialMs = DateTime.now().millisecondsSinceEpoch;
+        unawaited(backend.write('hub.lastAd', '$lastInterstitialMs'));
+      };
+    _applyEntitlements(state);
+    if (!_purchasesStarted) {
+      _purchasesStarted = true;
+      unawaited(purchases.init(_onPurchase));
+    }
     await state.afterStart();
     return state;
   }
@@ -175,6 +243,7 @@ void bootstrapHub(HubConfig hub) {
       purchases: PurchaseService.create(),
       audio: AudioService(),
     );
+    await services.loadShared();
     runApp(HubApp(hub: hub, services: services));
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Adaptive.applyOrientationPolicy();
@@ -226,7 +295,56 @@ class _HubAppState extends State<HubApp> with WidgetsBindingObserver {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: HubHome(hub: widget.hub, services: widget.services, lang: lang),
+      home: widget.services.consent == null
+          ? _HubConsentPage(
+              hub: widget.hub,
+              lang: lang,
+              onChoice: (all) async {
+                await widget.services.setConsent(all);
+                if (mounted) setState(() {});
+              },
+            )
+          : HubHome(hub: widget.hub, services: widget.services, lang: lang),
+    );
+  }
+}
+
+/// İlk açılış: merkez için tek seferlik gizlilik tercihi (yaş sorulmaz).
+class _HubConsentPage extends StatelessWidget {
+  final HubConfig hub;
+  final String lang;
+  final Future<void> Function(bool acceptAll) onChoice;
+  const _HubConsentPage({required this.hub, required this.lang, required this.onChoice});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Strings(lang);
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: ListView(
+              padding: const EdgeInsets.all(24),
+              shrinkWrap: true,
+              children: [
+                Icon(hub.icon, size: 96, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(height: 12),
+                Text(hub.localized(hub.title, lang),
+                    textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 24),
+                Text(t.t('consent_title'), style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(t.t('consent_body')),
+                const SizedBox(height: 24),
+                FilledButton(onPressed: () => onChoice(true), child: Text(t.t('accept_all'))),
+                const SizedBox(height: 8),
+                OutlinedButton(onPressed: () => onChoice(false), child: Text(t.t('essential_only'))),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -254,9 +372,11 @@ class _HubHomeState extends State<HubHome> {
       final state = await widget.services.stateFor(g);
       if (!mounted) return;
       state.onResumed();
+      widget.services.active = state;
       await Navigator.of(context).push(MaterialPageRoute<void>(
         builder: (_) => HubGamePage(state: state, backLabel: widget.hub.localized(_backLabel, widget.lang)),
       ));
+      widget.services.active = null;
       state.onPaused(); // flush saves when returning to the list
     } finally {
       if (mounted) setState(() => _opening = null);

@@ -151,10 +151,10 @@ class _GameAppState extends ConsumerState<GameApp> with WidgetsBindingObserver {
       ],
       builder: (context, child) {
         final mq = MediaQuery.of(context);
-        final scale = app.save.textScale.clamp(0.8, 1.6);
+        // Yazı boyutu sistem ayarından gelir (erişilebilirlik); en çok 1.6x.
         return MediaQuery(
           data: mq.copyWith(
-            textScaler: TextScaler.linear(scale),
+            textScaler: mq.textScaler.clamp(maxScaleFactor: 1.6),
             disableAnimations: app.save.reducedMotion || mq.disableAnimations,
           ),
           child: child ?? const SizedBox.shrink(),

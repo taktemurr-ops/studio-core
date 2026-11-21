@@ -1,14 +1,26 @@
-/// Lightweight localization: Turkish, English, German, Spanish, French.
-/// Order in every list: tr, en, de, es, fr.
+import 'strings_world.dart';
+
+/// Localization: Turkish, English, German, Spanish, French in [_base]
+/// (order in every list: tr, en, de, es, fr), plus 28 world languages in
+/// [kWorldStrings]. Missing texts fall back to English.
 class Strings {
-  static const languages = ['tr', 'en', 'de', 'es', 'fr'];
+  static const _core = ['tr', 'en', 'de', 'es', 'fr'];
+
+  /// All supported languages. Game text lists follow this order; a list
+  /// shorter than the index falls back to English.
+  static const languages = [..._core, ...kWorldLanguages];
+
   static const languageNames = {
     'tr': 'Türkçe',
     'en': 'English',
     'de': 'Deutsch',
     'es': 'Español',
     'fr': 'Français',
+    ...kWorldLanguageNames,
   };
+
+  /// Android reports some languages with legacy codes.
+  static const _aliases = {'iw': 'he', 'in': 'id', 'tl': 'fil', 'no': 'nb', 'nn': 'nb'};
 
   final String lang;
   final Map<String, List<String>> extra;
@@ -18,15 +30,30 @@ class Strings {
 
   int get _i => languages.indexOf(lang);
 
+  bool get rtl => kRtlLanguages.contains(lang);
+
   String t(String key, [Map<String, Object> params = const {}]) {
     final row = extra[key] ?? _base[key];
-    var s = row == null ? key : (row.length > _i ? row[_i] : row[1]);
+    String s;
+    if (row != null && row.length > _i) {
+      s = row[_i];
+    } else {
+      s = kWorldStrings[lang]?[key] ?? (row == null ? key : row[1]);
+    }
     params.forEach((k, v) => s = s.replaceAll('{$k}', '$v'));
     return s;
   }
 
-  static String pickLanguage(String deviceLang) =>
-      languages.contains(deviceLang) ? deviceLang : 'en';
+  /// Picks a value for [lang] from a list in [languages] order.
+  static String pick(List<String> l, String lang) {
+    final i = languages.indexOf(lang);
+    return i >= 0 && i < l.length ? l[i] : (l.length > 1 ? l[1] : l.first);
+  }
+
+  static String pickLanguage(String deviceLang) {
+    final l = _aliases[deviceLang] ?? deviceLang;
+    return languages.contains(l) ? l : 'en';
+  }
 
   static const Map<String, List<String>> _base = {
     'play': ['Oyna', 'Play', 'Spielen', 'Jugar', 'Jouer'],

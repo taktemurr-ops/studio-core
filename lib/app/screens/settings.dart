@@ -60,23 +60,6 @@ class SettingsScreen extends ConsumerWidget {
           value: s.colorBlindMode,
           onChanged: (v) => app.updateSettings((x) => x.colorBlindMode = v),
         ),
-        SwitchListTile(
-          secondary: const Icon(Icons.back_hand),
-          title: Text(app.t('left_handed')),
-          value: s.leftHanded,
-          onChanged: (v) => app.updateSettings((x) => x.leftHanded = v),
-        ),
-        ListTile(
-          leading: const Icon(Icons.text_fields),
-          title: Text(app.t('text_size')),
-          subtitle: Slider(
-            min: 0.8,
-            max: 1.6,
-            divisions: 8,
-            value: s.textScale.clamp(0.8, 1.6),
-            onChanged: (v) => app.updateSettings((x) => x.textScale = v),
-          ),
-        ),
         const Divider(),
         ListTile(
           leading: const Icon(Icons.help_outline),

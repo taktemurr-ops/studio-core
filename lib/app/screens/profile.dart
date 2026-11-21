@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/progression.dart';
 import '../../core/stats.dart';
 import '../app_state.dart';
 import '../widgets.dart';
+import 'achievements.dart';
+import 'collection.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -51,6 +52,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           SizedBox(width: 240, child: LinearProgressIndicator(value: PlayerProgression.progressInLevel(s.totalXp))),
         ]),
       ),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(child: _Shortcut(icon: Icons.emoji_events, label: app.t('achievements'), page: const AchievementsScreen())),
+        const SizedBox(width: 8),
+        Expanded(child: _Shortcut(icon: Icons.collections, label: app.t('collection'), page: const CollectionScreen())),
+      ]),
       SectionTitle(app.t('stats')),
       Card(
         child: Column(children: [
@@ -65,47 +72,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           if (s.records.isEmpty) const ListTile(title: Text('—')),
         ]),
       ),
-      SectionTitle(app.t('backup')),
-      Wrap(spacing: 8, children: [
-        OutlinedButton.icon(
-          icon: const Icon(Icons.copy),
-          label: Text(app.t('backup')),
-          onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: app.session.store.exportBackup(s)));
-            if (context.mounted) showToast(context, app.t('backup_copied'));
-          },
-        ),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.restore),
-          label: Text(app.t('restore_backup')),
-          onPressed: () => _import(context, app),
-        ),
-      ]),
     ]);
   }
+}
 
-  Future<void> _import(BuildContext context, AppState app) async {
-    final ctrl = TextEditingController();
-    final text = await showDialog<String>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: Text(app.t('paste_backup')),
-        content: TextField(controller: ctrl, maxLines: 4),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: Text(app.t('cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(c, ctrl.text), child: Text(app.t('ok'))),
-        ],
-      ),
-    );
-    ctrl.dispose();
-    if (text == null || !context.mounted) return;
-    final data = app.session.store.importBackup(text);
-    if (data == null) {
-      showToast(context, app.t('backup_invalid'));
-      return;
-    }
-    app.session.save = data;
-    app.changed(saveNow: true);
-    showToast(context, app.t('backup_restored'));
-  }
+class _Shortcut extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Widget page;
+  const _Shortcut({required this.icon, required this.label, required this.page});
+
+  @override
+  Widget build(BuildContext context) => FilledButton.tonalIcon(
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+        icon: Icon(icon),
+        label: Text(label, overflow: TextOverflow.ellipsis),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (_) => Scaffold(appBar: AppBar(title: Text(label)), body: page)),
+        ),
+      );
 }

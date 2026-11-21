@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app_state.dart';
 import 'home.dart';
 
-/// First launch: neutral age gate + privacy choice (store & GDPR/COPPA).
+/// First launch: privacy choice (GDPR). No age question.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -13,13 +13,9 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  int? _year;
-
   @override
   Widget build(BuildContext context) {
     final app = ref.watch(appStateProvider);
-    final now = DateTime.now().year;
-    final years = List.generate(100, (i) => now - i);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -33,29 +29,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 Text(app.title,
                     textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
                 const SizedBox(height: 24),
-                Text(app.t('age_question'), textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<int>(
-                  initialValue: _year,
-                  isExpanded: true,
-                  decoration: const InputDecoration(border: OutlineInputBorder()),
-                  items: years
-                      .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
-                      .toList(),
-                  onChanged: (v) => setState(() => _year = v),
-                ),
-                const SizedBox(height: 24),
                 Text(app.t('consent_title'), style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
                 Text(app.t('consent_body')),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: _year == null ? null : () => _done(app, true),
+                  onPressed: () => _done(app, true),
                   child: Text(app.t('accept_all')),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton(
-                  onPressed: _year == null ? null : () => _done(app, false),
+                  onPressed: () => _done(app, false),
                   child: Text(app.t('essential_only')),
                 ),
               ],
@@ -67,7 +51,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _done(AppState app, bool all) async {
-    await app.completeOnboarding(birthYear: _year!, acceptAll: all);
+    await app.completeOnboarding(acceptAll: all);
     if (!mounted) return;
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
   }

@@ -1,3 +1,4 @@
+import '../core/strings.dart';
 import 'package:flutter/material.dart';
 
 import '../core/game_rules.dart';
@@ -103,8 +104,6 @@ class GameConfig {
   });
 
   String localized(List<String> l, String lang) {
-    const order = ['tr', 'en', 'de', 'es', 'fr'];
-    final i = order.indexOf(lang);
-    return l.length > i && i >= 0 ? l[i] : l[1];
+    return Strings.pick(l, lang);
   }
 }
