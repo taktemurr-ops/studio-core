@@ -32,6 +32,9 @@ class HubConfig {
   final IconData icon;
   final List<GameConfig> games;
 
+  /// Families of variants shown as one tile that opens its own list.
+  final List<HubGroup> groups;
+
   const HubConfig({
     required this.hubId,
     required this.title,
@@ -39,13 +42,36 @@ class HubConfig {
     required this.seedColor,
     required this.icon,
     required this.games,
+    this.groups = const [],
   });
+
+  /// Every game in the hub, including those inside groups.
+  List<GameConfig> get allGames => [...games, for (final g in groups) ...g.games];
 
   String localized(List<String> l, String lang) {
     const order = ['tr', 'en', 'de', 'es', 'fr'];
     final i = order.indexOf(lang);
     return l.length > i && i >= 0 ? l[i] : l[1];
   }
+}
+
+/// A tile on the hub's home screen that opens a list of variant games.
+class HubGroup {
+  final String id;
+  final List<String> title;
+  final List<String> tagline;
+  final Color seedColor;
+  final IconData icon;
+  final List<GameConfig> games;
+
+  const HubGroup({
+    required this.id,
+    required this.title,
+    required this.tagline,
+    required this.seedColor,
+    required this.icon,
+    required this.games,
+  });
 }
 
 /// Device-level services shared by all games inside a hub.
@@ -209,7 +235,10 @@ class HubHome extends StatefulWidget {
   final HubConfig hub;
   final HubServices services;
   final String lang;
-  const HubHome({super.key, required this.hub, required this.services, required this.lang});
+
+  /// When set, the page lists this group's games instead of the hub's.
+  final HubGroup? group;
+  const HubHome({super.key, required this.hub, required this.services, required this.lang, this.group});
 
   @override
   State<HubHome> createState() => _HubHomeState();
@@ -236,14 +265,29 @@ class _HubHomeState extends State<HubHome> {
 
   static const _backLabel = ['Oyunlar', 'Games', 'Spiele', 'Juegos', 'Jeux'];
 
+  void _openGroup(HubGroup g) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => HubHome(hub: widget.hub, services: widget.services, lang: widget.lang, group: g),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final hub = widget.hub;
     final lang = widget.lang;
     final scheme = Theme.of(context).colorScheme;
+    final group = widget.group;
+    final entries = <(String, List<String>, List<String>, Color, IconData, VoidCallback, bool)>[
+      if (group == null)
+        for (final g in hub.groups)
+          (g.id, g.title, ['${g.games.length} · ${hub.localized(g.tagline, lang)}'], g.seedColor, g.icon,
+              () => _openGroup(g), true),
+      for (final g in group?.games ?? hub.games)
+        (g.gameId, g.title, g.tagline, g.seedColor, g.icon, () => _open(g), false),
+    ];
     return Scaffold(
       appBar: AppBar(
-        title: Text(hub.localized(hub.title, lang)),
+        title: Text(hub.localized(group?.title ?? hub.title, lang)),
         centerTitle: true,
       ),
       body: LayoutBuilder(builder: (context, cons) {
@@ -256,28 +300,28 @@ class _HubHomeState extends State<HubHome> {
             crossAxisSpacing: 12,
             childAspectRatio: 2.6,
           ),
-          itemCount: hub.games.length,
+          itemCount: entries.length,
           itemBuilder: (context, i) {
-            final g = hub.games[i];
-            final busy = _opening == g.gameId;
+            final (id, title, tagline, color, icon, onTap, isGroup) = entries[i];
+            final busy = _opening == id;
             return Semantics(
               button: true,
-              label: g.localized(g.title, lang),
+              label: hub.localized(title, lang),
               child: Card(
                 clipBehavior: Clip.antiAlias,
-                color: Color.alphaBlend(g.seedColor.withValues(alpha: 0.18), scheme.surface),
+                color: Color.alphaBlend(color.withValues(alpha: 0.18), scheme.surface),
                 child: InkWell(
-                  onTap: () => _open(g),
+                  onTap: onTap,
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Row(children: [
                       CircleAvatar(
                         radius: 28,
-                        backgroundColor: g.seedColor,
+                        backgroundColor: color,
                         child: busy
                             ? const SizedBox(
                                 width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Icon(g.icon, color: Colors.white, size: 30),
+                            : Icon(icon, color: Colors.white, size: 30),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -285,17 +329,17 @@ class _HubHomeState extends State<HubHome> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(g.localized(g.title, lang),
+                            Text(hub.localized(title, lang),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                             const SizedBox(height: 4),
-                            Text(g.localized(g.tagline, lang),
+                            Text(tagline.length == 1 ? tagline.first : hub.localized(tagline, lang),
                                 maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
                           ],
                         ),
                       ),
-                      const Icon(Icons.play_arrow_rounded),
+                      Icon(isGroup ? Icons.chevron_right_rounded : Icons.play_arrow_rounded),
                     ]),
                   ),
                 ),
