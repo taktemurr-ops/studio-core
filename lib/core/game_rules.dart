@@ -32,6 +32,10 @@ abstract class GameRules<P> {
 
   List<MissionTemplate> get missionTemplates;
 
+  /// Numaralı ana bölüm sayısı (harita). Sonrası sonsuz üretimle sürer.
+  /// Üretim + çözücü türleri 100.000, sonsuz + sahne türleri 50.000 kullanır.
+  int get levelCount => LevelPlanner.mainLevelCount;
+
   /// Builds a puzzle for [spec]. MUST be deterministic for spec.seed.
   P generate(LevelSpec spec);
 

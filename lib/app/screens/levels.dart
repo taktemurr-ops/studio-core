@@ -8,7 +8,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'home.dart';
 
-/// 500 worlds x 100 levels, lazily built. Endless beyond 50.000.
+/// levelCount / 100 worlds (500 or 1000), lazily built. Endless beyond.
 class LevelsScreen extends ConsumerWidget {
   const LevelsScreen({super.key});
 
@@ -18,11 +18,12 @@ class LevelsScreen extends ConsumerWidget {
     final current = app.save.currentLevel;
     final currentWorld = (current - 1) ~/ LevelPlanner.levelsPerWorld + 1;
     // Show the full 50.000-level map (500 worlds); endless worlds keep going past it.
-    final worlds = currentWorld + 2 > LevelPlanner.mainLevelCount ~/ LevelPlanner.levelsPerWorld
+    final total = app.config.rules.levelCount;
+    final worlds = currentWorld + 2 > total ~/ LevelPlanner.levelsPerWorld
         ? currentWorld + 2
-        : LevelPlanner.mainLevelCount ~/ LevelPlanner.levelsPerWorld;
+        : total ~/ LevelPlanner.levelsPerWorld;
     return Scaffold(
-      appBar: AppBar(title: Text('${app.t('worlds')} · ${current - 1}/${LevelPlanner.mainLevelCount}')),
+      appBar: AppBar(title: Text('${app.t('worlds')} · ${current - 1}/$total')),
       body: ContentWidth(child: ListView.builder(
         itemCount: worlds,
         itemBuilder: (c, i) {
