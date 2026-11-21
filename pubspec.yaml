@@ -1,0 +1,24 @@
+name: studio_core
+description: "Ortak oyun çekirdeği: kayıt, günlük ödüller, görevler, bölüm planı (50.000+), mağaza, reklam, uyarlanabilir arayüz. Tüm oyun ve merkez uygulamalar bu paketi kullanır."
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  shared_preferences: ^2.3.2
+  audioplayers: ^6.5.0
+  google_mobile_ads: ^9.2.0
+  in_app_purchase: ^3.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
