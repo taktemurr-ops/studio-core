@@ -17,9 +17,12 @@ class LevelsScreen extends ConsumerWidget {
     final app = ref.watch(appStateProvider);
     final current = app.save.currentLevel;
     final currentWorld = (current - 1) ~/ LevelPlanner.levelsPerWorld + 1;
-    final worlds = currentWorld.clamp(1, 1 << 20) + 2;
+    // Show the full 50.000-level map (500 worlds); endless worlds keep going past it.
+    final worlds = currentWorld + 2 > LevelPlanner.mainLevelCount ~/ LevelPlanner.levelsPerWorld
+        ? currentWorld + 2
+        : LevelPlanner.mainLevelCount ~/ LevelPlanner.levelsPerWorld;
     return Scaffold(
-      appBar: AppBar(title: Text(app.t('worlds'))),
+      appBar: AppBar(title: Text('${app.t('worlds')} · ${current - 1}/${LevelPlanner.mainLevelCount}')),
       body: ContentWidth(child: ListView.builder(
         itemCount: worlds,
         itemBuilder: (c, i) {
