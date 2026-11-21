@@ -326,7 +326,13 @@ class _ResultSheetState extends State<_ResultSheet> {
             if (r.score > 0) Text('${app.t('score')}: ${r.score}', style: Theme.of(context).textTheme.titleLarge),
             if (o.newRecord) Text(app.t('new_record'), style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            RewardChips(reward: o.reward + Reward(xp: r.won ? 0 : o.xpGained)),
+            RewardChips(
+                reward: o.reward + Reward(xp: r.won ? 0 : o.xpGained) + (_doubled ? Reward(coins: o.reward.coins) : const Reward())),
+            if (_doubled)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('x2', style: TextStyle(color: Colors.green.shade600, fontWeight: FontWeight.bold, fontSize: 18)),
+              ),
             if (o.leveledUp)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -354,11 +360,17 @@ class _ResultSheetState extends State<_ResultSheet> {
                 label: Text(app.t('double_reward')),
                 onPressed: () async {
                   final ok = await app.watchRewarded();
+                  if (!context.mounted) return;
                   if (ok) {
                     Reward(coins: o.reward.coins).applyTo(app.save);
                     app.audio.play(Sfx.coin);
                     app.changed(saveNow: true);
                     setState(() => _doubled = true);
+                  } else {
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+                        content: Text(app.strings.lang == 'tr'
+                            ? 'Ödül alınamadı: reklam sonuna kadar izlenmedi ya da şu an hazır değil.'
+                            : 'No reward: the ad was not finished or is not ready yet.')));
                   }
                 },
               ),

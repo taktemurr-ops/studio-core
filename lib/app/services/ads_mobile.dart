@@ -138,7 +138,11 @@ class AdMobService implements AdsService {
       onAdDismissedFullScreenContent: (a) {
         a.dispose();
         _loadRewarded();
-        if (!done.isCompleted) done.complete(earned);
+        // On Android the dismiss callback can arrive *before* the reward
+        // callback. Give the reward callback a moment before deciding.
+        Future<void>.delayed(const Duration(milliseconds: 800), () {
+          if (!done.isCompleted) done.complete(earned);
+        });
       },
       onAdFailedToShowFullScreenContent: (a, e) {
         a.dispose();
@@ -147,7 +151,9 @@ class AdMobService implements AdsService {
         if (!done.isCompleted) done.complete(false);
       },
     );
-    await ad.show(onUserEarnedReward: (a, reward) => earned = true);
+    await ad.show(onUserEarnedReward: (a, reward) {
+      earned = true;
+    });
     return done.future.timeout(const Duration(minutes: 3), onTimeout: () => earned);
   }
 
