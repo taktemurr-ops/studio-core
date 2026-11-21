@@ -39,7 +39,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       (app.t('play_time'), '${secs ~/ 3600}h ${(secs % 3600) ~/ 60}m'),
       (app.t('streak', {'n': s.loginStreak}), '${s.bestLoginStreak}'),
       for (final g in app.config.rules.gameStats)
-        (app.strings.lang == 'tr' ? g.nameTr : g.nameEn, '${s.stat(g.key)}'),
+        (g.name(app.strings.lang), '${s.stat(g.key)}'),
     ];
     return ListView(padding: const EdgeInsets.all(16), children: [
       Center(

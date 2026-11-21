@@ -1,3 +1,4 @@
+import 'strings.dart';
 /// Stat keys shared by every game. Games add their own [GameStat]s.
 class Stat {
   static const levelsWon = 'levels_won';
@@ -45,4 +46,6 @@ class GameStat {
   final int scale;
 
   const GameStat(this.key, this.nameTr, this.nameEn, {this.scale = 1});
+
+  String name(String lang) => Strings.tx(lang, nameTr, nameEn);
 }

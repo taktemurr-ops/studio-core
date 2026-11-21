@@ -52,7 +52,7 @@ class ArcadeStage extends StatefulWidget {
     this.boosterLabel = _defaultBooster,
   });
 
-  static String _defaultBooster(String lang) => lang == 'tr' ? 'Kalkan' : 'Shield';
+  static String _defaultBooster(String lang) => Strings.tx(lang, 'Kalkan', 'Shield');
 
   @override
   State<ArcadeStage> createState() => _ArcadeStageState();
@@ -373,7 +373,7 @@ class _ArcadeStageState extends State<ArcadeStage>
                                 const SizedBox(height: 12),
                                 Text(
                                   _paused
-                                      ? (ctx.lang == 'tr' ? 'Duraklatıldı – devam için dokun' : 'Paused – tap to resume')
+                                      ? (Strings.tx(ctx.lang, 'Duraklatıldı – devam için dokun', 'Paused – tap to resume'))
                                       : _t(widget.howTo),
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(color: Colors.white, fontSize: 18),
@@ -391,10 +391,10 @@ class _ArcadeStageState extends State<ArcadeStage>
           ),
           BoosterBar(buttons: [
             BoosterButton(widget.boosterIcon, widget.boosterLabel(ctx.lang), () => _booster(false)),
-            BoosterButton(Icons.slow_motion_video, ctx.lang == 'tr' ? 'Yavaş çekim' : 'Slow motion',
+            BoosterButton(Icons.slow_motion_video, Strings.tx(ctx.lang, 'Yavaş çekim', 'Slow motion'),
                 () => _booster(true)),
             if (!sim.meta.goal)
-              BoosterButton(Icons.flag_circle, ctx.lang == 'tr' ? 'Bitir' : 'Finish',
+              BoosterButton(Icons.flag_circle, Strings.tx(ctx.lang, 'Bitir', 'Finish'),
                   _ended ? null : () => _finish(sim.score > 0)),
           ]),
         ],

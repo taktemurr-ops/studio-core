@@ -413,7 +413,7 @@ String achievementTitle(AppState app, String key, Map<String, String> params, St
   if (stat != null) {
     final gs = app.config.rules.gameStats.where((g) => g.key == stat);
     p['stat'] = gs.isNotEmpty
-        ? (app.strings.lang == 'tr' ? gs.first.nameTr : gs.first.nameEn)
+        ? gs.first.name(app.strings.lang)
         : statLabel(app, stat);
   }
   final text = app.t(key, p);

@@ -1,3 +1,4 @@
+import 'strings_phrases.dart';
 import 'strings_world.dart';
 
 /// Localization: Turkish, English, German, Spanish, French in [_base]
@@ -48,6 +49,22 @@ class Strings {
   static String pick(List<String> l, String lang) {
     final i = languages.indexOf(lang);
     return i >= 0 && i < l.length ? l[i] : (l.length > 1 ? l[1] : l.first);
+  }
+
+  /// Oyun içi kısa metin: Türkçe ve İngilizce yazılır, diğer diller
+  /// [kPhrases] tablosundan gelir. {0}, {1} yer tutucuları [args] ile dolar.
+  static String tx(String lang, String tr, String en, [List<Object?> args = const []]) {
+    var s = lang == 'tr' ? tr : en;
+    if (lang != 'tr' && lang != 'en') {
+      final code = _aliases[lang] ?? lang;
+      final i = kPhraseLanguages.indexOf(code);
+      final row = kPhrases[en];
+      if (i >= 0 && row != null && i < row.length) s = row[i];
+    }
+    for (var k = 0; k < args.length; k++) {
+      s = s.replaceAll('{$k}', '${args[k]}');
+    }
+    return s;
   }
 
   static String pickLanguage(String deviceLang) {
