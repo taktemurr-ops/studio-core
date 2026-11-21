@@ -114,7 +114,7 @@ class RewardChips extends StatelessWidget {
     add(Icons.monetization_on, Colors.amber, reward.coins);
     add(Icons.diamond, Colors.cyan, reward.gems);
     add(Icons.lightbulb, Colors.orange, reward.hints);
-    add(Icons.bolt, Colors.purple, reward.boosters);
+    add(Icons.bolt, const Color(0xFF9763BC), reward.boosters);
     add(Icons.trending_up, Colors.green, reward.xp);
     return Wrap(spacing: 6, runSpacing: 4, alignment: WrapAlignment.center, children: chips);
   }

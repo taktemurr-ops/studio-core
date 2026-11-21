@@ -77,7 +77,7 @@ class DailyScreen extends ConsumerWidget {
         _Wheel(app: app),
         SectionTitle(app.t('surprise')),
         ListTile(
-          leading: const Icon(Icons.card_giftcard, color: Colors.purple),
+          leading: const Icon(Icons.card_giftcard, color: Color(0xFF9763BC)),
           title: Text(app.t('surprise')),
           subtitle: Text(s.lastSurpriseDay == today ? app.t('claimed') : app.t('surprise_hint')),
           trailing: FilledButton(

@@ -349,7 +349,7 @@ class _ResultSheetState extends State<_ResultSheet> {
             if (o.items.isNotEmpty)
               ListTile(
                 dense: true,
-                leading: const Icon(Icons.card_giftcard, color: Colors.purple),
+                leading: const Icon(Icons.card_giftcard, color: Color(0xFF9763BC)),
                 title: Text(app.t('item_unlocked')),
                 subtitle: Text('${o.items.length}'),
               ),

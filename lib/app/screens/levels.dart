@@ -100,7 +100,7 @@ class WorldScreen extends ConsumerWidget {
                               color: level == app.save.currentLevel ? Colors.white : null))
                       : const Icon(Icons.lock, size: 16),
                   if (open && stars > 0) StarRow(stars: stars, size: 12),
-                  if (level % 1000 == 0) const Icon(Icons.card_giftcard, size: 14, color: Colors.purple),
+                  if (level % 1000 == 0) const Icon(Icons.card_giftcard, size: 14, color: Color(0xFF9763BC)),
                 ]),
               ),
             ),
