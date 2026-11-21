@@ -17,3 +17,18 @@ dependencies:
 ```
 
 Kurallar: kumar ve şans mekaniği yok; 18+ içerik yok; çocuk modunda ebeveyn kapısı zorunlu.
+
+## Merkez uygulama (hub)
+
+Bir ailedeki oyunları tek mağaza uygulamasında toplar. Her oyunun kaydı, ilerlemesi ve ayarları ayrı kalır.
+
+```dart
+void main() => bootstrapHub(HubConfig(
+  hubId: 'merkez-blok-oyunlari',
+  title: ['Blok Oyunları', 'Block Games', 'Blockspiele', 'Juegos de Bloques', 'Jeux de Blocs'],
+  tagline: [...],
+  seedColor: Color(0xFF3F51B5),
+  icon: Icons.grid_view_rounded,
+  games: [blockPuzzleConfig, blokSudokuConfig],
+));
+```

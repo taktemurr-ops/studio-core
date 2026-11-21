@@ -36,6 +36,11 @@ class AppState extends ChangeNotifier {
   final PerformanceMonitor perf;
   StartupReport? startup;
   String? toast;
+
+  /// Set when the game runs inside a hub app: shows a "back to games" button
+  /// on the game's home screen.
+  VoidCallback? exitToHub;
+  String exitToHubLabel = '';
   Timer? _saveDebounce;
 
   AppState({

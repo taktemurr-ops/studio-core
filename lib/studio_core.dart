@@ -7,3 +7,4 @@ library;
 
 export 'app/bootstrap.dart';
 export 'app/game_api.dart';
+export 'app/hub.dart';

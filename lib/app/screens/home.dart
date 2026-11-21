@@ -96,6 +96,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ];
     return Scaffold(
       appBar: AppBar(
+        leading: app.exitToHub == null
+            ? null
+            : IconButton(
+                tooltip: app.exitToHubLabel,
+                icon: const Icon(Icons.apps_rounded),
+                onPressed: app.exitToHub,
+              ),
         title: Text(app.title),
         actions: [
           IconButton(
