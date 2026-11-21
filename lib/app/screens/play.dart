@@ -7,6 +7,7 @@ import '../../core/game_session.dart';
 import '../../core/level_plan.dart';
 import '../../core/telemetry.dart';
 import '../app_state.dart';
+import '../services/gen_runner_stub.dart' if (dart.library.io) '../services/gen_runner_io.dart';
 import '../game_api.dart';
 import '../services/audio.dart';
 import '../theme.dart';
@@ -41,7 +42,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 16));
     final app = ref.read(appStateProvider);
     try {
-      final g = app.config.rules.build(_spec);
+      final g = await runBuild(app.config.rules, _spec);
       if (!mounted) return;
       setState(() => _level = g);
       if (_spec.levelId == 1 && _spec.mode == GameModeId.campaign && app.save.stat('tutorial_seen') == 0) {
