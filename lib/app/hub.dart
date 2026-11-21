@@ -317,9 +317,10 @@ class HubGamePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    state
-      ..exitToHub = () => Navigator.of(context).pop()
-      ..exitToHubLabel = backLabel;
+    state.exitToHub = () {
+      Navigator.of(context).pop();
+    };
+    state.exitToHubLabel = backLabel;
     return ProviderScope(
       overrides: [appStateProvider.overrideWith((ref) => state)],
       child: GameApp(state: state),
