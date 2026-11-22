@@ -4,18 +4,18 @@ import 'package:flutter/material.dart';
 class Palettes {
   /// Dünya arka planları: koyu, yumuşak geçişli; parçaların renkleri öne çıkar.
   static const themes = <List<Color>>[
-    [Color(0xFF13203B), Color(0xFF2E4A7A)], // İznik gecesi
-    [Color(0xFF0C3B45), Color(0xFF1F7A72)], // lagün
-    [Color(0xFF2A1745), Color(0xFF5C3A8C)], // mor akşam
-    [Color(0xFF4A1F12), Color(0xFFA0482E)], // kızıl kaya
-    [Color(0xFF15361F), Color(0xFF3C7A44)], // çam
-    [Color(0xFF22252F), Color(0xFF4F586B)], // bazalt
-    [Color(0xFF3A0F2A), Color(0xFF8A2546)], // nar
-    [Color(0xFF062F5A), Color(0xFF1C6FA3)], // derin deniz
-    [Color(0xFF3B1730), Color(0xFFB4562C)], // gün batımı
-    [Color(0xFF26301A), Color(0xFF7A6A2E)], // zeytinlik
-    [Color(0xFF0F1A2E), Color(0xFF6A4B1F)], // fener
-    [Color(0xFF0E2F44), Color(0xFF4E7F99)], // kış sabahı
+    [Color(0xFF1A2E5C), Color(0xFF3A6FC4)], // İznik gecesi
+    [Color(0xFF0B4A55), Color(0xFF23A396)], // lagün
+    [Color(0xFF34195C), Color(0xFF7B4CC2)], // mor akşam
+    [Color(0xFF5A2414), Color(0xFFD0603A)], // kızıl kaya
+    [Color(0xFF15452A), Color(0xFF45A05A)], // çam
+    [Color(0xFF263049), Color(0xFF5D7196)], // bazalt
+    [Color(0xFF4A1235), Color(0xFFC0395F)], // nar
+    [Color(0xFF07386B), Color(0xFF2389C9)], // derin deniz
+    [Color(0xFF4A1C3C), Color(0xFFE0743A)], // gün batımı
+    [Color(0xFF2E3D1C), Color(0xFF9C8A35)], // zeytinlik
+    [Color(0xFF142240), Color(0xFF9A6A28)], // fener
+    [Color(0xFF103A55), Color(0xFF5E9CBE)], // kış sabahı
   ];
 
   static List<Color> theme(int i) => themes[i % themes.length];

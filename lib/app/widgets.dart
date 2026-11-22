@@ -206,14 +206,54 @@ class ThemedBackground extends StatelessWidget {
   const ThemedBackground({super.key, required this.colors, required this.child});
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: colors,
-          ),
-        ),
+  Widget build(BuildContext context) => CustomPaint(
+        painter: _BackdropPainter(colors),
         child: child,
       );
+}
+
+/// Oyun arka planı: yumuşak geçiş, üstte ışık halesi, birkaç büyük ve çok
+/// silik daire (derinlik hissi) ve kenarlarda hafif kararma. Düz renk yerine
+/// canlı ama göz yormayan bir zemin.
+class _BackdropPainter extends CustomPainter {
+  final List<Color> colors;
+  _BackdropPainter(this.colors);
+
+  @override
+  bool shouldRepaint(covariant _BackdropPainter o) => o.colors != colors;
+
+  @override
+  void paint(Canvas c, Size s) {
+    final r = Offset.zero & s;
+    final top = colors.first, bottom = colors.length > 1 ? colors.last : colors.first;
+    c.drawRect(
+        r,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color.lerp(top, bottom, 0.15)!, Color.lerp(top, bottom, 0.55)!, bottom],
+          ).createShader(r));
+    c.drawRect(
+        r,
+        Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(0, -0.85),
+            radius: 0.9,
+            colors: [Colors.white.withValues(alpha: 0.16), Colors.white.withValues(alpha: 0)],
+          ).createShader(r));
+    final m = s.shortestSide;
+    const spots = [(0.12, 0.22, 0.32), (0.88, 0.38, 0.26), (0.2, 0.78, 0.4), (0.82, 0.9, 0.3), (0.55, 0.06, 0.18)];
+    for (final (x, y, rr) in spots) {
+      c.drawCircle(Offset(s.width * x, s.height * y), m * rr, Paint()..color = Colors.white.withValues(alpha: 0.035));
+    }
+    c.drawRect(
+        r,
+        Paint()
+          ..shader = RadialGradient(
+            radius: 1.15,
+            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.22)],
+            stops: const [0.62, 1],
+          ).createShader(r));
+  }
 }
