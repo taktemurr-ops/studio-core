@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../online/online_service.dart';
+import '../../online/online_ui.dart';
+
 import '../../core/level_plan.dart';
 import '../../core/save_store.dart';
 import '../adaptive.dart';
