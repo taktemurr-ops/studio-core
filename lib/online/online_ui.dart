@@ -72,6 +72,10 @@ class _OnlineLobbyState extends State<OnlineLobby> {
   Widget build(BuildContext context) {
     final p = Online.instance.profile!;
     final rating = p.ratingFor(gameId);
+    if (p.vip != app.save.premium) {
+      p.vip = app.save.premium;
+      unawaited(Online.instance.saveProfile());
+    }
     return Scaffold(
       appBar: AppBar(title: Text(app.t('online_play')), actions: [
         IconButton(
@@ -206,7 +210,7 @@ class _WaitingRoomState extends State<WaitingRoom> {
             Card(
               child: ListTile(
                 leading: Text(i < seats.length && !seats[i].bot ? avatarOf(seats[i].avatar) : '⏳', style: const TextStyle(fontSize: 28)),
-                title: Text(i < seats.length ? (seats[i].bot ? '🤖' : seats[i].name) : app.t('searching')),
+                title: Text(i < seats.length ? (seats[i].bot ? '🤖' : seats[i].label) : app.t('searching')),
               ),
             ),
           const SizedBox(height: 12),
@@ -270,7 +274,7 @@ class _OnlineTableState extends State<OnlineTable> {
     super.dispose();
   }
 
-  String _name(int seat) => seat >= 0 && seat < m.seats.length ? (m.seats[seat].bot ? '🤖' : m.seats[seat].name) : '';
+  String _name(int seat) => seat >= 0 && seat < m.seats.length ? (m.seats[seat].bot ? '🤖' : m.seats[seat].label) : '';
 
   String _text(TableEvent e) {
     switch (e.kind) {
@@ -417,9 +421,21 @@ class _OnlineTableState extends State<OnlineTable> {
   /// Ücretsiz hediye günlük haktan, ücretli olan elmastan düşer.
   bool _spend(Gift g) {
     final s = app.save;
+    final today = int.parse(DateKeys.day(app.session.now()).replaceAll('-', ''));
+    // Premium: günde 5 gül ücretsiz.
+    if (g.id == 'rose' && s.premium) {
+      if (s.stat('rose_day') != today) {
+        s.stats['rose_day'] = today;
+        s.stats['rose_free'] = 0;
+      }
+      if (s.stat('rose_free') < 5) {
+        s.stats['rose_free'] = s.stat('rose_free') + 1;
+        app.changed(saveNow: true);
+        return true;
+      }
+    }
     if (g.gems == 0) {
       if (_freeLeft <= 0) return false;
-      final today = int.parse(DateKeys.day(app.session.now()).replaceAll('-', ''));
       if (s.stat('gift_day') != today) {
         s.stats['gift_day'] = today;
         s.stats['gift_free'] = 0;

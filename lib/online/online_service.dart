@@ -146,7 +146,7 @@ class OnlineMatchLink implements MatchLink {
   @override
   int get seed => m.seed;
   @override
-  List<String> get names => [for (final s in m.seats) s.bot ? '' : s.name];
+  List<String> get names => [for (final s in m.seats) s.bot ? '' : s.label];
   @override
   bool get isHost => m.isHost;
   @override

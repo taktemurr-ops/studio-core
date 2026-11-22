@@ -17,6 +17,9 @@ class Profile {
   /// 16 yaş ve üzeri olduğunu beyan etti: serbest yazışma açılır.
   bool age16;
 
+  /// Premium sahibi: masada yıldızlı ad, günlük ücretsiz güller.
+  bool vip;
+
   /// Arkadaş kodu (6 harf).
   final String code;
 
@@ -33,6 +36,7 @@ class Profile {
     required this.code,
     this.avatar = 0,
     this.age16 = false,
+    this.vip = false,
     Map<String, int>? rating,
     Map<String, int>? gifts,
     Set<String>? blocked,
@@ -47,6 +51,7 @@ class Profile {
         'name': name,
         'avatar': avatar,
         'age16': age16,
+        'vip': vip,
         'code': code,
         'rating': rating,
         'gifts': gifts,
@@ -59,6 +64,7 @@ class Profile {
         code: j['code'] as String? ?? '',
         avatar: (j['avatar'] as num?)?.toInt() ?? 0,
         age16: j['age16'] == true,
+        vip: j['vip'] == true,
         rating: {for (final e in ((j['rating'] as Map?) ?? {}).entries) '${e.key}': (e.value as num).toInt()},
         gifts: {for (final e in ((j['gifts'] as Map?) ?? {}).entries) '${e.key}': (e.value as num).toInt()},
         blocked: {for (final x in (j['blocked'] as List?) ?? const []) '$x'},
@@ -75,11 +81,15 @@ class Seat {
   final String uid; // boş: bot
   final String name;
   final int avatar;
-  const Seat(this.uid, this.name, [this.avatar = 0]);
+  final bool vip;
+  const Seat(this.uid, this.name, [this.avatar = 0, this.vip = false]);
   bool get bot => uid.isEmpty;
-  Map<String, Object?> toJson() => {'uid': uid, 'name': name, 'avatar': avatar};
+
+  /// Masada görünen ad (Premium sahipleri yıldızlı).
+  String get label => vip ? '⭐ $name' : name;
+  Map<String, Object?> toJson() => {'uid': uid, 'name': name, 'avatar': avatar, 'vip': vip};
   static Seat fromJson(Map<String, dynamic> j) =>
-      Seat(j['uid'] as String? ?? '', j['name'] as String? ?? '', (j['avatar'] as num?)?.toInt() ?? 0);
+      Seat(j['uid'] as String? ?? '', j['name'] as String? ?? '', (j['avatar'] as num?)?.toInt() ?? 0, j['vip'] == true);
 }
 
 enum MatchStatus { waiting, playing, done }
@@ -347,7 +357,7 @@ class MemoryBackend implements OnlineBackend {
   @override
   Future<String?> loadBlob(String key) async => server.blobs['$uid/$key'];
 
-  Seat get _mySeat => Seat(uid, _me!.name, _me!.avatar);
+  Seat get _mySeat => Seat(uid, _me!.name, _me!.avatar, _me!.vip);
 
   @override
   Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true}) async {

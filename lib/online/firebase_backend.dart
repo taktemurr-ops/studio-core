@@ -114,7 +114,7 @@ class FirebaseBackend implements OnlineBackend {
   Future<String?> loadBlob(String key) async =>
       (await db.collection('saves').doc(uid).collection('blobs').doc(key).get()).data()?['v'] as String?;
 
-  Map<String, Object?> get _mySeat => {'uid': uid, 'name': _me?.name ?? '', 'avatar': _me?.avatar ?? 0};
+  Map<String, Object?> get _mySeat => {'uid': uid, 'name': _me?.name ?? '', 'avatar': _me?.avatar ?? 0, 'vip': _me?.vip ?? false};
 
   @override
   Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true}) async {
