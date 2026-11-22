@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/game_session.dart';
 import '../core/monetization.dart';
@@ -20,6 +21,7 @@ import 'services/ads.dart';
 import 'services/audio.dart';
 import 'services/prefs_backend.dart';
 import 'services/purchases.dart';
+import 'studio_apps.dart';
 import 'theme.dart';
 
 /// A hub ("merkez") app: one store listing that bundles several games of
@@ -395,7 +397,6 @@ class _HubHomeState extends State<HubHome> {
   Widget build(BuildContext context) {
     final hub = widget.hub;
     final lang = widget.lang;
-    final scheme = Theme.of(context).colorScheme;
     final group = widget.group;
     final entries = <(String, List<String>, List<String>, Color, IconData, VoidCallback, bool)>[
       if (group == null)
@@ -412,62 +413,148 @@ class _HubHomeState extends State<HubHome> {
       ),
       body: LayoutBuilder(builder: (context, cons) {
         final cols = (cons.maxWidth / 320).floor().clamp(1, 4);
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: cols,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 2.6,
+        final delegate = SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: cols,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 2.6,
+        );
+        final featured = group == null && hub.games.length > 1 ? hub.games[weekIndex(DateTime.now()) % hub.games.length] : null;
+        final sisters = group == null && (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
+            ? [for (final a in studioApps) if (a.hubId != hub.hubId) a]
+            : const <StudioApp>[];
+        return CustomScrollView(slivers: [
+          if (featured != null)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              sliver: SliverToBoxAdapter(child: _featuredCard(context, featured)),
+            ),
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverGrid.builder(
+              gridDelegate: delegate,
+              itemCount: entries.length,
+              itemBuilder: (context, i) {
+                final (id, title, tagline, color, icon, onTap, isGroup) = entries[i];
+                return _tile(context, id, title, tagline, color, icon, onTap,
+                    trailing: isGroup ? Icons.chevron_right_rounded : Icons.play_arrow_rounded);
+              },
+            ),
           ),
-          itemCount: entries.length,
-          itemBuilder: (context, i) {
-            final (id, title, tagline, color, icon, onTap, isGroup) = entries[i];
-            final busy = _opening == id;
-            return Semantics(
-              button: true,
-              label: hub.localized(title, lang),
-              child: Card(
-                clipBehavior: Clip.antiAlias,
-                color: Color.alphaBlend(color.withValues(alpha: 0.18), scheme.surface),
-                child: InkWell(
-                  onTap: onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: color,
-                        child: busy
-                            ? const SizedBox(
-                                width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Icon(icon, color: Colors.white, size: 30),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(hub.localized(title, lang),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text(tagline.length == 1 ? tagline.first : hub.localized(tagline, lang),
-                                maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
-                          ],
-                        ),
-                      ),
-                      Icon(isGroup ? Icons.chevron_right_rounded : Icons.play_arrow_rounded),
-                    ]),
-                  ),
+          if (sisters.isNotEmpty) ...[
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: Text(hub.localized(kMoreApps, lang), style: Theme.of(context).textTheme.titleMedium),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverGrid.builder(
+                gridDelegate: delegate,
+                itemCount: sisters.length,
+                itemBuilder: (context, i) {
+                  final a = sisters[i];
+                  return _tile(context, a.hubId, a.title, const ['Google Play'], a.color, a.icon,
+                      () => launchUrl(a.playUrl, mode: LaunchMode.externalApplication),
+                      trailing: Icons.open_in_new_rounded);
+                },
+              ),
+            ),
+          ],
+        ]);
+      }),
+    );
+  }
+
+  /// Ana ekranın başındaki "haftanın oyunu" kartı.
+  Widget _featuredCard(BuildContext context, GameConfig g) {
+    final hub = widget.hub, lang = widget.lang;
+    final text = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: '${hub.localized(kWeekTitle, lang)}: ${hub.localized(g.title, lang)}',
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _open(g),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [g.seedColor, Color.lerp(g.seedColor, Colors.black, 0.35)!]),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(children: [
+              Icon(g.icon, color: Colors.white, size: 44),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(hub.localized(kWeekTitle, lang).toUpperCase(),
+                      style: text.labelSmall?.copyWith(color: Colors.white70, letterSpacing: 1.2)),
+                  const SizedBox(height: 4),
+                  Text(hub.localized(g.title, lang),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 2),
+                  Text(hub.localized(kWeekSubtitle, lang),
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: text.bodySmall?.copyWith(color: Colors.white70)),
+                ]),
+              ),
+              _opening == g.gameId
+                  ? const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 36),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tile(BuildContext context, String id, List<String> title, List<String> tagline, Color color, IconData icon,
+      VoidCallback onTap,
+      {required IconData trailing}) {
+    final hub = widget.hub, lang = widget.lang;
+    final scheme = Theme.of(context).colorScheme;
+    final busy = _opening == id;
+    return Semantics(
+      button: true,
+      label: hub.localized(title, lang),
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        color: Color.alphaBlend(color.withValues(alpha: 0.18), scheme.surface),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: color,
+                child: busy
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Icon(icon, color: Colors.white, size: 30),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(hub.localized(title, lang),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(tagline.length == 1 ? tagline.first : hub.localized(tagline, lang),
+                        maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+                  ],
                 ),
               ),
-            );
-          },
-        );
-      }),
+              Icon(trailing),
+            ]),
+          ),
+        ),
+      ),
     );
   }
 }
