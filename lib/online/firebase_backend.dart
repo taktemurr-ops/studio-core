@@ -169,6 +169,33 @@ class FirebaseBackend implements OnlineBackend {
   }
 
   @override
+  Future<List<TableInfo>> openTables(String gameId, int seats) async {
+    final q = await db
+        .collection('matches')
+        .where('gameId', isEqualTo: gameId)
+        .where('size', isEqualTo: seats)
+        .where('private', isEqualTo: false)
+        .where('status', isEqualTo: 'waiting')
+        .orderBy('created')
+        .limit(30)
+        .get();
+    final blocked = _me?.blocked ?? const <String>{};
+    final out = <TableInfo>[];
+    for (final d in q.docs) {
+      final j = d.data();
+      if (blocked.contains(j['host'])) continue;
+      final seats0 = (j['seats'] as List?) ?? const [];
+      if (seats0.isEmpty || seats0.length >= seats) continue;
+      final h = Seat.fromJson(Map<String, dynamic>.from(seats0.first as Map));
+      out.add(TableInfo(d.id, gameId, h.label, h.avatar, seats0.length, seats, (j['rating'] as num?)?.toInt() ?? 1000));
+    }
+    return out;
+  }
+
+  @override
+  Future<OnlineMatch?> joinTable(String matchId) => _join(db.collection('matches').doc(matchId));
+
+  @override
   Future<OnlineMatch?> rejoin(String matchId) async {
     final ref = db.collection('matches').doc(matchId);
     final d = (await ref.get()).data();

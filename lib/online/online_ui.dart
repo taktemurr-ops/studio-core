@@ -3,6 +3,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -183,14 +184,33 @@ class OnlineLobby extends StatefulWidget {
 
 class _OnlineLobbyState extends State<OnlineLobby> {
   bool _busy = false;
+  bool _private = false;
   final _code = TextEditingController();
+  List<TableInfo>? _tables;
+  List<Profile> _atTable = const [];
 
   AppState get app => widget.app;
   OnlineBackend get b => Online.instance.backend!;
   int get seats => app.config.rules.localPlayers;
   String get gameId => app.config.gameId;
 
-  Future<void> _go(Future<OnlineMatch?> Function() f) async {
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final t = await b.openTables(gameId, seats).catchError((_) => <TableInfo>[]);
+    final f = await b.friends().catchError((_) => <Profile>[]);
+    if (!mounted) return;
+    setState(() {
+      _tables = t;
+      _atTable = [for (final p in f) if (p.table.startsWith('$gameId|')) p];
+    });
+  }
+
+  Future<void> _go(Future<OnlineMatch?> Function() f, {bool quick = false}) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
@@ -198,9 +218,11 @@ class _OnlineLobbyState extends State<OnlineLobby> {
       if (!mounted) return;
       if (m == null) {
         showToast(context, app.t('code_not_found'));
+        unawaited(_refresh());
         return;
       }
-      await Navigator.push(context, MaterialPageRoute(builder: (_) => WaitingRoom(app: app, match: m)));
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => WaitingRoom(app: app, match: m, quick: quick)));
+      unawaited(_refresh());
     } catch (_) {
       if (mounted) showToast(context, app.t('online_unavailable'));
     } finally {
@@ -208,16 +230,26 @@ class _OnlineLobbyState extends State<OnlineLobby> {
     }
   }
 
+  Widget _seatDots(int taken, int size) => Row(mainAxisSize: MainAxisSize.min, children: [
+        for (var i = 0; i < size; i++)
+          Padding(
+            padding: const EdgeInsets.only(right: 3),
+            child: Icon(i < taken ? Icons.person_rounded : Icons.person_outline_rounded,
+                size: 18, color: i < taken ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline),
+          ),
+      ]);
+
   @override
   Widget build(BuildContext context) {
     final p = Online.instance.profile!;
     final rating = p.ratingFor(gameId);
+    final text = Theme.of(context).textTheme;
     if (p.vip != app.save.premium) {
       p.vip = app.save.premium;
       unawaited(Online.instance.saveProfile());
     }
     return Scaffold(
-      appBar: AppBar(title: Text(app.t('online_play')), actions: [
+      appBar: AppBar(title: Text(app.t('online_table')), actions: [
         IconButton(
             icon: const Icon(Icons.leaderboard),
             tooltip: app.t('leaderboards'),
@@ -228,48 +260,115 @@ class _OnlineLobbyState extends State<OnlineLobby> {
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OnlineProfileScreen(app: app)))),
       ]),
       body: ContentWidth(
-        child: ListView(padding: const EdgeInsets.all(16), children: [
-          Card(
-            child: ListTile(
-              leading: Text(avatarOf(p.avatar), style: const TextStyle(fontSize: 34)),
-              title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text('${app.t(leagueKeys[leagueTier(rating)])} · ${app.t('rating')}: $rating'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-            icon: const Icon(Icons.bolt),
-            label: Text(app.t('quick_match')),
-            onPressed: _busy ? null : () => _go(() => b.quickMatch(gameId, seats, rating)),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-            icon: const Icon(Icons.group_add),
-            label: Text(app.t('invite_friend')),
-            onPressed: _busy ? null : () => _go(() => b.createMatch(gameId, seats)),
-          ),
-          const SizedBox(height: 20),
-          Text(app.t('join_code'), style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 6),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _code,
-                textCapitalization: TextCapitalization.characters,
-                maxLength: 6,
-                decoration: InputDecoration(hintText: app.t('enter_code'), counterText: ''),
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(padding: const EdgeInsets.all(16), children: [
+            Card(
+              child: ListTile(
+                leading: Text(avatarOf(p.avatar), style: const TextStyle(fontSize: 34)),
+                title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: Text('${app.t(leagueKeys[leagueTier(rating)])} · ${app.t('rating')}: $rating'),
               ),
             ),
-            const SizedBox(width: 8),
-            FilledButton(
-              onPressed: _busy ? null : () => _go(() => b.joinByCode(_code.text.trim())),
-              child: Text(app.t('join_code')),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: FilledButton.icon(
+                  key: const ValueKey('open-table'),
+                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                  icon: const Icon(Icons.table_restaurant_rounded),
+                  label: Text(app.t('open_table')),
+                  onPressed: _busy ? null : () => _go(() => b.createMatch(gameId, seats, private: _private)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                  icon: const Icon(Icons.bolt),
+                  label: Text(app.t('quick_match')),
+                  onPressed: _busy ? null : () => _go(() => b.quickMatch(gameId, seats, rating), quick: true),
+                ),
+              ),
+            ]),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(app.t('private_table')),
+              secondary: const Icon(Icons.lock_outline_rounded),
+              value: _private,
+              onChanged: (v) => setState(() => _private = v),
             ),
+            if (_atTable.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(app.t('friends_title'), style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+              for (final f in _atTable)
+                Card(
+                  child: ListTile(
+                    leading: Text(avatarOf(f.avatar), style: const TextStyle(fontSize: 28)),
+                    title: Text(f.name),
+                    subtitle: Text(app.t('friend_at_table')),
+                    trailing: FilledButton(
+                      onPressed: _busy ? null : () => _go(() => b.joinTable(f.table.split('|').last)),
+                      child: Text(app.t('join_table')),
+                    ),
+                  ),
+                ),
+            ],
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: Text(app.t('open_tables'), style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800))),
+              IconButton(tooltip: app.t('refresh'), icon: const Icon(Icons.refresh_rounded), onPressed: _refresh),
+            ]),
+            if (_tables == null)
+              const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))
+            else if (_tables!.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(app.t('no_open_tables'), textAlign: TextAlign.center, style: text.bodyMedium),
+              )
+            else
+              for (final t in _tables!)
+                Card(
+                  child: ListTile(
+                    leading: Text(avatarOf(t.hostAvatar), style: const TextStyle(fontSize: 28)),
+                    title: Text(t.hostName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    subtitle: Row(children: [
+                      _seatDots(t.taken, t.size),
+                      const SizedBox(width: 6),
+                      Flexible(child: Text(app.t('table_seats', {'n': t.taken, 'm': t.size}), overflow: TextOverflow.ellipsis)),
+                    ]),
+                    trailing: FilledButton(
+                      onPressed: _busy ? null : () => _go(() => b.joinTable(t.id)),
+                      child: Text(app.t('join_table')),
+                    ),
+                  ),
+                ),
+            const SizedBox(height: 12),
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              leading: const Icon(Icons.vpn_key_outlined),
+              title: Text(app.t('join_code')),
+              children: [
+                Row(children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _code,
+                      textCapitalization: TextCapitalization.characters,
+                      maxLength: 6,
+                      decoration: InputDecoration(hintText: app.t('enter_code'), counterText: ''),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: _busy ? null : () => _go(() => b.joinByCode(_code.text.trim())),
+                    child: Text(app.t('join_code')),
+                  ),
+                ]),
+              ],
+            ),
+            if (_busy) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
           ]),
-          if (_busy) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
-        ]),
+        ),
       ),
     );
   }
@@ -280,7 +379,11 @@ class _OnlineLobbyState extends State<OnlineLobby> {
 class WaitingRoom extends StatefulWidget {
   final AppState app;
   final OnlineMatch match;
-  const WaitingRoom({super.key, required this.app, required this.match});
+
+  /// Hızlı eşleşme: 15 saniyede kimse gelmezse boş koltuklara bot oturur.
+  /// Açılan masalar ise arkadaşlar ve listeden gelenler için bekler.
+  final bool quick;
+  const WaitingRoom({super.key, required this.app, required this.match, this.quick = false});
 
   @override
   State<WaitingRoom> createState() => _WaitingRoomState();
@@ -298,9 +401,10 @@ class _WaitingRoomState extends State<WaitingRoom> {
   void initState() {
     super.initState();
     _sub = m.changes.listen((_) => _check());
+    unawaited(Online.instance.setTable('${m.gameId}|${m.id}'));
     // Hızlı eşleşme (kodu paylaşılmayan masa): kimse beklemesin.
     _auto = Timer(const Duration(seconds: 15), () {
-      if (m.isHost && m.status == MatchStatus.waiting && !_private) m.fillWithBotsAndStart();
+      if (widget.quick && m.isHost && m.status == MatchStatus.waiting && !_private) m.fillWithBotsAndStart();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _check());
   }
@@ -322,6 +426,7 @@ class _WaitingRoomState extends State<WaitingRoom> {
   void dispose() {
     _sub?.cancel();
     _auto?.cancel();
+    unawaited(Online.instance.setTable(''));
     if (!_started) m.leave();
     super.dispose();
   }
@@ -380,17 +485,19 @@ class _WaitingRoomState extends State<WaitingRoom> {
             ),
           ),
           const SizedBox(height: 16),
-          for (var i = 0; i < size; i++)
-            Card(
-              child: ListTile(
-                leading: Text(i < seats.length && !seats[i].bot ? avatarOf(seats[i].avatar) : '⏳', style: const TextStyle(fontSize: 28)),
-                title: Text(i < seats.length ? (seats[i].bot ? '🤖' : seats[i].label) : app.t('searching')),
-              ),
-            ),
+          _RoundTable(
+            size: size,
+            seats: [
+              for (var i = 0; i < size; i++)
+                i < seats.length
+                    ? (seats[i].bot ? '🤖' : avatarOf(seats[i].avatar), seats[i].bot ? '🤖' : seats[i].label)
+                    : (null, app.t('empty_seat')),
+            ],
+          ),
           const SizedBox(height: 12),
           const Center(child: CircularProgressIndicator()),
           const SizedBox(height: 12),
-          if (m.isHost && _private) ...[
+          if (m.isHost) ...[
             FilledButton.tonalIcon(
               key: const ValueKey('call-friend'),
               icon: const Icon(Icons.person_add_alt_1),
@@ -908,6 +1015,68 @@ class LeaderboardScreen extends StatelessWidget {
             ),
         ]),
       ),
+    );
+  }
+}
+
+
+/// Bekleme odasındaki yuvarlak masa: koltuklar masanın çevresinde.
+class _RoundTable extends StatelessWidget {
+  final int size;
+  final List<(String?, String)> seats;
+  const _RoundTable({required this.size, required this.seats});
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 1.25,
+      child: LayoutBuilder(builder: (context, c) {
+        final w = c.maxWidth, h = c.maxHeight;
+        final center = Offset(w / 2, h / 2);
+        final rx = w * 0.36, ry = h * 0.34;
+        return Stack(children: [
+          Positioned(
+            left: center.dx - rx * 0.78,
+            top: center.dy - ry * 0.72,
+            width: rx * 1.56,
+            height: ry * 1.44,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const RadialGradient(colors: [Color(0xFF2E8A5E), Color(0xFF1B5A3D)]),
+                border: Border.all(color: const Color(0xFF8A5A36), width: 8),
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, 6))],
+              ),
+            ),
+          ),
+          for (var i = 0; i < size; i++)
+            Builder(builder: (context) {
+              final a = math.pi / 2 + i * 2 * math.pi / size;
+              final p = Offset(center.dx + math.cos(a) * rx, center.dy + math.sin(a) * ry);
+              final (av, name) = seats[i];
+              return Positioned(
+                left: p.dx - 52,
+                top: p.dy - 34,
+                width: 104,
+                child: Column(children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: av == null ? Colors.white24 : Colors.white,
+                    child: av == null
+                        ? const Icon(Icons.chair_alt_rounded, color: Colors.white70)
+                        : Text(av, style: const TextStyle(fontSize: 26)),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700)),
+                ]),
+              );
+            }),
+        ]);
+      }),
     );
   }
 }

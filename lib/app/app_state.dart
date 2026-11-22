@@ -16,6 +16,7 @@ import '../core/stats.dart';
 import '../core/strings.dart';
 import '../core/telemetry.dart';
 import '../online/online_service.dart';
+import 'covers.dart';
 import 'game_api.dart';
 import 'services/ads.dart';
 import 'services/audio.dart';
@@ -44,6 +45,9 @@ class AppState extends ChangeNotifier {
   /// on the game's home screen.
   VoidCallback? exitToHub;
   String exitToHubLabel = '';
+
+  /// Merkezden gelen kapak resmi (oyun ana ekranında simge yerine).
+  GameCover? cover;
   Timer? _saveDebounce;
 
   AppState({

@@ -82,16 +82,18 @@ ThemeData buildTheme(Color seed, Brightness b) {
   final base = ColorScheme.fromSeed(
     seedColor: seed,
     brightness: b,
-    dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
+    dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
   );
-  // Yüzeyleri hafifçe sıcak tona çek: düz gri/beyaz yerine kâğıt ve gece mavisi.
+  // Yüzeyler oyunun kendi renginden çok hafif bir tonla boyanır: her oyun
+  // kendine özgü, ferah ve canlı görünür (düz bej/gri yerine).
+  Color tint(Color c, double a) => Color.alphaBlend(seed.withValues(alpha: a), c);
   final scheme = base.copyWith(
-    surface: dark ? const Color(0xFF141821) : const Color(0xFFFBF8F3),
+    surface: dark ? tint(const Color(0xFF12151D), 0.06) : tint(const Color(0xFFF7F8FC), 0.05),
     surfaceContainerLowest: dark ? const Color(0xFF0F121A) : const Color(0xFFFFFFFF),
-    surfaceContainerLow: dark ? const Color(0xFF1A1F2A) : const Color(0xFFF6F2EB),
-    surfaceContainer: dark ? const Color(0xFF1E2430) : const Color(0xFFF1ECE3),
-    surfaceContainerHigh: dark ? const Color(0xFF242B38) : const Color(0xFFEBE5DA),
-    surfaceContainerHighest: dark ? const Color(0xFF2B3341) : const Color(0xFFE4DDD0),
+    surfaceContainerLow: dark ? tint(const Color(0xFF1A1F2A), 0.07) : tint(const Color(0xFFFFFFFF), 0.04),
+    surfaceContainer: dark ? tint(const Color(0xFF1E2430), 0.08) : tint(const Color(0xFFF3F5FA), 0.07),
+    surfaceContainerHigh: dark ? tint(const Color(0xFF242B38), 0.09) : tint(const Color(0xFFECEFF6), 0.09),
+    surfaceContainerHighest: dark ? tint(const Color(0xFF2B3341), 0.10) : tint(const Color(0xFFE4E8F1), 0.11),
   );
   final radius = BorderRadius.circular(18);
   return ThemeData(
@@ -108,7 +110,8 @@ ThemeData buildTheme(Color seed, Brightness b) {
         fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 0.2, color: scheme.onSurface),
     ),
     cardTheme: CardThemeData(
-      elevation: 0,
+      elevation: dark ? 0 : 1,
+      shadowColor: seed.withValues(alpha: 0.18),
       color: scheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(
         borderRadius: radius,

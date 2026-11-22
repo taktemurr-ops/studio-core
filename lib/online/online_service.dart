@@ -138,6 +138,14 @@ class Online extends ChangeNotifier {
     await saveProfile().catchError((_) {});
   }
 
+  /// Beklenen masayı profile yazar (arkadaşlar "masasına otur" diyebilsin).
+  Future<void> setTable(String v) async {
+    final p = profile;
+    if (p == null || p.table == v) return;
+    p.table = v;
+    await saveProfile().catchError((_) {});
+  }
+
   /// Kapanmadan önce oynanan maç hâlâ sürüyorsa ona bağlanır.
   Future<OnlineMatch?> resumeActive() async {
     final p = profile;

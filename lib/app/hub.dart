@@ -3,11 +3,13 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'covers.dart';
 import '../core/game_session.dart';
 import '../core/monetization.dart';
 import '../core/save_data.dart';
@@ -49,6 +51,9 @@ class HubConfig {
   /// İlk açılış rehberinde önerilen oyunlar (gameId); boşsa ilk üç oyun.
   final List<String> starters;
 
+  /// Oyun ya da grup kimliği → kapak resmi (simge yerine çizilir).
+  final Map<String, GameCover> covers;
+
   const HubConfig({
     required this.hubId,
     required this.title,
@@ -59,7 +64,10 @@ class HubConfig {
     this.groups = const [],
     this.sections = const [],
     this.starters = const [],
+    this.covers = const {},
   });
+
+  GameCover? coverFor(String id) => covers[id];
 
   /// Every game in the hub, including those inside groups.
   List<GameConfig> get allGames => [...games, for (final g in groups) ...g.games];
@@ -519,7 +527,8 @@ class _HubHomeState extends State<HubHome> {
       state.onResumed();
       widget.services.active = state;
       await Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => HubGamePage(state: state, backLabel: widget.hub.localized(_backLabel, widget.lang)),
+        builder: (_) => HubGamePage(
+            state: state, backLabel: widget.hub.localized(_backLabel, widget.lang), cover: widget.hub.coverFor(g.gameId)),
       ));
       widget.services.active = null;
       state.onPaused(); // flush saves when returning to the list
@@ -652,7 +661,9 @@ class _HubHomeState extends State<HubHome> {
             ),
             padding: const EdgeInsets.all(16),
             child: Row(children: [
-              Icon(g.icon, color: Colors.white, size: 44),
+              hub.coverFor(g.gameId) != null
+                  ? CoverArt(cover: hub.coverFor(g.gameId)!, color: g.seedColor, size: 72, radius: 18)
+                  : Icon(g.icon, color: Colors.white, size: 44),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -689,19 +700,32 @@ class _HubHomeState extends State<HubHome> {
       label: hub.localized(title, lang),
       child: Card(
         clipBehavior: Clip.antiAlias,
-        color: Color.alphaBlend(color.withValues(alpha: 0.18), scheme.surface),
+        color: Color.alphaBlend(color.withValues(alpha: 0.10), scheme.surfaceContainerLowest),
+        elevation: 1.5,
+        shadowColor: color.withValues(alpha: 0.35),
         child: InkWell(
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: color,
-                child: busy
-                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Icon(icon, color: Colors.white, size: 30),
-              ),
+              Stack(alignment: Alignment.center, children: [
+                hub.coverFor(id) != null
+                    ? CoverArt(cover: hub.coverFor(id)!, color: color, size: 64, radius: 16)
+                    : Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color.lerp(color, Colors.white, 0.15)!, Color.lerp(color, Colors.black, 0.25)!]),
+                        ),
+                        child: Icon(icon, color: Colors.white, size: 32),
+                      ),
+                if (busy)
+                  const SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)),
+              ]),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -732,7 +756,8 @@ class _HubHomeState extends State<HubHome> {
 class HubGamePage extends StatelessWidget {
   final AppState state;
   final String backLabel;
-  const HubGamePage({super.key, required this.state, required this.backLabel});
+  final GameCover? cover;
+  const HubGamePage({super.key, required this.state, required this.backLabel, this.cover});
 
   @override
   Widget build(BuildContext context) {
@@ -740,6 +765,7 @@ class HubGamePage extends StatelessWidget {
       Navigator.of(context).pop();
     };
     state.exitToHubLabel = backLabel;
+    state.cover ??= cover;
     return ProviderScope(
       overrides: [appStateProvider.overrideWith((ref) => state)],
       child: GameApp(state: state),

@@ -9,6 +9,7 @@ import '../../online/online_ui.dart';
 import '../../core/level_plan.dart';
 import '../../core/save_store.dart';
 import '../adaptive.dart';
+import '../covers.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -72,8 +73,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           actions: [FilledButton(onPressed: () => Navigator.pop(c), child: Text(app.t('ok')))],
         ),
       );
-    } else if (r.loginRewardReady) {
-      setState(() => _tab = 1);
     }
     app.startup = null;
   }
@@ -173,51 +172,125 @@ class _HomeTab extends StatelessWidget {
   final AppState app;
   const _HomeTab({required this.app});
 
+  /// Aynı masada birden çok kişinin oynadığı oyun (rakip yapay zekâ ya da
+  /// çevrimiçi masa). Aynı cihazda sırayla oynama sunulmaz.
+  bool get _multi => app.config.rules.localPlayers >= 2;
+
+  Future<void> _online(BuildContext context) async {
+    if (!Online.instance.available) {
+      await showDialog<void>(
+        context: context,
+        builder: (c) => AlertDialog(
+          icon: const Icon(Icons.wifi_off_rounded),
+          title: Text(app.t('online_table')),
+          content: Text(app.t('online_needs_net')),
+          actions: [FilledButton(onPressed: () => Navigator.pop(c), child: Text(app.t('ok')))],
+        ),
+      );
+      return;
+    }
+    await openOnline(context, app);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = app.save;
     final spec = app.session.nextCampaignSpec;
     final theme = Palettes.theme(spec.theme);
+    final seed = app.config.seedColor;
     final modes = app.config.rules.modes
-        .where((m) => m != GameModeId.campaign && m != GameModeId.practice)
+        .where((m) => m != GameModeId.campaign && m != GameModeId.practice && m != GameModeId.versus && m != GameModeId.online)
         .toList();
-    if (app.config.rules.localPlayers >= 2) {
-      modes.insert(0, GameModeId.versus);
-      if (Online.instance.available) modes.insert(0, GameModeId.online);
-    }
     final resume = s.resume['spec'] is Map;
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        ThemedBackground(
-          colors: theme,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(children: [
-              Icon(app.config.icon, size: 72, color: Colors.white),
-              const SizedBox(height: 8),
-              Text(app.t('world', {'n': spec.world}),
-                  style: const TextStyle(color: Colors.white70, fontSize: 16)),
-              Text(app.t('level', {'n': spec.levelId}),
-                  style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                    minimumSize: const Size(220, 56), backgroundColor: Colors.white, foregroundColor: theme.first),
-                icon: Icon(resume ? Icons.play_circle : Icons.play_arrow),
-                label: Text(resume ? app.t('resume') : app.t('play'), style: const TextStyle(fontSize: 20)),
-                onPressed: () => resume ? openResume(context, app) : openPlay(context, app, spec),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LevelsScreen())),
-                child: Text(app.t('worlds'), style: const TextStyle(color: Colors.white)),
+    final text = Theme.of(context).textTheme;
+    final hero = Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color.lerp(seed, theme.last, 0.35)!, Color.lerp(seed, theme.first, 0.55)!],
+        ),
+        boxShadow: [BoxShadow(color: seed.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 8))],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      child: Column(children: [
+        Row(children: [
+          app.cover != null
+              ? CoverArt(cover: app.cover!, color: seed, size: 96, radius: 22)
+              : Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(22)),
+                  child: Icon(app.config.icon, size: 56, color: Colors.white),
+                ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(app.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(20)),
+                child: Text(
+                    _multi
+                        ? app.t('stage_n', {'n': spec.levelId})
+                        : '${app.t('world', {'n': spec.world})} · ${app.t('level', {'n': spec.levelId})}',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ]),
           ),
+        ]),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(56), backgroundColor: Colors.white, foregroundColor: Color.lerp(seed, Colors.black, 0.3)),
+            icon: Icon(resume ? Icons.play_circle : (_multi ? Icons.smart_toy_rounded : Icons.play_arrow_rounded)),
+            label: Text(resume ? app.t('resume') : (_multi ? app.t('play_ai') : app.t('play')),
+                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+            onPressed: () => resume ? openResume(context, app) : openPlay(context, app, spec),
+          ),
         ),
+        if (_multi) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const ValueKey('online-table'),
+              style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  backgroundColor: const Color(0xFFFFC857),
+                  foregroundColor: const Color(0xFF2A1E05)),
+              icon: const Icon(Icons.groups_rounded),
+              label: Text(app.t('online_table'), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+              onPressed: () => _online(context),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(app.t('online_table_d'),
+                textAlign: TextAlign.center, style: text.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.85))),
+          ),
+        ],
+        TextButton.icon(
+          icon: const Icon(Icons.map_rounded, color: Colors.white),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LevelsScreen())),
+          label: Text(app.t('worlds'), style: const TextStyle(color: Colors.white)),
+        ),
+      ]),
+    );
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        hero,
         if (Online.instance.available)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 10),
             child: OutlinedButton.icon(
               icon: const Icon(Icons.leaderboard),
               label: Text(app.t('leaderboards')),
@@ -230,15 +303,13 @@ class _HomeTab extends StatelessWidget {
               },
             ),
           ),
-        SectionTitle(app.t('modes')),
-        // Fixed tile height (not an aspect ratio): narrow phones and wide
-        // tablets get the same readable card, and it can never overflow.
+        if (modes.isNotEmpty) SectionTitle(app.t('other_modes')),
         GridView(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: Adaptive.columns(MediaQuery.sizeOf(context).width, minTile: 200, max: 4).clamp(2, 4),
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            mainAxisExtent: 116,
+            mainAxisExtent: 104,
           ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -266,6 +337,16 @@ class _ModeCard extends StatelessWidget {
         _ => Icons.play_arrow,
       };
 
+  Color get tint => switch (mode) {
+        GameModeId.endless => const Color(0xFF7B4FD6),
+        GameModeId.timeAttack => const Color(0xFFE0533D),
+        GameModeId.zen => const Color(0xFF2E9E78),
+        GameModeId.daily => const Color(0xFF2F7BD9),
+        GameModeId.weekly => const Color(0xFFD9822B),
+        GameModeId.challenge => const Color(0xFFC23D7A),
+        _ => const Color(0xFF3C6E8F),
+      };
+
   @override
   Widget build(BuildContext context) {
     final best = app.save.records[mode.name];
@@ -279,7 +360,12 @@ class _ModeCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: Theme.of(context).colorScheme.primary),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(color: tint.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(11)),
+                child: Icon(icon, color: tint, size: 22),
+              ),
               // Flexible texts shrink (ellipsis) instead of overflowing with
               // large system font sizes or very narrow cards.
               Flexible(

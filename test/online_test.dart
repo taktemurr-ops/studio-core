@@ -90,6 +90,28 @@ void main() {
       expect(m.seats.where((s) => s.bot).length, 2);
     });
 
+    test('açık masalar listelenir, 4 kişilik masaya arkadaşlar tek tek oturur', () async {
+      final server = MemoryServer();
+      final a = MemoryBackend(server, 'a'), b = MemoryBackend(server, 'b'), c = MemoryBackend(server, 'c'), d = MemoryBackend(server, 'd');
+      for (final x in [a, b, c, d]) {
+        await x.signIn();
+      }
+      final m = await a.createMatch('oyun-101-okey', 4, private: false);
+      await a.createMatch('oyun-101-okey', 4); // davetli masa listede görünmez
+      var list = await b.openTables('oyun-101-okey', 4);
+      expect(list.length, 1);
+      expect(list.first.taken, 1);
+      expect(await b.joinTable(list.first.id), isNotNull);
+      expect(await b.joinTable(list.first.id), isNull, reason: 'aynı oyuncu iki kez oturamaz');
+      await c.joinTable(m.id);
+      list = await d.openTables('oyun-101-okey', 4);
+      expect(list.single.taken, 3);
+      await d.joinTable(m.id);
+      expect(m.status, MatchStatus.playing);
+      expect(m.seats.where((s) => s.bot), isEmpty);
+      expect(await d.openTables('oyun-101-okey', 4), isEmpty);
+    });
+
     test('engellenen oyuncunun masasına eşleşilmez', () async {
       final server = MemoryServer();
       final a = MemoryBackend(server, 'a'), b = MemoryBackend(server, 'b');

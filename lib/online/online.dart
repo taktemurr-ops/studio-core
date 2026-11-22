@@ -26,6 +26,10 @@ class Profile {
   /// Premium sahibi: masada yıldızlı ad, günlük ücretsiz güller.
   bool vip;
 
+  /// Oyuncunun beklediği masa: "oyunKimliği|masaKimliği" (boş = yok).
+  /// Arkadaşlar listesinde "masasına otur" için kullanılır.
+  String table;
+
   /// Arkadaş kodu (6 harf).
   final String code;
 
@@ -45,6 +49,7 @@ class Profile {
     this.terms = 0,
     this.active = '',
     this.vip = false,
+    this.table = '',
     Map<String, int>? rating,
     Map<String, int>? gifts,
     Set<String>? blocked,
@@ -62,6 +67,7 @@ class Profile {
         'terms': terms,
         'active': active,
         'vip': vip,
+        'table': table,
         'code': code,
         'rating': rating,
         'gifts': gifts,
@@ -77,6 +83,7 @@ class Profile {
         terms: (j['terms'] as num?)?.toInt() ?? 0,
         active: j['active'] as String? ?? '',
         vip: j['vip'] == true,
+        table: j['table'] as String? ?? '',
         rating: {for (final e in ((j['rating'] as Map?) ?? {}).entries) '${e.key}': (e.value as num).toInt()},
         gifts: {for (final e in ((j['gifts'] as Map?) ?? {}).entries) '${e.key}': (e.value as num).toInt()},
         blocked: {for (final x in (j['blocked'] as List?) ?? const []) '$x'},
@@ -102,6 +109,13 @@ class Seat {
   Map<String, Object?> toJson() => {'uid': uid, 'name': name, 'avatar': avatar, 'vip': vip};
   static Seat fromJson(Map<String, dynamic> j) =>
       Seat(j['uid'] as String? ?? '', j['name'] as String? ?? '', (j['avatar'] as num?)?.toInt() ?? 0, j['vip'] == true);
+}
+
+/// Lobide listelenen, oyuncu bekleyen herkese açık masa.
+class TableInfo {
+  final String id, gameId, hostName;
+  final int hostAvatar, taken, size, rating;
+  const TableInfo(this.id, this.gameId, this.hostName, this.hostAvatar, this.taken, this.size, this.rating);
 }
 
 enum MatchStatus { waiting, playing, done }
@@ -204,6 +218,12 @@ abstract class OnlineBackend {
   Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true});
   Future<OnlineMatch?> joinByCode(String code);
   Future<OnlineMatch> quickMatch(String gameId, int seats, int rating);
+
+  /// Oyuncu bekleyen herkese açık masalar (en eskisi başta).
+  Future<List<TableInfo>> openTables(String gameId, int seats);
+
+  /// Listeden seçilen masaya otur (doluysa ya da başladıysa null).
+  Future<OnlineMatch?> joinTable(String matchId);
 
   /// Uygulama kapanıp açıldıysa sürmekte olan maça geri dön (oturduğum
   /// koltuk duruyor ve maç bitmemişse). Geçmiş hamleler [OnlineMatch.history].
@@ -448,6 +468,30 @@ class MemoryBackend implements OnlineBackend {
       }
     }
     return createMatch(gameId, seats, private: false);
+  }
+
+  @override
+  Future<List<TableInfo>> openTables(String gameId, int seats) async => [
+        for (final d in server.matches.values)
+          if (!d.private &&
+              d.gameId == gameId &&
+              d.size == seats &&
+              d.status == MatchStatus.waiting &&
+              d.seats.length < d.size &&
+              !_me!.blocked.contains(d.hostUid))
+            TableInfo(d.id, d.gameId, d.seats.first.label, d.seats.first.avatar, d.seats.length, d.size, d.rating),
+      ];
+
+  @override
+  Future<OnlineMatch?> joinTable(String matchId) async {
+    final d = server.matches[matchId];
+    if (d == null || d.status != MatchStatus.waiting || d.seats.length >= d.size || d.seats.any((x) => x.uid == uid)) {
+      return null;
+    }
+    d.seats.add(_mySeat);
+    if (d.seats.length == d.size) d.status = MatchStatus.playing;
+    d.ctl.add(null);
+    return _MemMatch(this, d);
   }
 
   @override
