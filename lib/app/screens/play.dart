@@ -147,7 +147,11 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       sfx: (s) => app.audio.play(s),
       sound: (n) => app.audio.playNamed(n),
     );
-    return KeyedSubtree(key: ValueKey(_roundKey), child: app.config.buildPlay(ctx));
+    // Oyun alanı renkleri hafifçe yumuşatılır: göz yormayan, sakin bir görünüm.
+    return KeyedSubtree(
+      key: ValueKey(_roundKey),
+      child: ColorFiltered(colorFilter: kCalmColors, child: app.config.buildPlay(ctx)),
+    );
   }
 
   // ---- Pause -------------------------------------------------------------------
@@ -446,3 +450,11 @@ String statLabel(AppState app, String stat) {
   if (k == null) return stat;
   return app.t(k, {'n': ''}).replaceAll(RegExp(r'\s+'), ' ').trim();
 }
+
+/// Doygunluğu %15 azaltan renk süzgeci (renk ayrımı korunur, parlaklık yumuşar).
+const ColorFilter kCalmColors = ColorFilter.matrix(<double>[
+  0.8819, 0.1073, 0.0108, 0, 0, //
+  0.0319, 0.9573, 0.0108, 0, 0, //
+  0.0319, 0.1073, 0.8608, 0, 0, //
+  0, 0, 0, 1, 0,
+]);

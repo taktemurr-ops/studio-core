@@ -82,7 +82,7 @@ ThemeData buildTheme(Color seed, Brightness b) {
   final base = ColorScheme.fromSeed(
     seedColor: seed,
     brightness: b,
-    dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+    dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
   );
   // Yüzeyleri hafifçe sıcak tona çek: düz gri/beyaz yerine kâğıt ve gece mavisi.
   final scheme = base.copyWith(
