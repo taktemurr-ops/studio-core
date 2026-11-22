@@ -475,12 +475,13 @@ class _OnlineTableState extends State<OnlineTable> {
   Widget build(BuildContext context) {
     return Stack(children: [
       PlayScreen(spec: widget.spec, match: OnlineMatchLink(m)),
+      // Balonlar altta, ipucu düğmesinin üstünde: üstteki hedef/sıra satırını kapatmaz.
       Positioned(
-        top: MediaQuery.paddingOf(context).top + 60,
+        bottom: MediaQuery.paddingOf(context).bottom + 84,
         left: 12,
-        right: 12,
+        right: 64,
         child: IgnorePointer(
-          child: Column(children: [
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
             for (final b in _bubbles.take(3))
               Card(
                 color: Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.95),
@@ -556,7 +557,10 @@ class _OnlineTableState extends State<OnlineTable> {
 
   Future<void> _gift() async {
     final targets = [for (var i = 0; i < m.seats.length; i++) if (i != m.mySeat && !m.seats[i].bot) i];
-    if (targets.isEmpty) return;
+    if (targets.isEmpty) {
+      showToast(context, app.t('gift_no_target'));
+      return;
+    }
     var to = targets.first;
     await showModalBottomSheet<void>(
       context: context,
