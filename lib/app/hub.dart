@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'covers.dart';
+export 'covers.dart' show GameCover, CoverArt;
 import '../core/game_session.dart';
 import '../core/monetization.dart';
 import '../core/save_data.dart';
