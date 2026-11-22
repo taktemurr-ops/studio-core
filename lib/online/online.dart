@@ -466,18 +466,27 @@ class MemoryBackend implements OnlineBackend {
   }
 
   @override
-  Stream<Invite> invites() async* {
+  Stream<Invite> invites() {
     var seen = 0;
     final l = server.invites.putIfAbsent(uid, () => []);
-    while (seen < l.length) {
-      yield l[seen++];
-    }
-    await for (final to in server.inviteCtl.stream) {
-      if (to != uid) continue;
+    late final StreamController<Invite> ctl;
+    StreamSubscription<String>? sub;
+    void pump() {
       while (seen < l.length) {
-        yield l[seen++];
+        ctl.add(l[seen++]);
       }
     }
+
+    ctl = StreamController<Invite>(
+      onListen: () {
+        pump();
+        sub = server.inviteCtl.stream.listen((to) {
+          if (to == uid) pump();
+        });
+      },
+      onCancel: () => sub?.cancel(),
+    );
+    return ctl.stream;
   }
 
   @override
