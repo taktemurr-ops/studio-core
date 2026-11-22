@@ -10,7 +10,9 @@ class GameCover {
   /// Çizim türü: cards, solitaire, pyramid, rack, domino, mahjong, chess,
   /// checkers, go, reversi, xo, connect, backgammon, mancala, dice, race,
   /// grid, nonogram, blocks, hexes, bubbles, gems, tubes, maze, pipes,
-  /// shelf, pairs, lens, chain, fruit, pins, war, map.
+  /// shelf, pairs, lens, chain, fruit, pins, war, map, pool, hockey, foosball,
+  /// pingpong, ships, dots, marbles, cube, hanoi, cars, arrows, jigsaw,
+  /// tangram, lights.
   final String kind;
 
   /// Kartta ya da ızgarada gösterilecek kısa yazı (ör. "A", "7", "21").
@@ -703,6 +705,198 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
         drawCard(c, Offset(36 + i * 1.5, 54 - i * 1.5), 30, -0.1, back: true);
       }
       drawCard(c, const Offset(64, 50), 30, 0.12, rank: cover.label.isEmpty ? 'K' : cover.label, suit: v);
+    case 'pool':
+      _bg(c, seed);
+      final t = RRect.fromRectAndRadius(const Rect.fromLTWH(10, 20, 80, 60), const Radius.circular(8));
+      _shadowRRect(c, t);
+      c.drawRRect(t, _p(_wood));
+      c.drawRRect(t.deflate(5), _p(const Color(0xFF1E7A4F)));
+      for (final o in const [Offset(16, 26), Offset(50, 25), Offset(84, 26), Offset(16, 74), Offset(50, 75), Offset(84, 74)]) {
+        c.drawCircle(o, 3.2, _p(Colors.black87));
+      }
+      var k2 = 0;
+      for (var row = 0; row < 3; row++) {
+        for (var i = 0; i <= row; i++) {
+          _stone(c, Offset(58 + row * 6.2, 50 + (i - row / 2) * 6.6), 3.2, _pal[k2++ % 8]);
+        }
+      }
+      _stone(c, const Offset(30, 50), 3.2, Colors.white);
+      c.drawLine(const Offset(6, 62), const Offset(26, 52), _stroke(const Color(0xFFE6C38F), 2.2));
+    case 'hockey':
+      _bg(c, seed);
+      final t = RRect.fromRectAndRadius(const Rect.fromLTWH(22, 8, 56, 84), const Radius.circular(14));
+      _shadowRRect(c, t);
+      c.drawRRect(t, _p(const Color(0xFFEAF4FB)));
+      c.drawLine(const Offset(22, 50), const Offset(78, 50), _stroke(const Color(0xFFE2574C), 1.4));
+      c.drawCircle(const Offset(50, 50), 9, _stroke(const Color(0xFF3075C4), 1.4));
+      c.drawRect(const Rect.fromLTWH(40, 8, 20, 3), _p(_ink));
+      c.drawRect(const Rect.fromLTWH(40, 89, 20, 3), _p(_ink));
+      _stone(c, const Offset(50, 24), 7, _red);
+      _stone(c, const Offset(46, 76), 7, const Color(0xFF3075C4));
+      c.drawCircle(const Offset(58, 44), 4.2, _p(_ink));
+    case 'foosball':
+      _bg(c, seed);
+      final f = const Rect.fromLTWH(12, 12, 76, 76);
+      c.drawRRect(RRect.fromRectAndRadius(f.inflate(4), const Radius.circular(6)), _p(_wood));
+      c.drawRect(f, _p(const Color(0xFF2E8B57)));
+      c.drawLine(const Offset(12, 50), const Offset(88, 50), _stroke(Colors.white70, 1));
+      for (var r = 0; r < 4; r++) {
+        final y = 22.0 + r * 19;
+        c.drawLine(Offset(6, y), Offset(94, y), _stroke(const Color(0xFFB0B7C3), 1.8));
+        for (var i = 0; i < 3; i++) {
+          c.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(28 + i * 22, y), width: 6, height: 10), const Radius.circular(2)),
+              _p(r.isEven ? _red : const Color(0xFF3075C4)));
+        }
+      }
+      c.drawCircle(const Offset(52, 52), 3.2, _p(Colors.white));
+    case 'pingpong':
+      _bg(c, seed);
+      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(14, 30, 72, 44), const Radius.circular(3)), _p(const Color(0xFF1F5FA8)));
+      c.drawRect(const Rect.fromLTWH(14, 30, 72, 44), _stroke(Colors.white, 1.4));
+      c.drawLine(const Offset(50, 26), const Offset(50, 78), _stroke(Colors.white, 2.2));
+      c.drawCircle(const Offset(28, 66), 9, _p(_red));
+      c.drawLine(const Offset(28, 75), const Offset(26, 86), _stroke(_wood, 4));
+      c.drawCircle(const Offset(70, 20), 3.4, _p(Colors.white));
+    case 'ships':
+      _bg(c, seed, tint: const Color(0xFF1E5F8E));
+      for (var i = 0; i <= 5; i++) {
+        c.drawLine(Offset(14 + i * 14.4, 14), Offset(14 + i * 14.4, 86), _stroke(Colors.white24, 0.8));
+        c.drawLine(Offset(14, 14 + i * 14.4), Offset(86, 14 + i * 14.4), _stroke(Colors.white24, 0.8));
+      }
+      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(17, 31, 38, 9), const Radius.circular(5)), _p(const Color(0xFFB0BEC5)));
+      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(60, 46, 9, 30), const Radius.circular(5)), _p(const Color(0xFFB0BEC5)));
+      for (final o in const [Offset(36, 64), Offset(78, 24)]) {
+        c.drawLine(o - const Offset(4, 4), o + const Offset(4, 4), _stroke(Colors.white, 2.2));
+        c.drawLine(o + const Offset(4, -4), o - const Offset(4, -4), _stroke(Colors.white, 2.2));
+      }
+      c.drawCircle(const Offset(64, 54), 4.5, _p(_red));
+    case 'dots':
+      _bg(c, seed);
+      c.drawRect(const Rect.fromLTWH(32, 32, 18, 18), _p(const Color(0xFFF2A93B)));
+      c.drawRect(const Rect.fromLTWH(50, 50, 18, 18), _p(const Color(0xFF2BB3B1)));
+      for (final (a, b) in const [(Offset(32, 32), Offset(50, 32)), (Offset(32, 32), Offset(32, 50)), (Offset(50, 32), Offset(50, 68)),
+          (Offset(32, 50), Offset(68, 50)), (Offset(50, 68), Offset(68, 68)), (Offset(68, 50), Offset(68, 68)), (Offset(14, 14), Offset(32, 14))]) {
+        c.drawLine(a, b, _stroke(Colors.white, 2.6));
+      }
+      for (var y = 0; y < 5; y++) {
+        for (var x = 0; x < 5; x++) {
+          c.drawCircle(Offset(14 + x * 18, 14 + y * 18), 2.6, _p(Colors.white));
+        }
+      }
+    case 'marbles':
+      _bg(c, seed);
+      final star = Path();
+      for (var i = 0; i < 12; i++) {
+        final a = -math.pi / 2 + i * math.pi / 6;
+        final r = i.isEven ? 42.0 : 24.0;
+        final pt = Offset(50 + math.cos(a) * r, 52 + math.sin(a) * r);
+        i == 0 ? star.moveTo(pt.dx, pt.dy) : star.lineTo(pt.dx, pt.dy);
+      }
+      star.close();
+      c.drawPath(star, _p(const Color(0xFFE9D6B0)));
+      for (var y = -2; y <= 2; y++) {
+        for (var x = -2; x <= 2; x++) {
+          if ((x + y).abs() > 2) continue;
+          final o = Offset(50 + x * 10 + y * 5, 52 + y * 8.7);
+          _stone(c, o, 3.6, y < 0 ? _red : (y > 0 ? const Color(0xFF3075C4) : const Color(0xFF3BA776)));
+        }
+      }
+    case 'cube':
+      _bg(c, seed);
+      Path face(List<Offset> pts) => Path()..addPolygon(pts, true);
+      const top = [Offset(50, 14), Offset(84, 30), Offset(50, 46), Offset(16, 30)];
+      const left = [Offset(16, 30), Offset(50, 46), Offset(50, 86), Offset(16, 70)];
+      const right = [Offset(50, 46), Offset(84, 30), Offset(84, 70), Offset(50, 86)];
+      c.drawPath(face(top), _p(_pal[2]));
+      c.drawPath(face(left), _p(_pal[0]));
+      c.drawPath(face(right), _p(_pal[1]));
+      for (final f in [top, left, right]) {
+        for (var i = 1; i < 3; i++) {
+          final t = i / 3;
+          c.drawLine(Offset.lerp(f[0], f[1], t)!, Offset.lerp(f[3], f[2], t)!, _stroke(Colors.black26, 1.4));
+          c.drawLine(Offset.lerp(f[0], f[3], t)!, Offset.lerp(f[1], f[2], t)!, _stroke(Colors.black26, 1.4));
+        }
+      }
+    case 'hanoi':
+      _bg(c, seed);
+      c.drawRect(const Rect.fromLTWH(8, 80, 84, 6), _p(_wood));
+      for (var i = 0; i < 3; i++) {
+        c.drawRect(Rect.fromLTWH(20 + i * 30, 30, 3, 50), _p(_woodLight));
+      }
+      for (var i = 0; i < 4; i++) {
+        final w = 26.0 - i * 5;
+        c.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(21.5, 75 - i * 9), width: w, height: 8), const Radius.circular(4)),
+            _p(_pal[i]));
+      }
+      c.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: const Offset(51.5, 75), width: 28, height: 8), const Radius.circular(4)), _p(_pal[4]));
+    case 'cars':
+      _bg(c, seed, tint: const Color(0xFF4A5568));
+      void car(Rect r, Color col) {
+        final rr = RRect.fromRectAndRadius(r, const Radius.circular(4));
+        c.drawRRect(rr.shift(const Offset(0, 1.5)), _p(Colors.black38));
+        c.drawRRect(rr, _p(col));
+        final horiz = r.width > r.height;
+        c.drawRect(horiz ? Rect.fromLTWH(r.left + r.width * 0.3, r.top + 2, r.width * 0.3, r.height - 4)
+            : Rect.fromLTWH(r.left + 2, r.top + r.height * 0.3, r.width - 4, r.height * 0.3), _p(Colors.white.withValues(alpha: 0.55)));
+      }
+      c.drawRect(const Rect.fromLTWH(12, 12, 76, 76), _stroke(Colors.white54, 1.5));
+      car(const Rect.fromLTWH(16, 42, 30, 14), _red);
+      car(const Rect.fromLTWH(52, 16, 14, 30), _pal[1]);
+      car(const Rect.fromLTWH(70, 50, 14, 32), _pal[2]);
+      car(const Rect.fromLTWH(20, 66, 30, 14), _pal[3]);
+      c.drawRect(const Rect.fromLTWH(86, 42, 4, 14), _p(const Color(0xFFFFD166)));
+    case 'arrows':
+      _bg(c, seed);
+      for (var y = 0; y < 4; y++) {
+        for (var x = 0; x < 4; x++) {
+          final o = Offset(20 + x * 20, 20 + y * 20);
+          final dir = (x * 3 + y * 5 + v) % 4;
+          c.save();
+          c.translate(o.dx, o.dy);
+          c.rotate(dir * math.pi / 2);
+          final r = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset.zero, width: 16, height: 16), const Radius.circular(4));
+          c.drawRRect(r, _p(_pal[dir]));
+          c.drawPath(Path()..moveTo(0, -6)..lineTo(5, 1)..lineTo(-5, 1)..close(), _p(Colors.white));
+          c.drawRect(const Rect.fromLTWH(-1.5, 0, 3, 5), _p(Colors.white));
+          c.restore();
+        }
+      }
+    case 'jigsaw':
+      _bg(c, seed);
+      Path piece(Offset o, double s) => Path()
+        ..moveTo(o.dx, o.dy)
+        ..lineTo(o.dx + s * 0.38, o.dy)
+        ..arcToPoint(Offset(o.dx + s * 0.62, o.dy), radius: Radius.circular(s * 0.14), largeArc: true)
+        ..lineTo(o.dx + s, o.dy)
+        ..lineTo(o.dx + s, o.dy + s * 0.38)
+        ..arcToPoint(Offset(o.dx + s, o.dy + s * 0.62), radius: Radius.circular(s * 0.14), largeArc: true)
+        ..lineTo(o.dx + s, o.dy + s)
+        ..lineTo(o.dx, o.dy + s)
+        ..close();
+      final p1 = piece(const Offset(16, 24), 34), p2 = piece(const Offset(52, 44), 30);
+      c.drawPath(p1.shift(const Offset(0, 2)), _p(Colors.black26));
+      c.drawPath(p1, _p(_pal[2]));
+      c.drawPath(p2.shift(const Offset(0, 2)), _p(Colors.black26));
+      c.drawPath(p2, _p(_pal[5]));
+    case 'tangram':
+      _bg(c, seed);
+      c.drawPath(Path()..addPolygon(const [Offset(14, 14), Offset(86, 14), Offset(50, 50)], true), _p(_pal[0]));
+      c.drawPath(Path()..addPolygon(const [Offset(14, 14), Offset(50, 50), Offset(14, 86)], true), _p(_pal[1]));
+      c.drawPath(Path()..addPolygon(const [Offset(86, 14), Offset(86, 50), Offset(68, 32)], true), _p(_pal[2]));
+      c.drawPath(Path()..addPolygon(const [Offset(50, 50), Offset(68, 32), Offset(86, 50), Offset(68, 68)], true), _p(_pal[3]));
+      c.drawPath(Path()..addPolygon(const [Offset(14, 86), Offset(50, 50), Offset(68, 68), Offset(32, 86)], true), _p(_pal[4]));
+      c.drawPath(Path()..addPolygon(const [Offset(32, 86), Offset(86, 86), Offset(86, 50)], true), _p(_pal[5]));
+    case 'lights':
+      _bg(c, seed, tint: const Color(0xFF243049));
+      for (var y = 0; y < 4; y++) {
+        for (var x = 0; x < 4; x++) {
+          final on = (x * 7 + y * 3 + v) % 3 == 0;
+          final o = Offset(20 + x * 20, 20 + y * 20);
+          if (on) c.drawCircle(o, 10, _p(const Color(0xFFFFD166).withValues(alpha: 0.35)));
+          c.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: o, width: 15, height: 15), const Radius.circular(4)),
+              _p(on ? const Color(0xFFFFD166) : const Color(0xFF3B4A66)));
+        }
+      }
     default:
       _bg(c, seed);
       _text(c, cover.label.isEmpty ? '?' : cover.label, const Offset(50, 50), 40, Colors.white);
