@@ -6,6 +6,40 @@ import '../core/level_plan.dart';
 import 'services/audio.dart';
 
 /// Everything a game screen needs from the shell.
+/// Bir koltuğu kim oynuyor.
+enum SeatRole {
+  /// Bu cihazdaki oyuncu.
+  local,
+
+  /// Yapay zekâ.
+  ai,
+
+  /// Çevrimiçi rakip (hamleleri ağdan gelir).
+  remote,
+}
+
+/// Çevrimiçi maçın oyun motoruna bakan yüzü: hamle gönderir, rakip
+/// hamlelerini dinler. Hamle, oyunun kendi kodladığı bir metindir.
+abstract class MatchLink {
+  /// Bu cihazın koltuğu.
+  int get mySeat;
+
+  /// Maçın ortak tohumu (deste, zar ve dizilim herkes için aynı olur).
+  int get seed;
+
+  /// Koltuk adları (oyuncu takma adları; bot koltukları için boş).
+  List<String> get names;
+
+  /// Bu cihazın hamlesini yayınlar.
+  Future<void> send(String move);
+
+  /// Rakiplerin hamleleri, sırayla.
+  Stream<(int seat, String move)> get moves;
+
+  /// Maç bitti: kazanan koltuk (-1 berabere).
+  Future<void> finish(int winner);
+}
+
 class PlayContext {
   final LevelSpec spec;
 
@@ -59,7 +93,31 @@ class PlayContext {
     required this.requestContinue,
     required this.sfx,
     this.sound = _noSound,
+    this.seats = const [],
+    this.match,
   });
+
+  /// Koltuk rolleri; boşsa koltuk 0 bu cihaz, diğerleri yapay zekâ.
+  final List<SeatRole> seats;
+
+  /// Çevrimiçi maçta ağ bağlantısı; değilse null.
+  final MatchLink? match;
+
+  SeatRole role(int seat) {
+    if (seat < seats.length) return seats[seat];
+    if (seats.isEmpty && seat == 0) return SeatRole.local;
+    return SeatRole.ai;
+  }
+
+  /// Aynı cihazda birden çok kişi oynuyor mu.
+  bool get passAndPlay => seats.where((r) => r == SeatRole.local).length > 1;
+
+  /// Koltuğun ekranda görünen adı.
+  String seatName(int seat) {
+    final m = match;
+    if (m != null && seat < m.names.length && m.names[seat].isNotEmpty) return m.names[seat];
+    return t('player_n', {'n': seat + 1});
+  }
 
   static void _noSound(String name) {}
 

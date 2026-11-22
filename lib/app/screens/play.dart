@@ -19,7 +19,13 @@ import 'tutorial.dart';
 class PlayScreen extends ConsumerStatefulWidget {
   final LevelSpec spec;
   final bool resume;
-  const PlayScreen({super.key, required this.spec, this.resume = false});
+
+  /// Aynı cihazda oynayan kişi sayısı (0/1: tek kişi).
+  final int players;
+
+  /// Çevrimiçi maç bağlantısı.
+  final MatchLink? match;
+  const PlayScreen({super.key, required this.spec, this.resume = false, this.players = 0, this.match});
 
   @override
   ConsumerState<PlayScreen> createState() => _PlayScreenState();
@@ -140,7 +146,16 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       lang: app.strings.lang,
       t: app.t,
       finish: (r) => _finish(app, r),
-      saveResume: (s) => app.saveResume(level.spec, s),
+      // Çok kişili oyunlar yarıda kalırsa devam kaydı tutulmaz.
+      saveResume: (s) {
+        if (widget.players <= 1 && widget.match == null) app.saveResume(level.spec, s);
+      },
+      seats: widget.match != null
+          ? [for (var i = 0; i < widget.match!.names.length; i++) i == widget.match!.mySeat ? SeatRole.local : (widget.match!.names[i].isEmpty ? SeatRole.ai : SeatRole.remote)]
+          : widget.players > 1
+              ? List.filled(widget.players, SeatRole.local)
+              : const [],
+      match: widget.match,
       requestHint: () => _requestHint(app),
       requestBooster: () => _requestBooster(app),
       requestContinue: () => _requestContinue(app),
@@ -326,10 +341,10 @@ class _ResultSheetState extends State<_ResultSheet> {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(r.won ? app.t('win_title') : app.t('lose_title'),
+            Text(r.headline ?? (r.won ? app.t('win_title') : app.t('lose_title')),
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
-            if (r.won) StarRow(stars: r.stars, size: 44),
+            if (r.won && r.headline == null) StarRow(stars: r.stars, size: 44),
             if (r.score > 0) Text('${app.t('score')}: ${r.score}', style: Theme.of(context).textTheme.titleLarge),
             if (o.newRecord) Text(app.t('new_record'), style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),

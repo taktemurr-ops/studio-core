@@ -164,6 +164,7 @@ class _HomeTab extends StatelessWidget {
     final modes = app.config.rules.modes
         .where((m) => m != GameModeId.campaign && m != GameModeId.practice)
         .toList();
+    if (app.config.rules.localPlayers >= 2) modes.insert(0, GameModeId.versus);
     final resume = s.resume['spec'] is Map;
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -225,6 +226,7 @@ class _ModeCard extends StatelessWidget {
         GameModeId.daily => Icons.today,
         GameModeId.weekly => Icons.date_range,
         GameModeId.challenge => Icons.military_tech,
+        GameModeId.versus => Icons.people_alt,
         _ => Icons.play_arrow,
       };
 
@@ -286,6 +288,9 @@ void openMode(BuildContext context, AppState app, GameModeId mode) {
     case GameModeId.challenge:
       Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengesScreen()));
       break;
+    case GameModeId.versus:
+      openVersus(context, app);
+      break;
     default:
       final run = app.save.stat('run_${mode.name}') + 1;
       app.save.stats['run_${mode.name}'] = run;
@@ -324,4 +329,36 @@ void openResume(BuildContext context, AppState app) {
       spec = p.run(mode, level, difficulty: (j['difficulty'] as num?)?.toInt() ?? 4);
   }
   Navigator.push(context, MaterialPageRoute(builder: (_) => PlayScreen(spec: spec, resume: true)));
+}
+
+/// Aynı cihazda çok kişili oyun: kişi sayısını sorar (2'den fazlası
+/// mümkünse), sonra maçı açar. Kalan koltuklara yapay zekâ oturur.
+Future<void> openVersus(BuildContext context, AppState app) async {
+  final max = app.config.rules.localPlayers;
+  var n = 2;
+  if (max > 2) {
+    final picked = await showDialog<int>(
+      context: context,
+      builder: (c) => SimpleDialog(
+        title: Text(app.t('choose_players')),
+        children: [
+          for (var i = 2; i <= max; i++)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(c, i),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(app.t('players_n', {'n': i}), style: const TextStyle(fontSize: 18)),
+              ),
+            ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    n = picked;
+  }
+  if (!context.mounted) return;
+  final run = app.save.stat('run_versus') + 1;
+  app.save.stats['run_versus'] = run;
+  final spec = app.session.planner.run(GameModeId.versus, run, difficulty: 4);
+  Navigator.push(context, MaterialPageRoute(builder: (_) => PlayScreen(spec: spec, players: n)));
 }

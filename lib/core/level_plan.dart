@@ -25,6 +25,12 @@ enum GameModeId {
   zen,
   challenge,
   practice,
+
+  /// Aynı cihazda 2-4 kişi (sırayla).
+  versus,
+
+  /// Çevrimiçi maç (arkadaşla ya da rastgele rakiple).
+  online,
 }
 
 /// Immutable description of one level. Same inputs => same level.

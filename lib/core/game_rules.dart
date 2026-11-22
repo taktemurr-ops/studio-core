@@ -32,6 +32,9 @@ abstract class GameRules<P> {
 
   List<MissionTemplate> get missionTemplates;
 
+  /// Aynı cihazda en çok kaç kişi oynayabilir (0: tek kişilik oyun).
+  int get localPlayers => 0;
+
   /// Numaralı ana bölüm sayısı (harita). Sonrası sonsuz üretimle sürer.
   /// Üretim + çözücü türleri 100.000, sonsuz + sahne türleri 50.000 kullanır.
   int get levelCount => LevelPlanner.mainLevelCount;
@@ -87,6 +90,9 @@ class RoundResult {
   /// Game specific counters, e.g. {'lines_cleared': 4}.
   final Map<String, int> gameStats;
 
+  /// Sonuç ekranı başlığı (ör. "Oyuncu 2 kazandı!"); null: kazandın/kaybettin.
+  final String? headline;
+
   const RoundResult({
     required this.won,
     this.score = 0,
@@ -96,5 +102,6 @@ class RoundResult {
     this.hintsUsed = 0,
     this.undosUsed = 0,
     this.gameStats = const {},
+    this.headline,
   });
 }
