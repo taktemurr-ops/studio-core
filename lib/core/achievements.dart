@@ -59,7 +59,7 @@ class AchievementCatalog {
   static const _tiers = [1, 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
   static const _levelMilestones = [
     1, 10, 25, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000,
-    7500, 10000, 15000, 20000, 30000, 40000, 50000
+    7500, 10000, 15000, 20000, 30000, 40000, 50000, 75000, 100000
   ];
 
   factory AchievementCatalog.build(List<GameStat> gameStats) {
@@ -241,7 +241,8 @@ class AchievementCatalog {
     add('round_5000', (s, c) => c.justWon && c.lastLevel == 5000);
     add('round_25000', (s, c) => c.justWon && c.lastLevel == 25000);
     add('round_50000', (s, c) => c.justWon && c.lastLevel == 50000);
-    add('beyond', (s, c) => s.completedLevels > 50000);
+    add('round_100000', (s, c) => c.justWon && c.lastLevel == 100000);
+    add('beyond', (s, c) => s.completedLevels > 100000);
     add('sessions_100', (s, c) => s.stat(Stat.sessions) >= 100);
     add('sessions_1000', (s, c) => s.stat(Stat.sessions) >= 1000);
     add('long_break', (s, c) => s.stat(Stat.comebackWins) >= 1);

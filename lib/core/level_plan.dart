@@ -8,10 +8,10 @@ enum LevelSource {
   /// 1001..10000: extended content, validated in the nightly CI job.
   extended,
 
-  /// 10001..50000: procedural, validated on device before being served.
+  /// 10001..100000: procedural, validated on device before being served.
   procedural,
 
-  /// > 50000: endless generation.
+  /// > 100000: endless generation.
   endless,
 }
 
@@ -100,7 +100,7 @@ class LevelPlanner {
   final int themeCount;
 
   static const int levelsPerWorld = 100;
-  static const int mainLevelCount = 50000;
+  static const int mainLevelCount = 100000;
 
   const LevelPlanner({
     required this.gameId,
