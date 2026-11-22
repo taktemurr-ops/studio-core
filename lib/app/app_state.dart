@@ -14,6 +14,7 @@ import '../core/save_data.dart';
 import '../core/stats.dart';
 import '../core/strings.dart';
 import '../core/telemetry.dart';
+import '../online/online_service.dart';
 import 'game_api.dart';
 import 'services/ads.dart';
 import 'services/audio.dart';
@@ -107,6 +108,20 @@ class AppState extends ChangeNotifier {
   Future<void> flushSave() async {
     _saveDebounce?.cancel();
     await session.persist();
+    // Çevrimiçi açıksa ilerleme buluta da yedeklenir (uygulama arka plana geçerken).
+    final b = Online.instance.backend;
+    if (Online.instance.ready && b != null) unawaited(b.saveBlob(config.gameId, save.encode()).catchError((_) {}));
+  }
+
+  /// Buluttaki yedeği bu cihaza yükler.
+  Future<bool> restoreFromCloud() async {
+    final b = Online.instance.backend;
+    if (b == null) return false;
+    final j = await b.loadBlob(config.gameId);
+    if (j == null) return false;
+    session.save = SaveData.decode(j);
+    changed(saveNow: true);
+    return true;
   }
 
   // ---- Onboarding / privacy ------------------------------------------------
@@ -159,6 +174,9 @@ class AppState extends ChangeNotifier {
   // ---- Rounds -------------------------------------------------------------------
   LevelOutcome finishRound(LevelSpec spec, RoundResult r) {
     final out = session.completeRound(spec, r);
+    if (r.won && (spec.mode == GameModeId.daily || spec.mode == GameModeId.weekly)) {
+      unawaited(Online.instance.submitDaily(config.gameId, dayKey(), save.weeklyKey, r.score));
+    }
     audio.play(r.won ? Sfx.win : Sfx.lose);
     changed(saveNow: true);
     return out;

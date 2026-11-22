@@ -164,7 +164,10 @@ class _HomeTab extends StatelessWidget {
     final modes = app.config.rules.modes
         .where((m) => m != GameModeId.campaign && m != GameModeId.practice)
         .toList();
-    if (app.config.rules.localPlayers >= 2) modes.insert(0, GameModeId.versus);
+    if (app.config.rules.localPlayers >= 2) {
+      modes.insert(0, GameModeId.versus);
+      if (Online.instance.available) modes.insert(0, GameModeId.online);
+    }
     final resume = s.resume['spec'] is Map;
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -195,6 +198,21 @@ class _HomeTab extends StatelessWidget {
             ]),
           ),
         ),
+        if (Online.instance.available)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.leaderboard),
+              label: Text(app.t('leaderboards')),
+              onPressed: () async {
+                if (!await Online.instance.start()) {
+                  if (context.mounted) showToast(context, app.t('online_unavailable'));
+                  return;
+                }
+                if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => LeaderboardScreen(app: app)));
+              },
+            ),
+          ),
         SectionTitle(app.t('modes')),
         // Fixed tile height (not an aspect ratio): narrow phones and wide
         // tablets get the same readable card, and it can never overflow.
@@ -227,6 +245,7 @@ class _ModeCard extends StatelessWidget {
         GameModeId.weekly => Icons.date_range,
         GameModeId.challenge => Icons.military_tech,
         GameModeId.versus => Icons.people_alt,
+        GameModeId.online => Icons.public,
         _ => Icons.play_arrow,
       };
 
@@ -290,6 +309,9 @@ void openMode(BuildContext context, AppState app, GameModeId mode) {
       break;
     case GameModeId.versus:
       openVersus(context, app);
+      break;
+    case GameModeId.online:
+      openOnline(context, app);
       break;
     default:
       final run = app.save.stat('run_${mode.name}') + 1;

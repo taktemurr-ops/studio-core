@@ -43,8 +43,9 @@ abstract class MatchLink {
   /// Rakiplerin hamleleri, sırayla.
   Stream<(int seat, String move)> get moves;
 
-  /// Maç bitti: kazanan koltuk (-1 berabere).
-  Future<void> finish(int winner);
+  /// Maç bitti: kazanan koltuk (-1 berabere). [iWon]: eşli oyunlarda
+  /// takım arkadaşı kazandıysa da doğru.
+  Future<void> finish(int winner, {bool? iWon});
 }
 
 class PlayContext {
