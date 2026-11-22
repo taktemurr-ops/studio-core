@@ -94,6 +94,21 @@ void main() {
     });
   });
 
+  test('telefon değişimi: taşıma kodu profili ve kayıtları yeni hesaba taşır', () async {
+    final server = MemoryServer();
+    final old = MemoryBackend(server, 'eski'), yeni = MemoryBackend(server, 'yeni');
+    final p = await old.signIn();
+    p.rating['oyun-okey'] = 1300;
+    final code = await old.createTransfer({'oyun-okey': '{"lvl":40}'});
+    expect(code.length, 12);
+    await yeni.signIn();
+    final got = await yeni.claimTransfer(code);
+    expect(got, {'oyun-okey': '{"lvl":40}'});
+    expect(yeni.me!.name, p.name);
+    expect(yeni.me!.ratingFor('oyun-okey'), 1300);
+    expect(await yeni.claimTransfer(code), isNull); // tek kullanımlık
+  });
+
   group('güvenlik ve lig', () {
     test('küfür süzgeci, bağlantı ve telefon numarası engeli', () {
       expect(filterText('selam amk naber'), 'selam *** naber');
