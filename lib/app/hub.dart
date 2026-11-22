@@ -65,9 +65,26 @@ class HubConfig {
     this.sections = const [],
     this.starters = const [],
     this.covers = const {},
+    this.defaultCover,
   });
 
-  GameCover? coverFor(String id) => covers[id];
+  /// Ailenin varsayılan kapağı (eşleşme yoksa).
+  final GameCover? defaultCover;
+
+  /// Önce tam kimlik, sonra en uzun önek, sonra oyunun içinde olduğu grup.
+  GameCover? coverFor(String id) {
+    final exact = covers[id];
+    if (exact != null) return exact;
+    String? best;
+    for (final k in covers.keys) {
+      if (id.startsWith('$k-') && (best == null || k.length > best.length)) best = k;
+    }
+    if (best != null) return covers[best];
+    for (final g in groups) {
+      if (g.games.any((x) => x.gameId == id) && covers[g.id] != null) return covers[g.id];
+    }
+    return defaultCover;
+  }
 
   /// Every game in the hub, including those inside groups.
   List<GameConfig> get allGames => [...games, for (final g in groups) ...g.games];
