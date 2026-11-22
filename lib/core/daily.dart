@@ -1,4 +1,5 @@
 import 'clock.dart';
+import 'monetization.dart';
 import 'rng.dart';
 import 'save_data.dart';
 import 'stats.dart';
@@ -82,8 +83,11 @@ class DailySystems {
   bool loginRewardAvailable(SaveData s, DateTime now) =>
       s.lastLoginRewardDay != DateKeys.day(now);
 
-  Reward loginRewardPreview(SaveData s) =>
-      loginCycle[(s.loginStreak - 1).clamp(0, 1 << 20) % loginCycle.length];
+  /// Premium sahipleri günlük giriş ödülünü iki kat alır.
+  Reward loginRewardPreview(SaveData s) {
+    final r = loginCycle[(s.loginStreak - 1).clamp(0, 1 << 20) % loginCycle.length];
+    return s.premium ? r.scaled(Products.premiumRewardMultiplier) : r;
+  }
 
   Reward? claimLogin(SaveData s, DateTime now) {
     if (!loginRewardAvailable(s, now)) return null;

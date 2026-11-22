@@ -378,6 +378,34 @@ void main() {
       expect(session.save.starsFor(1), 3);
       expect(await session.persist(), isTrue);
     });
+    test('premium: 3 free hints a day, double login reward, exclusive items', () async {
+      final session = GameSession(rules: rules, store: SaveStore(MemoryBackend()));
+      await session.start();
+      final s = session.save;
+      s.hints = 0;
+      expect(session.spendHint(), isFalse);
+      final base = DailySystems('t').loginRewardPreview(s);
+      PurchaseLedger.apply(s,
+          productId: Products.premium, purchaseId: 'p1', state: PurchaseState.purchased, verified: true);
+      expect(s.premiumGift, isTrue);
+      final hints = s.hints;
+      expect(session.premiumHintsLeft, Products.premiumDailyHints);
+      for (var i = 0; i < Products.premiumDailyHints; i++) {
+        expect(session.spendHint(), isTrue);
+      }
+      expect(session.premiumHintsLeft, 0);
+      expect(s.hints, hints);
+      expect(DailySystems('t').loginRewardPreview(s).coins, base.coins * Products.premiumRewardMultiplier);
+      final cat = CollectionCatalog.build();
+      final prem = cat.items.where((i) => i.unlock == UnlockKind.premium).toList();
+      expect(prem.length, greaterThanOrEqualTo(9));
+    });
+    test('starter pack is marked as bought', () {
+      final s = SaveData();
+      PurchaseLedger.apply(s,
+          productId: Products.starterPack, purchaseId: 'sp', state: PurchaseState.purchased, verified: true);
+      expect(s.starterBought, isTrue);
+    });
     test('missions can be claimed exactly once', () async {
       final session = GameSession(rules: rules, store: SaveStore(MemoryBackend()));
       await session.start();

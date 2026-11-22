@@ -48,12 +48,14 @@ class CollectionCatalog {
     final l = <CollectionItem>[];
     for (var i = 0; i < themes; i++) {
       l.add(CollectionItem('theme_$i', ItemType.theme, i,
-          i == 0 ? UnlockKind.free : UnlockKind.world, i * 2 + 1));
+          i == 0 ? UnlockKind.free : (i >= themes - 2 && themes > 4 ? UnlockKind.premium : UnlockKind.world), i * 2 + 1));
     }
     for (var i = 0; i < 24; i++) {
       final kind = i == 0
           ? UnlockKind.free
-          : i % 4 == 0
+          : i >= 21
+              ? UnlockKind.premium
+              : i % 4 == 0
               ? UnlockKind.gems
               : i % 3 == 0
                   ? UnlockKind.stars

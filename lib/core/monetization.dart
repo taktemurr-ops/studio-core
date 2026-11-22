@@ -13,6 +13,10 @@ class Products {
   static const hintPack = 'hint_pack';
   static const starterPack = 'starter_pack';
 
+  /// Premium avantajları: günlük ücretsiz ipucu ve ödül çarpanı.
+  static const premiumDailyHints = 3;
+  static const premiumRewardMultiplier = 2;
+
   static const nonConsumable = {removeAds, premium};
   static const consumable = {coinsSmall, coinsLarge, hintPack, starterPack};
   static const all = {...nonConsumable, ...consumable};
@@ -84,9 +88,11 @@ class PurchaseLedger {
           }
           if (!already && state == PurchaseState.purchased) {
             Products.grantFor(productId).applyTo(s);
+            if (productId == Products.premium) s.premiumGift = true;
           }
         } else if (state == PurchaseState.purchased) {
           Products.grantFor(productId).applyTo(s);
+          if (productId == Products.starterPack) s.starterBought = true;
         }
         if (purchaseId.isNotEmpty) {
           s.processedPurchaseIds.add(purchaseId);

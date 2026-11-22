@@ -131,6 +131,12 @@ class HubServices {
     }
     save.premium = entitlements.contains(Products.premium);
     save.removeAds = save.premium || entitlements.contains(Products.removeAds);
+    if (entitlements.contains(Products.starterPack)) save.starterBought = true;
+    // Premium hediyesi merkezdeki her oyuna bir kez yüklenir.
+    if (save.premium && !save.premiumGift) {
+      Products.grantFor(Products.premium).applyTo(save);
+      save.premiumGift = true;
+    }
   }
 
   void _onPurchase(PurchaseEvent e) {
@@ -138,7 +144,11 @@ class HubServices {
     if (target == null) return;
     target.onPurchase(e);
     // Kalıcı ürünler merkezin her oyununa geçer.
-    entitlements = {for (final id in Products.nonConsumable) if (target.save.ownedProducts.contains(id)) id};
+    entitlements = {
+      for (final id in Products.nonConsumable)
+        if (target.save.ownedProducts.contains(id)) id,
+      if (target.save.starterBought || entitlements.contains(Products.starterPack)) Products.starterPack,
+    };
     unawaited(backend.write('hub.entitlements', entitlements.join(',')));
     for (final s in _states.values) {
       _applyEntitlements(s);

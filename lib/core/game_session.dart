@@ -284,7 +284,8 @@ class GameSession {
 
   Reward? claimMission(Mission m) {
     if (!m.done(save) || m.claimed(save)) return null;
-    final r = Reward(coins: m.coins, xp: m.xp, gems: m.gems);
+    final f = save.premium ? Products.premiumRewardMultiplier : 1;
+    final r = Reward(coins: m.coins * f, xp: m.xp, gems: m.gems * f);
     r.applyTo(save);
     (m.weekly ? save.weeklyClaimed : save.dailyClaimed).add(m.id);
     save.addStat(Stat.missionsDone);
@@ -294,7 +295,23 @@ class GameSession {
   }
 
   // ---- Helpers for boosters --------------------------------------------------
+  /// Premium: bugün kalan ücretsiz ipucu.
+  int get premiumHintsLeft {
+    if (!save.premium) return 0;
+    if (save.premiumHintDay != DateKeys.day(now())) return Products.premiumDailyHints;
+    return (Products.premiumDailyHints - save.premiumHintsUsed).clamp(0, Products.premiumDailyHints);
+  }
+
   bool spendHint() {
+    if (premiumHintsLeft > 0) {
+      final d = DateKeys.day(now());
+      if (save.premiumHintDay != d) {
+        save.premiumHintDay = d;
+        save.premiumHintsUsed = 0;
+      }
+      save.premiumHintsUsed++;
+      return true;
+    }
     if (save.hints <= 0) return false;
     save.hints--;
     return true;

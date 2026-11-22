@@ -95,7 +95,9 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
               child: Center(
                 child: Row(children: [
                   const Icon(Icons.lightbulb, color: Colors.orange, size: 18),
-                  Text(' ${app.save.hints}  '),
+                  Text(app.session.premiumHintsLeft > 0
+                      ? ' ${app.save.hints}+${app.session.premiumHintsLeft}  '
+                      : ' ${app.save.hints}  '),
                   const Icon(Icons.monetization_on, color: Colors.amber, size: 18),
                   Text(' ${compactNumber(app.save.coins)}'),
                 ]),

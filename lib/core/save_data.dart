@@ -77,6 +77,13 @@ class SaveData {
   bool underAge = false;
   bool removeAds = false;
   bool premium = false;
+  /// Premium hediyesi bu oyuna yüklendi mi (merkezde her oyun bir kez alır).
+  bool premiumGift = false;
+  /// Başlangıç paketi bir kez satılır.
+  bool starterBought = false;
+  /// Premium: günlük ücretsiz ipucu sayacı.
+  String premiumHintDay = '';
+  int premiumHintsUsed = 0;
   Set<String> ownedProducts = {};
   Set<String> processedPurchaseIds = {};
   int levelsSinceInterstitial = 0;
@@ -183,6 +190,10 @@ class SaveData {
         'underAge': underAge,
         'removeAds': removeAds,
         'premium': premium,
+        'premiumGift': premiumGift,
+        'starterBought': starterBought,
+        'premiumHintDay': premiumHintDay,
+        'premiumHintsUsed': premiumHintsUsed,
         'ownedProducts': ownedProducts.toList(),
         'processedPurchaseIds': processedPurchaseIds.toList(),
         'levelsSinceInterstitial': levelsSinceInterstitial,
@@ -268,6 +279,10 @@ class SaveData {
     d.underAge = _b(j['underAge'], false);
     d.removeAds = _b(j['removeAds'], false);
     d.premium = _b(j['premium'], false);
+    d.premiumGift = _b(j['premiumGift'], false);
+    d.starterBought = _b(j['starterBought'], false);
+    d.premiumHintDay = _s(j['premiumHintDay'], '');
+    d.premiumHintsUsed = _i(j['premiumHintsUsed'], 0);
     d.ownedProducts = _set(j['ownedProducts']);
     d.processedPurchaseIds = _set(j['processedPurchaseIds']);
     d.levelsSinceInterstitial = _i(j['levelsSinceInterstitial'], 0);

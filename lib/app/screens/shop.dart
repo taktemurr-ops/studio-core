@@ -32,11 +32,26 @@ class ShopScreen extends ConsumerWidget {
         if (!ps.available || disabled)
           Card(child: ListTile(leading: const Icon(Icons.info_outline), title: Text(app.t('store_unavailable')))),
         for (final id in _order)
+          if (!(id == Products.starterPack && app.save.starterBought))
           Card(
+            shape: id == Products.premium
+                ? RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2))
+                : null,
             child: ListTile(
               leading: Icon(_icon(id), color: Theme.of(context).colorScheme.primary),
               title: Text(app.t(id)),
-              subtitle: RewardChips(reward: Products.grantFor(id)),
+              subtitle: switch (id) {
+                Products.removeAds => Text(app.t('remove_ads_desc')),
+                Products.premium => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(app.t('premium_desc')),
+                    const SizedBox(height: 4),
+                    RewardChips(reward: Products.grantFor(id)),
+                  ]),
+                _ => RewardChips(reward: Products.grantFor(id)),
+              },
+              isThreeLine: id == Products.premium,
               trailing: app.save.ownedProducts.contains(id) && Products.nonConsumable.contains(id)
                   ? Text(app.t('owned'))
                   : FilledButton(
