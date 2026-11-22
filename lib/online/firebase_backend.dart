@@ -3,6 +3,7 @@
 /// Veri düzeni (kurallar: firebase/firestore.rules):
 ///   users/{uid}                 profil (ad, avatar, 16+, kod, puanlar, hediyeler, engellenenler)
 ///   users/{uid}/friends/{fuid}  arkadaşlar
+///   users/{uid}/invites/{auto}  arkadaşlardan masa davetleri
 ///   codes/{code}                arkadaş kodu → uid
 ///   saves/{uid}/blobs/{key}     bulut kayıt
 ///   boards/{board}/scores/{uid} skor tabloları
@@ -31,6 +32,10 @@ class FirebaseBackend implements OnlineBackend {
         auth = auth ?? FirebaseAuth.instance;
 
   String get uid => auth.currentUser!.uid;
+
+  /// Bu cihazda daha önce açılmış bir çevrimiçi hesap var mı.
+  static Future<bool> hasSession() async =>
+      (await FirebaseAuth.instance.authStateChanges().first.timeout(const Duration(seconds: 5), onTimeout: () => null)) != null;
 
   @override
   Profile? get me => _me;
@@ -164,6 +169,33 @@ class FirebaseBackend implements OnlineBackend {
   }
 
   @override
+  Future<OnlineMatch?> rejoin(String matchId) async {
+    final ref = db.collection('matches').doc(matchId);
+    final d = (await ref.get()).data();
+    if (d == null || d['status'] != 'playing' || !((d['uids'] as List?) ?? const []).contains(uid)) return null;
+    return _FsMatch.open(this, ref, replay: true);
+  }
+
+  @override
+  Future<void> sendInvite(String toUid, Invite invite) =>
+      db.collection('users').doc(toUid).collection('invites').add({...invite.toJson(), 'from': uid, 'ts': FieldValue.serverTimestamp()});
+
+  @override
+  Stream<Invite> invites() async* {
+    final since = DateTime.now().millisecondsSinceEpoch - 10 * 60 * 1000;
+    final q = db.collection('users').doc(uid).collection('invites').where('at', isGreaterThan: since);
+    await for (final snap in q.snapshots()) {
+      for (final c in snap.docChanges) {
+        if (c.type != DocumentChangeType.added) continue;
+        yield Invite.fromJson(c.doc.id, c.doc.data()!);
+      }
+    }
+  }
+
+  @override
+  Future<void> deleteInvite(String id) => db.collection('users').doc(uid).collection('invites').doc(id).delete();
+
+  @override
   Future<OnlineMatch> quickMatch(String gameId, int seats, int rating) async {
     final q = await db
         .collection('matches')
@@ -215,7 +247,8 @@ class FirebaseBackend implements OnlineBackend {
     me
       ..name = old.name
       ..avatar = old.avatar
-      ..age16 = old.age16;
+      ..age16 = old.age16
+      ..terms = old.terms;
     me.rating.addAll(old.rating);
     me.gifts.addAll(old.gifts);
     await saveProfile(me);
@@ -237,6 +270,10 @@ class FirebaseBackend implements OnlineBackend {
     for (final f in friends.docs) {
       await db.collection('users').doc(f.id).collection('friends').doc(uid).delete().catchError((_) {});
       await f.reference.delete();
+    }
+    final inv = await db.collection('users').doc(uid).collection('invites').get();
+    for (final i in inv.docs) {
+      await i.reference.delete();
     }
     final blobs = await db.collection('saves').doc(uid).collection('blobs').get();
     for (final b in blobs.docs) {
@@ -266,11 +303,28 @@ class _FsMatch implements OnlineMatch {
   /// Bu istemcinin gördüğü ya da gönderdiği hamle sayısı (sıra numarası).
   int _ply = 0;
 
+  /// Geri dönüşte yeniden oynanacak hamleler; bunların sıra numarasının
+  /// altındakiler canlı akışta tekrar verilmez.
+  @override
+  final List<(int, String)> history = [];
+  int _replayed = 0;
+
   _FsMatch(this.b, this.ref);
 
-  static Future<OnlineMatch> open(FirebaseBackend b, DocumentReference<Map<String, dynamic>> ref) async {
+  static Future<OnlineMatch> open(FirebaseBackend b, DocumentReference<Map<String, dynamic>> ref, {bool replay = false}) async {
     final m = _FsMatch(b, ref);
     m._d = (await ref.get()).data() ?? {};
+    if (replay) {
+      final q = await ref.collection('moves').orderBy('n').get();
+      for (final d in q.docs) {
+        final x = d.data();
+        m.history.add(((x['seat'] as num).toInt(), x['move'] as String));
+      }
+      m._replayed = m.history.length;
+      m._ply = m.history.length;
+      // Geri döndüğümüzü hemen bildir: ev sahibi koltuğumuzu bota bırakmasın.
+      unawaited(ref.update({'beats.${b.uid}': FieldValue.serverTimestamp()}).catchError((_) {}));
+    }
     m._subs.add(ref.snapshots().listen((s) {
       m._d = s.data() ?? m._d;
       m._changes.add(null);
@@ -281,6 +335,7 @@ class _FsMatch implements OnlineMatch {
         final x = c.doc.data()!;
         final n = (x['n'] as num).toInt();
         if (n >= m._ply) m._ply = n + 1;
+        if (n < m._replayed) continue;
         if (x['by'] != b.uid) m._moves.add(((x['seat'] as num).toInt(), x['move'] as String));
       }
     }));

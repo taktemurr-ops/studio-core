@@ -17,6 +17,12 @@ class Profile {
   /// 16 yaş ve üzeri olduğunu beyan etti: serbest yazışma açılır.
   bool age16;
 
+  /// Çevrimiçi oyun kurallarını kabul etti (sürüm numarası; 0 = hiç).
+  int terms;
+
+  /// Sürmekte olan maç (uygulama kapanırsa geri dönmek için); boş = yok.
+  String active;
+
   /// Premium sahibi: masada yıldızlı ad, günlük ücretsiz güller.
   bool vip;
 
@@ -36,6 +42,8 @@ class Profile {
     required this.code,
     this.avatar = 0,
     this.age16 = false,
+    this.terms = 0,
+    this.active = '',
     this.vip = false,
     Map<String, int>? rating,
     Map<String, int>? gifts,
@@ -51,6 +59,8 @@ class Profile {
         'name': name,
         'avatar': avatar,
         'age16': age16,
+        'terms': terms,
+        'active': active,
         'vip': vip,
         'code': code,
         'rating': rating,
@@ -64,6 +74,8 @@ class Profile {
         code: j['code'] as String? ?? '',
         avatar: (j['avatar'] as num?)?.toInt() ?? 0,
         age16: j['age16'] == true,
+        terms: (j['terms'] as num?)?.toInt() ?? 0,
+        active: j['active'] as String? ?? '',
         vip: j['vip'] == true,
         rating: {for (final e in ((j['rating'] as Map?) ?? {}).entries) '${e.key}': (e.value as num).toInt()},
         gifts: {for (final e in ((j['gifts'] as Map?) ?? {}).entries) '${e.key}': (e.value as num).toInt()},
@@ -110,6 +122,28 @@ class TableEvent {
 }
 
 /// Bir çevrimiçi maç. Oyun motoru bunu `MatchLink` olarak görür.
+/// Arkadaştan gelen masa daveti (uygulama açıkken gösterilir).
+class Invite {
+  final String id, from, name, gameId, code;
+  final int avatar, atMs;
+  const Invite(this.id, this.from, this.name, this.avatar, this.gameId, this.code, this.atMs);
+
+  Map<String, Object?> toJson() => {'from': from, 'name': name, 'avatar': avatar, 'gameId': gameId, 'code': code, 'at': atMs};
+
+  static Invite fromJson(String id, Map<String, dynamic> j) => Invite(
+        id,
+        j['from'] as String? ?? '',
+        j['name'] as String? ?? '',
+        (j['avatar'] as num?)?.toInt() ?? 0,
+        j['gameId'] as String? ?? '',
+        j['code'] as String? ?? '',
+        (j['at'] as num?)?.toInt() ?? 0,
+      );
+
+  /// Davetler 10 dakika geçerlidir.
+  bool fresh(DateTime now) => now.millisecondsSinceEpoch - atMs < 10 * 60 * 1000;
+}
+
 abstract class OnlineMatch {
   String get id;
   String get gameId;
@@ -128,6 +162,10 @@ abstract class OnlineMatch {
   /// Rakip hamleleri (kendi gönderdiklerimiz gelmez).
   Stream<(int, String)> get moves;
   Stream<TableEvent> get events;
+
+  /// Maça geri dönüldüyse o ana kadarki bütün hamleler (kendi hamlelerimiz
+  /// dahil, sırayla); oyun motoru bunları hızlıca yeniden oynar.
+  List<(int, String)> get history;
 
   /// Hamle gönder ([asSeat]: ev sahibi bot/kopan oyuncu adına).
   Future<void> send(String move, {int? asSeat});
@@ -166,6 +204,15 @@ abstract class OnlineBackend {
   Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true});
   Future<OnlineMatch?> joinByCode(String code);
   Future<OnlineMatch> quickMatch(String gameId, int seats, int rating);
+
+  /// Uygulama kapanıp açıldıysa sürmekte olan maça geri dön (oturduğum
+  /// koltuk duruyor ve maç bitmemişse). Geçmiş hamleler [OnlineMatch.history].
+  Future<OnlineMatch?> rejoin(String matchId);
+
+  // Arkadaşa doğrudan davet
+  Future<void> sendInvite(String toUid, Invite invite);
+  Stream<Invite> invites();
+  Future<void> deleteInvite(String id);
 
   // Güvenlik
   Future<void> report(String uid, String reason, {String matchId = '', String text = ''});
@@ -285,6 +332,8 @@ class MemoryServer {
   final matches = <String, _MemMatchData>{};
   final reports = <Map<String, String>>[];
   final transfers = <String, (Map<String, Object?>, Map<String, String>)>{};
+  final invites = <String, List<Invite>>{};
+  final inviteCtl = StreamController<String>.broadcast();
   final r = math.Random(7);
 }
 
@@ -402,6 +451,39 @@ class MemoryBackend implements OnlineBackend {
   }
 
   @override
+  Future<OnlineMatch?> rejoin(String matchId) async {
+    final d = server.matches[matchId];
+    if (d == null || d.status != MatchStatus.playing || !d.seats.any((s) => s.uid == uid)) return null;
+    return _MemMatch(this, d, replay: true);
+  }
+
+  @override
+  Future<void> sendInvite(String toUid, Invite invite) async {
+    if (!(server.friends[uid]?.contains(toUid) ?? false)) return;
+    final l = server.invites.putIfAbsent(toUid, () => []);
+    l.add(Invite('i${l.length + 1}', uid, invite.name, invite.avatar, invite.gameId, invite.code, invite.atMs));
+    server.inviteCtl.add(toUid);
+  }
+
+  @override
+  Stream<Invite> invites() async* {
+    var seen = 0;
+    final l = server.invites.putIfAbsent(uid, () => []);
+    while (seen < l.length) {
+      yield l[seen++];
+    }
+    await for (final to in server.inviteCtl.stream) {
+      if (to != uid) continue;
+      while (seen < l.length) {
+        yield l[seen++];
+      }
+    }
+  }
+
+  @override
+  Future<void> deleteInvite(String id) async => server.invites[uid]?.removeWhere((i) => i.id == id);
+
+  @override
   Future<void> report(String target, String reason, {String matchId = '', String text = ''}) async =>
       server.reports.add({'by': uid, 'target': target, 'reason': reason, 'match': matchId, 'text': text});
 
@@ -423,7 +505,8 @@ class MemoryBackend implements OnlineBackend {
     _me!
       ..name = old.name
       ..avatar = old.avatar
-      ..age16 = old.age16;
+      ..age16 = old.age16
+      ..terms = old.terms;
     _me!.rating.addAll(old.rating);
     _me!.gifts.addAll(old.gifts);
     for (final e in t.$2.entries) {
@@ -462,8 +545,15 @@ class _MemMatch implements OnlineMatch {
   late final StreamController<(int, String)> _moves = StreamController.broadcast(onListen: _pump);
   late final StreamController<TableEvent> _events = StreamController.broadcast(onListen: _pump);
   late final StreamSubscription<void> _sub;
+  @override
+  final List<(int, String)> history = [];
 
-  _MemMatch(this.b, this.d) {
+  _MemMatch(this.b, this.d, {bool replay = false}) {
+    if (replay) {
+      history.addAll([for (final m in d.moves) (m.$1, m.$2)]);
+      _movesSeen = d.moves.length;
+      _eventsSeen = d.events.length;
+    }
     _sub = d.ctl.stream.listen((_) => _pump());
   }
 

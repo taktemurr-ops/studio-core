@@ -217,6 +217,53 @@ class Strings {
     'restore_purchases': ['Satın alımları geri yükle', 'Restore purchases', 'Käufe wiederherstellen', 'Restaurar compras', 'Restaurer les achats'],
     'remove_ads': ['Reklamları kaldır', 'Remove ads', 'Werbung entfernen', 'Quitar anuncios', 'Supprimer les pubs'],
     'premium_pack': ['Premium paket', 'Premium pack', 'Premium-Paket', 'Paquete premium', 'Pack premium'],
+    'hub_welcome': ['Hoş geldin!', 'Welcome!', 'Willkommen!', '¡Bienvenido!', 'Bienvenue !'],
+    'hub_welcome_body': ['{n} oyun tek uygulamada. Nereden başlayacağını bilmiyorsan şunlardan birini dene:', '{n} games in one app. Not sure where to start? Try one of these:', '{n} Spiele in einer App. Wo anfangen? Probier eins davon:', '{n} juegos en una app. ¿No sabes por dónde empezar? Prueba uno de estos:', '{n} jeux dans une seule appli. Par où commencer ? Essaie l’un de ceux-ci :'],
+    'hub_tips': ['• Bütün oyunlar internetsiz oynanır.
+• Her oyunun ilerlemesi ayrı saklanır.
+• Reklamsız ve Premium bir kez alınır, buradaki bütün oyunlarda geçerli olur.', '• Every game plays offline.
+• Each game keeps its own progress.
+• No Ads and Premium are bought once and work in every game here.', '• Alle Spiele funktionieren offline.
+• Jedes Spiel speichert seinen eigenen Fortschritt.
+• Werbefrei und Premium kaufst du einmal – für alle Spiele hier.', '• Todos los juegos funcionan sin conexión.
+• Cada juego guarda su propio progreso.
+• Sin anuncios y Premium se compran una vez y valen para todos los juegos de aquí.', '• Tous les jeux fonctionnent hors ligne.
+• Chaque jeu garde sa propre progression.
+• Sans pub et Premium s’achètent une fois et valent pour tous les jeux ici.'],
+    'hub_browse': ['Hepsine göz at', 'Browse all', 'Alle ansehen', 'Ver todos', 'Tout parcourir'],
+    'rejoin_title': ['Yarım kalan maç', 'Unfinished match', 'Unbeendetes Spiel', 'Partida sin terminar', 'Partie inachevée'],
+    'rejoin_body': ['Masa hâlâ sürüyor. Sen yokken yerine bot oynadı; kaldığın yerden devam etmek ister misin?', 'The table is still playing. A bot covered for you while you were away. Jump back in?', 'Der Tisch spielt noch. Ein Bot hat für dich übernommen. Weiterspielen?', 'La mesa sigue jugando. Un bot jugó por ti mientras no estabas. ¿Vuelves?', 'La table joue encore. Un robot a pris ta place pendant ton absence. Revenir ?'],
+    'rejoin_yes': ['Maça dön', 'Rejoin', 'Zurück zum Tisch', 'Volver', 'Revenir'],
+    'later': ['Sonra', 'Later', 'Später', 'Luego', 'Plus tard'],
+    'invite_title': ['Masa daveti', 'Table invite', 'Einladung an den Tisch', 'Invitación a la mesa', 'Invitation à la table'],
+    'invite_body': ['{name} seni {game} masasına çağırıyor.', '{name} invited you to a {game} table.', '{name} lädt dich zu {game} ein.', '{name} te invita a una mesa de {game}.', '{name} t’invite à une table de {game}.'],
+    'invite_join': ['Katıl', 'Join', 'Beitreten', 'Unirse', 'Rejoindre'],
+    'call_friend': ['Arkadaşını çağır', 'Call a friend', 'Freund einladen', 'Llamar a un amigo', 'Appeler un ami'],
+    'invite_sent': ['Davet gönderildi', 'Invite sent', 'Einladung gesendet', 'Invitación enviada', 'Invitation envoyée'],
+    'invite': ['Davet et', 'Invite', 'Einladen', 'Invitar', 'Inviter'],
+    'terms_title': ['Çevrimiçi oyun kuralları', 'Online play rules', 'Regeln für Online-Spiele', 'Normas del juego en línea', 'Règles du jeu en ligne'],
+    'terms_body': ['• Saygılı ol: küfür, hakaret, nefret söylemi ve taciz yasak.
+• Kişisel bilgi (telefon, adres, sosyal medya) paylaşma, isteme.
+• Hile, dolandırıcılık ve reklam yasak.
+• Kurallara uymayan hesaplar uyarılmadan kapatılabilir; şikâyetler incelenir.
+• Çevrimiçi oyun 13 yaş ve üzeri içindir; yazılı sohbet 16 yaş ve üzeri.', '• Be respectful: swearing, insults, hate speech and harassment are not allowed.
+• Do not share or ask for personal details (phone, address, social media).
+• No cheating, scams or advertising.
+• Accounts that break the rules may be closed without warning; reports are reviewed.
+• Online play is for ages 13+; typed chat is for ages 16+.', '• Sei respektvoll: Beleidigungen, Hassrede und Belästigung sind verboten.
+• Teile oder erfrage keine persönlichen Daten (Telefon, Adresse, soziale Medien).
+• Kein Schummeln, Betrug oder Werbung.
+• Konten, die gegen die Regeln verstoßen, können ohne Warnung gesperrt werden; Meldungen werden geprüft.
+• Online-Spiel ab 13 Jahren; Text-Chat ab 16 Jahren.', '• Sé respetuoso: prohibidos los insultos, el odio y el acoso.
+• No compartas ni pidas datos personales (teléfono, dirección, redes).
+• Prohibidas las trampas, estafas y publicidad.
+• Las cuentas que incumplan las normas pueden cerrarse sin aviso; se revisan las denuncias.
+• El juego en línea es para mayores de 13; el chat escrito, para mayores de 16.', '• Soyez respectueux : insultes, haine et harcèlement sont interdits.
+• Ne partagez ni ne demandez d’informations personnelles (téléphone, adresse, réseaux).
+• Pas de triche, d’arnaque ni de publicité.
+• Les comptes qui enfreignent les règles peuvent être fermés sans préavis ; les signalements sont examinés.
+• Le jeu en ligne est réservé aux 13 ans et plus ; la discussion écrite aux 16 ans et plus.'],
+    'terms_accept': ['Kabul ediyorum', 'I agree', 'Ich stimme zu', 'Acepto', 'J’accepte'],
     'transfer_title': ['Telefon değiştirme', 'Changing phones', 'Handywechsel', 'Cambio de teléfono', 'Changement de téléphone'],
     'transfer_create': ['Taşıma kodu al', 'Get a transfer code', 'Übertragungscode holen', 'Obtener código de traspaso', 'Obtenir un code de transfert'],
     'transfer_code_info': ['Bu kodu yeni telefonunda Profil bölümüne gir: ilerlemen, adın, ligin ve hediyelerin taşınır. Kodu kimseyle paylaşma, bir kez kullanılır.', 'Enter this code under Profile on your new phone: your progress, name, league and gifts move over. Do not share it; it works once.', 'Gib diesen Code auf dem neuen Handy unter Profil ein: Fortschritt, Name, Liga und Geschenke ziehen um. Nicht teilen; nur einmal gültig.', 'Introduce este código en Perfil en tu nuevo teléfono: se trasladan progreso, nombre, liga y regalos. No lo compartas; sirve una vez.', 'Saisissez ce code dans Profil sur le nouveau téléphone : progression, nom, ligue et cadeaux sont transférés. Ne le partagez pas ; usage unique.'],

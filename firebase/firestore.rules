@@ -16,6 +16,13 @@ service cloud.firestore {
         allow read: if me(uid);
         allow write: if me(uid) || me(fuid);
       }
+      // Masa daveti: yalnızca arkadaş listesindekiler gönderebilir.
+      match /invites/{i} {
+        allow read, delete: if me(uid);
+        allow create: if signedIn() && request.resource.data.from == request.auth.uid
+                      && exists(/databases/$(db)/documents/users/$(uid)/friends/$(request.auth.uid))
+                      && request.resource.data.code is string && request.resource.data.code.size() <= 8;
+      }
     }
     match /codes/{code} {
       allow read: if signedIn();

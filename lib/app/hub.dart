@@ -23,8 +23,10 @@ import 'services/audio.dart';
 import 'services/prefs_backend.dart';
 import 'services/purchases.dart';
 import '../online/online_service.dart';
+import '../online/online_ui.dart';
 import 'studio_apps.dart';
 import 'theme.dart';
+import 'services/cloud_telemetry.dart';
 
 /// A hub ("merkez") app: one store listing that bundles several games of
 /// the same family. Every game keeps its own save (prefixed by gameId), its
@@ -44,6 +46,9 @@ class HubConfig {
   /// ids in order; anything not listed is shown at the end without a heading.
   final List<HubSection> sections;
 
+  /// İlk açılış rehberinde önerilen oyunlar (gameId); boşsa ilk üç oyun.
+  final List<String> starters;
+
   const HubConfig({
     required this.hubId,
     required this.title,
@@ -53,6 +58,7 @@ class HubConfig {
     required this.games,
     this.groups = const [],
     this.sections = const [],
+    this.starters = const [],
   });
 
   /// Every game in the hub, including those inside groups.
@@ -266,9 +272,11 @@ void bootstrapHub(HubConfig hub) {
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
       errors.record(ErrorCategory.crash, details.exceptionAsString());
+      CloudTelemetry.recordFlutter(details);
     };
     PlatformDispatcher.instance.onError = (error, stack) {
       errors.record(ErrorCategory.crash, error, fatal: true);
+      CloudTelemetry.recordError(error, stack, fatal: true);
       return true;
     };
     final emergency = EmergencyConfig();
@@ -293,6 +301,7 @@ void bootstrapHub(HubConfig hub) {
     await services.loadShared();
     services.registerTransfer(hub.allGames);
     runApp(HubApp(hub: hub, services: services));
+    unawaited(CloudTelemetry.init(crashReports: true, measurement: false));
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Adaptive.applyOrientationPolicy();
       perf.recordStartup(startWatch.elapsedMilliseconds);
@@ -414,6 +423,92 @@ class HubHome extends StatefulWidget {
 
 class _HubHomeState extends State<HubHome> {
   String? _opening;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.group == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final hub = widget.hub;
+        unawaited(_firstRunGuide());
+        unawaited(OnlineHost.attach(context, Strings(widget.lang), (id) {
+          for (final g in hub.allGames) {
+            if (g.gameId == id) return hub.localized(g.title, widget.lang);
+          }
+          return id;
+        }, _openFor));
+      });
+    }
+  }
+
+  static const _guideKey = 'hub.guide.v1';
+
+  /// İlk açılışta: kaç oyun olduğu, önerilen ilk oyunlar ve üç kısa bilgi.
+  Future<void> _firstRunGuide() async {
+    final backend = widget.services.backend;
+    if (await backend.read(_guideKey) != null || !mounted) return;
+    await backend.write(_guideKey, '1');
+    final hub = widget.hub;
+    final s = Strings(widget.lang);
+    final all = hub.allGames;
+    final picks = <GameConfig>[
+      for (final id in hub.starters)
+        for (final g in all)
+          if (g.gameId == id) g,
+    ];
+    if (picks.isEmpty) picks.addAll(all.take(3));
+    if (!mounted) return;
+    final chosen = await showModalBottomSheet<GameConfig>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        key: const ValueKey('hub-guide'),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+            Text(s.t('hub_welcome'), style: Theme.of(c).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(s.t('hub_welcome_body', {'n': all.length})),
+            const SizedBox(height: 12),
+            for (final g in picks.take(3))
+              Card(
+                child: ListTile(
+                  leading: CircleAvatar(backgroundColor: g.seedColor.withValues(alpha: 0.18), child: Icon(g.icon, color: g.seedColor)),
+                  title: Text(hub.localized(g.title, widget.lang), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: Text(hub.localized(g.tagline, widget.lang), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  trailing: const Icon(Icons.play_arrow_rounded),
+                  onTap: () => Navigator.pop(c, g),
+                ),
+              ),
+            const SizedBox(height: 12),
+            Text(s.t('hub_tips'), style: Theme.of(c).textTheme.bodyMedium?.copyWith(height: 1.5)),
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: () => Navigator.pop(c), child: Text(s.t('hub_browse'))),
+          ]),
+        ),
+      ),
+    );
+    if (chosen != null && mounted) unawaited(_open(chosen));
+  }
+
+  /// Davet ya da yarım maç: oyuna gidip [action]'ı onun ekranında çalıştırır.
+  Future<bool> _openFor(String gameId, Future<void> Function(BuildContext, AppState) action) async {
+    GameConfig? g;
+    for (final x in widget.hub.allGames) {
+      if (x.gameId == gameId) g = x;
+    }
+    if (g == null || !mounted) return false;
+    // Başka bir oyundaysa ya da alt listedeyse önce ana listeye dön.
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    final state = await widget.services.stateFor(g);
+    state.pendingOnline = (c) => action(c, state);
+    if (!mounted) return false;
+    _opening = null;
+    unawaited(_open(g));
+    return true;
+  }
 
   Future<void> _open(GameConfig g) async {
     if (_opening != null) return;

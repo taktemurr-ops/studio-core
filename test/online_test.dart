@@ -29,6 +29,51 @@ void main() {
       await sub.cancel();
     });
 
+    test('maça geri dönüş: geçmiş hamleler (kendi hamlelerimiz dahil) sırayla gelir', () async {
+      final server = MemoryServer();
+      final a = MemoryBackend(server, 'a'), b = MemoryBackend(server, 'b');
+      await a.signIn();
+      await b.signIn();
+      final ma = await a.quickMatch('oyun-tavla', 2, 1000);
+      final mb = await b.quickMatch('oyun-tavla', 2, 1000);
+      await ma.send('1');
+      await mb.send('2');
+      await ma.send('3');
+      await mb.leave();
+      expect(await b.rejoin('yok'), isNull);
+      final back = await b.rejoin(ma.id);
+      expect(back, isNotNull);
+      expect(back!.history, [(0, '1'), (1, '2'), (0, '3')]);
+      final got = <(int, String)>[];
+      final sub = back.moves.listen(got.add);
+      await ma.send('4');
+      await Future<void>.delayed(Duration.zero);
+      expect(got, [(0, '4')]);
+      await sub.cancel();
+      await ma.finish(0);
+      expect(await b.rejoin(ma.id), isNull);
+    });
+
+    test('arkadaşa doğrudan davet: yalnızca arkadaşlar gönderebilir', () async {
+      final server = MemoryServer();
+      final a = MemoryBackend(server, 'a'), b = MemoryBackend(server, 'b'), c = MemoryBackend(server, 'c');
+      final pb = await b.signIn();
+      await a.signIn();
+      await c.signIn();
+      final got = <Invite>[];
+      final sub = b.invites().listen(got.add);
+      await c.sendInvite('b', Invite('', 'c', 'C', 0, 'oyun-okey', 'ABCDEF', DateTime.now().millisecondsSinceEpoch));
+      await a.addFriend(pb.code);
+      await a.sendInvite('b', Invite('', 'a', 'A', 2, 'oyun-okey', 'XYZ234', DateTime.now().millisecondsSinceEpoch));
+      await Future<void>.delayed(Duration.zero);
+      expect(got.map((i) => i.code), ['XYZ234']);
+      expect(got.single.from, 'a');
+      expect(got.single.fresh(DateTime.now()), isTrue);
+      await b.deleteInvite(got.single.id);
+      expect(server.invites['b'], isEmpty);
+      await sub.cancel();
+    });
+
     test('davet kodu ile katılma, masa dolmadan botla başlatma', () async {
       final server = MemoryServer();
       final a = MemoryBackend(server, 'a'), b = MemoryBackend(server, 'b');

@@ -43,6 +43,10 @@ abstract class MatchLink {
   /// Rakiplerin hamleleri, sırayla.
   Stream<(int seat, String move)> get moves;
 
+  /// Maça geri dönüldüyse o ana kadarki bütün hamleler (bu cihazınkiler
+  /// dahil); motor bunları [moves]'tan önce, beklemeden uygular.
+  List<(int seat, String move)> get history;
+
   /// Maç bitti: kazanan koltuk (-1 berabere). [iWon]: eşli oyunlarda
   /// takım arkadaşı kazandıysa da doğru.
   Future<void> finish(int winner, {bool? iWon});

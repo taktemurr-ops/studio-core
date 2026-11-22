@@ -185,6 +185,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'استعادة المشتريات',
     'remove_ads': 'إزالة الإعلانات',
     'premium_pack': 'الحزمة المميزة',
+    'hub_welcome': 'أهلًا بك!',
+    'hub_welcome_body': '{n} لعبة في تطبيق واحد. لا تعرف من أين تبدأ؟ جرّب إحداها:',
+    'hub_tips': '• جميع الألعاب تعمل دون إنترنت.
+• لكل لعبة تقدّمها الخاص.
+• إزالة الإعلانات والمميز تُشترى مرة واحدة وتسري على كل الألعاب هنا.',
+    'hub_browse': 'تصفح الكل',
+    'rejoin_title': 'مباراة لم تكتمل',
+    'rejoin_body': 'الطاولة ما زالت تلعب. لعب روبوت بدلًا منك أثناء غيابك. هل تعود؟',
+    'rejoin_yes': 'العودة',
+    'later': 'لاحقًا',
+    'invite_title': 'دعوة إلى الطاولة',
+    'invite_body': 'يدعوك {name} إلى طاولة {game}.',
+    'invite_join': 'انضمام',
+    'call_friend': 'ادعُ صديقًا',
+    'invite_sent': 'تم إرسال الدعوة',
+    'invite': 'دعوة',
+    'terms_title': 'قواعد اللعب عبر الإنترنت',
+    'terms_body': '• كن محترمًا: الشتائم والإهانة وخطاب الكراهية والتحرش ممنوعة.
+• لا تشارك أو تطلب معلومات شخصية (هاتف، عنوان، حسابات تواصل).
+• الغش والاحتيال والإعلان ممنوعة.
+• قد تُغلق الحسابات المخالفة دون إنذار؛ وتُراجع البلاغات.
+• اللعب عبر الإنترنت لمن هم 13 عامًا فأكثر؛ والدردشة الكتابية لـ16 فأكثر.',
+    'terms_accept': 'أوافق',
     'transfer_title': 'تغيير الهاتف',
     'transfer_create': 'احصل على رمز النقل',
     'transfer_code_info': 'أدخل هذا الرمز في الملف الشخصي على هاتفك الجديد لنقل تقدمك واسمك ودوريك وهداياك. لا تشاركه؛ يعمل مرة واحدة.',
@@ -462,6 +485,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'بازیابی خریدها',
     'remove_ads': 'حذف تبلیغات',
     'premium_pack': 'بسته ویژه',
+    'hub_welcome': 'خوش آمدی!',
+    'hub_welcome_body': '{n} بازی در یک برنامه. نمی‌دانی از کجا شروع کنی؟ یکی از این‌ها را امتحان کن:',
+    'hub_tips': '• همه بازی‌ها بدون اینترنت اجرا می‌شوند.
+• پیشرفت هر بازی جدا ذخیره می‌شود.
+• حذف تبلیغات و پریمیوم یک بار خریده می‌شوند و برای همه بازی‌های اینجا معتبرند.',
+    'hub_browse': 'مشاهده همه',
+    'rejoin_title': 'بازی نیمه‌تمام',
+    'rejoin_body': 'میز هنوز در جریان است. در نبودت ربات جای تو بازی کرد. برمی‌گردی؟',
+    'rejoin_yes': 'بازگشت',
+    'later': 'بعداً',
+    'invite_title': 'دعوت به میز',
+    'invite_body': '{name} تو را به میز {game} دعوت کرد.',
+    'invite_join': 'پیوستن',
+    'call_friend': 'صدا زدن دوست',
+    'invite_sent': 'دعوت فرستاده شد',
+    'invite': 'دعوت',
+    'terms_title': 'قوانین بازی آنلاین',
+    'terms_body': '• محترم باش: فحاشی، توهین، نفرت‌پراکنی و آزار ممنوع است.
+• اطلاعات شخصی (تلفن، آدرس، شبکه‌های اجتماعی) را به اشتراک نگذار و درخواست نکن.
+• تقلب، کلاهبرداری و تبلیغ ممنوع است.
+• حساب‌های متخلف ممکن است بدون هشدار بسته شوند؛ گزارش‌ها بررسی می‌شوند.
+• بازی آنلاین برای ۱۳ سال به بالا و گفتگوی متنی برای ۱۶ سال به بالاست.',
+    'terms_accept': 'موافقم',
     'transfer_title': 'تعویض گوشی',
     'transfer_create': 'دریافت کد انتقال',
     'transfer_code_info': 'این کد را در بخش نمایهٔ گوشی جدید وارد کن تا پیشرفت، نام، لیگ و هدیه‌هایت منتقل شوند. آن را با کسی به اشتراک نگذار؛ یک‌بار مصرف است.',
@@ -739,6 +785,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'שחזור רכישות',
     'remove_ads': 'הסרת מודעות',
     'premium_pack': 'חבילת פרימיום',
+    'hub_welcome': 'ברוך הבא!',
+    'hub_welcome_body': '{n} משחקים באפליקציה אחת. לא בטוח במה להתחיל? נסה אחד מאלה:',
+    'hub_tips': '• כל המשחקים עובדים ללא אינטרנט.
+• לכל משחק התקדמות משלו.
+• ללא פרסומות ו־Premium נרכשים פעם אחת ותקפים בכל המשחקים כאן.',
+    'hub_browse': 'עיון בכולם',
+    'rejoin_title': 'משחק שלא הסתיים',
+    'rejoin_body': 'השולחן עדיין משחק. בוט שיחק במקומך. לחזור?',
+    'rejoin_yes': 'חזרה',
+    'later': 'אחר כך',
+    'invite_title': 'הזמנה לשולחן',
+    'invite_body': '{name} מזמין/ה אותך לשולחן {game}.',
+    'invite_join': 'הצטרפות',
+    'call_friend': 'הזמנת חבר',
+    'invite_sent': 'ההזמנה נשלחה',
+    'invite': 'הזמן',
+    'terms_title': 'כללי המשחק המקוון',
+    'terms_body': '• היו מכבדים: קללות, עלבונות, שנאה והטרדה אסורים.
+• אל תשתפו ואל תבקשו פרטים אישיים (טלפון, כתובת, רשתות).
+• אסור לרמות, להונות או לפרסם.
+• חשבונות שמפרים את הכללים עלולים להיסגר ללא אזהרה; דיווחים נבדקים.
+• משחק מקוון מגיל 13; צ׳אט כתוב מגיל 16.',
+    'terms_accept': 'אני מסכים/ה',
     'transfer_title': 'החלפת טלפון',
     'transfer_create': 'קבלת קוד העברה',
     'transfer_code_info': 'הזינו את הקוד בפרופיל בטלפון החדש: ההתקדמות, השם, הליגה והמתנות יועברו. אל תשתפו; חד־פעמי.',
@@ -1016,6 +1085,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'خریداریاں بحال کریں',
     'remove_ads': 'اشتہارات ہٹائیں',
     'premium_pack': 'پریمیم پیک',
+    'hub_welcome': 'خوش آمدید!',
+    'hub_welcome_body': 'ایک ایپ میں {n} کھیل۔ کہاں سے شروع کریں؟ ان میں سے ایک آزمائیں:',
+    'hub_tips': '• تمام کھیل آف لائن چلتے ہیں۔
+• ہر کھیل کی پیش رفت الگ محفوظ ہوتی ہے۔
+• اشتہار سے پاک اور پریمیم ایک بار خریدیں، یہاں کے تمام کھیلوں میں چلے گا۔',
+    'hub_browse': 'سب دیکھیں',
+    'rejoin_title': 'ادھورا میچ',
+    'rejoin_body': 'میز ابھی جاری ہے۔ آپ کی غیر موجودگی میں بوٹ کھیلا۔ واپس آئیں؟',
+    'rejoin_yes': 'واپس جائیں',
+    'later': 'بعد میں',
+    'invite_title': 'میز کی دعوت',
+    'invite_body': '{name} نے آپ کو {game} کی میز پر بلایا ہے۔',
+    'invite_join': 'شامل ہوں',
+    'call_friend': 'دوست کو بلائیں',
+    'invite_sent': 'دعوت بھیج دی گئی',
+    'invite': 'دعوت دیں',
+    'terms_title': 'آن لائن کھیل کے اصول',
+    'terms_body': '• عزت سے پیش آئیں: گالی، توہین، نفرت انگیزی اور ہراسانی منع ہے۔
+• ذاتی معلومات (فون، پتا، سوشل میڈیا) نہ دیں نہ مانگیں۔
+• دھوکا، فراڈ اور اشتہار منع ہے۔
+• خلاف ورزی کرنے والے اکاؤنٹ بغیر اطلاع بند ہو سکتے ہیں؛ شکایات کا جائزہ لیا جاتا ہے۔
+• آن لائن کھیل 13 سال اور زائد کے لیے؛ تحریری چیٹ 16 سال اور زائد کے لیے۔',
+    'terms_accept': 'میں متفق ہوں',
     'transfer_title': 'فون تبدیل کرنا',
     'transfer_create': 'منتقلی کوڈ لیں',
     'transfer_code_info': 'یہ کوڈ نئے فون میں پروفائل میں درج کریں: پیش رفت، نام، لیگ اور تحفے منتقل ہوں گے۔ کسی کو نہ دیں؛ ایک بار چلتا ہے۔',
@@ -1293,6 +1385,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Восстановить покупки',
     'remove_ads': 'Убрать рекламу',
     'premium_pack': 'Премиум-набор',
+    'hub_welcome': 'Добро пожаловать!',
+    'hub_welcome_body': '{n} игр в одном приложении. Не знаете, с чего начать? Попробуйте одну из этих:',
+    'hub_tips': '• Все игры работают без интернета.
+• У каждой игры свой прогресс.
+• «Без рекламы» и Premium покупаются один раз и действуют во всех играх здесь.',
+    'hub_browse': 'Смотреть все',
+    'rejoin_title': 'Незавершённая партия',
+    'rejoin_body': 'Стол ещё играет. Пока вас не было, за вас играл бот. Вернуться?',
+    'rejoin_yes': 'Вернуться',
+    'later': 'Позже',
+    'invite_title': 'Приглашение за стол',
+    'invite_body': '{name} приглашает вас за стол: {game}.',
+    'invite_join': 'Присоединиться',
+    'call_friend': 'Позвать друга',
+    'invite_sent': 'Приглашение отправлено',
+    'invite': 'Пригласить',
+    'terms_title': 'Правила онлайн-игры',
+    'terms_body': '• Будьте вежливы: мат, оскорбления, ненависть и травля запрещены.
+• Не делитесь и не просите личные данные (телефон, адрес, соцсети).
+• Запрещены читерство, мошенничество и реклама.
+• Нарушители могут быть заблокированы без предупреждения; жалобы проверяются.
+• Онлайн-игра — с 13 лет; текстовый чат — с 16 лет.',
+    'terms_accept': 'Принимаю',
     'transfer_title': 'Смена телефона',
     'transfer_create': 'Получить код переноса',
     'transfer_code_info': 'Введите код в профиле на новом телефоне: прогресс, имя, лига и подарки перенесутся. Никому не сообщайте; код одноразовый.',
@@ -1570,6 +1685,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Відновити покупки',
     'remove_ads': 'Прибрати рекламу',
     'premium_pack': 'Преміум-набір',
+    'hub_welcome': 'Ласкаво просимо!',
+    'hub_welcome_body': '{n} ігор в одному застосунку. Не знаєте, з чого почати? Спробуйте одну з цих:',
+    'hub_tips': '• Усі ігри працюють без інтернету.
+• Кожна гра має власний поступ.
+• «Без реклами» і Premium купуються один раз і діють у всіх іграх тут.',
+    'hub_browse': 'Переглянути всі',
+    'rejoin_title': 'Незавершена партія',
+    'rejoin_body': 'Стіл ще грає. Поки вас не було, за вас грав бот. Повернутися?',
+    'rejoin_yes': 'Повернутися',
+    'later': 'Пізніше',
+    'invite_title': 'Запрошення до столу',
+    'invite_body': '{name} запрошує вас до столу: {game}.',
+    'invite_join': 'Приєднатися',
+    'call_friend': 'Покликати друга',
+    'invite_sent': 'Запрошення надіслано',
+    'invite': 'Запросити',
+    'terms_title': 'Правила онлайн-гри',
+    'terms_body': '• Будьте ввічливі: лайка, образи, ненависть і цькування заборонені.
+• Не діліться й не просіть особисті дані (телефон, адресу, соцмережі).
+• Заборонені шахрайство, обман і реклама.
+• Порушників можуть заблокувати без попередження; скарги перевіряються.
+• Онлайн-гра — з 13 років; текстовий чат — з 16 років.',
+    'terms_accept': 'Погоджуюся',
     'transfer_title': 'Зміна телефону',
     'transfer_create': 'Отримати код перенесення',
     'transfer_code_info': 'Введіть код у профілі на новому телефоні: прогрес, ім’я, ліга й подарунки перенесуться. Нікому не кажіть; код одноразовий.',
@@ -1847,6 +1985,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Przywróć zakupy',
     'remove_ads': 'Usuń reklamy',
     'premium_pack': 'Pakiet premium',
+    'hub_welcome': 'Witaj!',
+    'hub_welcome_body': '{n} gier w jednej aplikacji. Nie wiesz, od czego zacząć? Wypróbuj jedną z tych:',
+    'hub_tips': '• Wszystkie gry działają offline.
+• Każda gra ma własne postępy.
+• Bez reklam i Premium kupujesz raz – działają we wszystkich grach tutaj.',
+    'hub_browse': 'Przeglądaj wszystkie',
+    'rejoin_title': 'Niedokończona gra',
+    'rejoin_body': 'Stół nadal gra. Pod twoją nieobecność grał za ciebie bot. Wracasz?',
+    'rejoin_yes': 'Wróć',
+    'later': 'Później',
+    'invite_title': 'Zaproszenie do stołu',
+    'invite_body': '{name} zaprasza cię do stołu: {game}.',
+    'invite_join': 'Dołącz',
+    'call_friend': 'Zaproś znajomego',
+    'invite_sent': 'Zaproszenie wysłane',
+    'invite': 'Zaproś',
+    'terms_title': 'Zasady gry online',
+    'terms_body': '• Bądź uprzejmy: wulgaryzmy, obelgi, mowa nienawiści i nękanie są zakazane.
+• Nie udostępniaj ani nie proś o dane osobowe (telefon, adres, media społecznościowe).
+• Zakaz oszukiwania, wyłudzeń i reklam.
+• Konta łamiące zasady mogą zostać zamknięte bez ostrzeżenia; zgłoszenia są sprawdzane.
+• Gra online od 13 lat; czat tekstowy od 16 lat.',
+    'terms_accept': 'Akceptuję',
     'transfer_title': 'Zmiana telefonu',
     'transfer_create': 'Pobierz kod przeniesienia',
     'transfer_code_info': 'Wpisz ten kod w Profilu na nowym telefonie: przeniesiesz postęp, nazwę, ligę i prezenty. Nie udostępniaj; działa raz.',
@@ -2124,6 +2285,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Obnovit nákupy',
     'remove_ads': 'Odstranit reklamy',
     'premium_pack': 'Prémiový balíček',
+    'hub_welcome': 'Vítej!',
+    'hub_welcome_body': '{n} her v jedné aplikaci. Nevíš, kde začít? Zkus některou z těchto:',
+    'hub_tips': '• Všechny hry fungují offline.
+• Každá hra si ukládá vlastní postup.
+• Bez reklam a Premium koupíš jednou a platí ve všech hrách tady.',
+    'hub_browse': 'Procházet vše',
+    'rejoin_title': 'Nedokončená hra',
+    'rejoin_body': 'Stůl stále hraje. Než jsi byl pryč, hrál za tebe bot. Vrátit se?',
+    'rejoin_yes': 'Vrátit se',
+    'later': 'Později',
+    'invite_title': 'Pozvánka ke stolu',
+    'invite_body': '{name} tě zve ke stolu: {game}.',
+    'invite_join': 'Připojit',
+    'call_friend': 'Pozvat přítele',
+    'invite_sent': 'Pozvánka odeslána',
+    'invite': 'Pozvat',
+    'terms_title': 'Pravidla online hry',
+    'terms_body': '• Buď slušný: nadávky, urážky, nenávist a obtěžování jsou zakázány.
+• Nesdílej ani nežádej osobní údaje (telefon, adresu, sociální sítě).
+• Zakázané je podvádění, podvody a reklama.
+• Účty porušující pravidla mohou být bez varování zrušeny; nahlášení prověřujeme.
+• Online hra od 13 let; textový chat od 16 let.',
+    'terms_accept': 'Souhlasím',
     'transfer_title': 'Výměna telefonu',
     'transfer_create': 'Získat kód přenosu',
     'transfer_code_info': 'Zadej kód v Profilu na novém telefonu: přenese se postup, jméno, liga a dárky. Nesdílej ho; platí jednou.',
@@ -2401,6 +2585,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Restaurează achizițiile',
     'remove_ads': 'Elimină reclamele',
     'premium_pack': 'Pachet premium',
+    'hub_welcome': 'Bun venit!',
+    'hub_welcome_body': '{n} jocuri într-o singură aplicație. Nu știi de unde să începi? Încearcă unul dintre acestea:',
+    'hub_tips': '• Toate jocurile merg offline.
+• Fiecare joc își păstrează progresul.
+• Fără reclame și Premium se cumpără o dată și sunt valabile în toate jocurile de aici.',
+    'hub_browse': 'Vezi toate',
+    'rejoin_title': 'Meci neterminat',
+    'rejoin_body': 'Masa încă joacă. Un bot a jucat în locul tău. Te întorci?',
+    'rejoin_yes': 'Revino',
+    'later': 'Mai târziu',
+    'invite_title': 'Invitație la masă',
+    'invite_body': '{name} te invită la o masă de {game}.',
+    'invite_join': 'Alătură-te',
+    'call_friend': 'Cheamă un prieten',
+    'invite_sent': 'Invitație trimisă',
+    'invite': 'Invită',
+    'terms_title': 'Regulile jocului online',
+    'terms_body': '• Fii respectuos: înjurăturile, insultele, ura și hărțuirea sunt interzise.
+• Nu împărtăși și nu cere date personale (telefon, adresă, rețele sociale).
+• Fără trișat, înșelătorii sau reclame.
+• Conturile care încalcă regulile pot fi închise fără avertisment; reclamațiile sunt verificate.
+• Jocul online este de la 13 ani; chatul scris de la 16 ani.',
+    'terms_accept': 'Accept',
     'transfer_title': 'Schimbarea telefonului',
     'transfer_create': 'Obține un cod de transfer',
     'transfer_code_info': 'Introdu codul în Profil pe noul telefon: se mută progresul, numele, liga și cadourile. Nu-l împărtăși; e de unică folosință.',
@@ -2678,6 +2885,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Vásárlások visszaállítása',
     'remove_ads': 'Hirdetések eltávolítása',
     'premium_pack': 'Prémium csomag',
+    'hub_welcome': 'Üdv!',
+    'hub_welcome_body': '{n} játék egy alkalmazásban. Nem tudod, hol kezdd? Próbáld ki ezek egyikét:',
+    'hub_tips': '• Minden játék offline is működik.
+• Minden játék külön menti a haladást.
+• A Reklámmentes és a Premium egyszer kell megvenni, és itt minden játékra érvényes.',
+    'hub_browse': 'Összes megtekintése',
+    'rejoin_title': 'Befejezetlen meccs',
+    'rejoin_body': 'Az asztal még játszik. Amíg távol voltál, egy bot játszott helyetted. Visszatérsz?',
+    'rejoin_yes': 'Vissza',
+    'later': 'Később',
+    'invite_title': 'Asztalmeghívó',
+    'invite_body': '{name} meghívott egy {game} asztalhoz.',
+    'invite_join': 'Csatlakozás',
+    'call_friend': 'Barát meghívása',
+    'invite_sent': 'Meghívó elküldve',
+    'invite': 'Meghív',
+    'terms_title': 'Az online játék szabályai',
+    'terms_body': '• Légy tisztelettudó: a káromkodás, sértegetés, gyűlöletkeltés és zaklatás tilos.
+• Ne ossz meg és ne kérj személyes adatot (telefon, cím, közösségi média).
+• Csalás, átverés és reklám tilos.
+• A szabályszegő fiókok figyelmeztetés nélkül letilthatók; a jelentéseket kivizsgáljuk.
+• Az online játék 13 éves kortól, a szöveges csevegés 16 éves kortól.',
+    'terms_accept': 'Elfogadom',
     'transfer_title': 'Telefoncsere',
     'transfer_create': 'Átviteli kód kérése',
     'transfer_code_info': 'Írd be ezt a kódot az új telefon Profil menüjében: átkerül a haladás, név, liga és ajándékok. Ne add ki; egyszer használható.',
@@ -2955,6 +3185,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Επαναφορά αγορών',
     'remove_ads': 'Χωρίς διαφημίσεις',
     'premium_pack': 'Πακέτο premium',
+    'hub_welcome': 'Καλώς ήρθες!',
+    'hub_welcome_body': '{n} παιχνίδια σε μία εφαρμογή. Δεν ξέρεις από πού να ξεκινήσεις; Δοκίμασε ένα από αυτά:',
+    'hub_tips': '• Όλα τα παιχνίδια παίζονται χωρίς internet.
+• Κάθε παιχνίδι κρατά τη δική του πρόοδο.
+• Χωρίς διαφημίσεις και Premium αγοράζονται μία φορά και ισχύουν σε όλα τα παιχνίδια εδώ.',
+    'hub_browse': 'Δες όλα',
+    'rejoin_title': 'Ημιτελής αγώνας',
+    'rejoin_body': 'Το τραπέζι παίζει ακόμα. Ένα bot έπαιξε για σένα. Επιστρέφεις;',
+    'rejoin_yes': 'Επιστροφή',
+    'later': 'Αργότερα',
+    'invite_title': 'Πρόσκληση στο τραπέζι',
+    'invite_body': '{name} σε προσκαλεί σε τραπέζι {game}.',
+    'invite_join': 'Συμμετοχή',
+    'call_friend': 'Κάλεσε φίλο',
+    'invite_sent': 'Η πρόσκληση στάλθηκε',
+    'invite': 'Πρόσκληση',
+    'terms_title': 'Κανόνες online παιχνιδιού',
+    'terms_body': '• Να είσαι ευγενικός: βρισιές, προσβολές, ρητορική μίσους και παρενόχληση απαγορεύονται.
+• Μη μοιράζεσαι και μη ζητάς προσωπικά στοιχεία (τηλέφωνο, διεύθυνση, μέσα κοινωνικής δικτύωσης).
+• Απαγορεύονται η εξαπάτηση, η απάτη και η διαφήμιση.
+• Λογαριασμοί που παραβιάζουν τους κανόνες μπορεί να κλείσουν χωρίς προειδοποίηση· οι αναφορές εξετάζονται.
+• Το online παιχνίδι είναι από 13 ετών· η γραπτή συνομιλία από 16.',
+    'terms_accept': 'Συμφωνώ',
     'transfer_title': 'Αλλαγή κινητού',
     'transfer_create': 'Λήψη κωδικού μεταφοράς',
     'transfer_code_info': 'Βάλε τον κωδικό στο Προφίλ του νέου κινητού: μεταφέρονται πρόοδος, όνομα, πρωτάθλημα και δώρα. Μην τον μοιραστείς· ισχύει μία φορά.',
@@ -3232,6 +3485,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Ripristina acquisti',
     'remove_ads': 'Rimuovi annunci',
     'premium_pack': 'Pacchetto premium',
+    'hub_welcome': 'Benvenuto!',
+    'hub_welcome_body': '{n} giochi in un’app. Non sai da dove iniziare? Prova uno di questi:',
+    'hub_tips': '• Tutti i giochi funzionano offline.
+• Ogni gioco salva i propri progressi.
+• Senza pubblicità e Premium si acquistano una volta e valgono per tutti i giochi qui.',
+    'hub_browse': 'Sfoglia tutti',
+    'rejoin_title': 'Partita in sospeso',
+    'rejoin_body': 'Il tavolo è ancora in gioco. Un bot ha giocato al posto tuo. Rientri?',
+    'rejoin_yes': 'Rientra',
+    'later': 'Più tardi',
+    'invite_title': 'Invito al tavolo',
+    'invite_body': '{name} ti invita a un tavolo di {game}.',
+    'invite_join': 'Partecipa',
+    'call_friend': 'Chiama un amico',
+    'invite_sent': 'Invito inviato',
+    'invite': 'Invita',
+    'terms_title': 'Regole del gioco online',
+    'terms_body': '• Sii rispettoso: insulti, odio e molestie sono vietati.
+• Non condividere né chiedere dati personali (telefono, indirizzo, social).
+• Vietati trucchi, truffe e pubblicità.
+• Gli account che violano le regole possono essere chiusi senza preavviso; le segnalazioni vengono esaminate.
+• Il gioco online è dai 13 anni; la chat scritta dai 16.',
+    'terms_accept': 'Accetto',
     'transfer_title': 'Cambio di telefono',
     'transfer_create': 'Ottieni codice di trasferimento',
     'transfer_code_info': 'Inserisci il codice in Profilo sul nuovo telefono: progressi, nome, lega e regali verranno trasferiti. Non condividerlo; vale una volta.',
@@ -3509,6 +3785,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Restaurar compras',
     'remove_ads': 'Remover anúncios',
     'premium_pack': 'Pacote premium',
+    'hub_welcome': 'Bem-vindo!',
+    'hub_welcome_body': '{n} jogos em um app. Não sabe por onde começar? Experimente um destes:',
+    'hub_tips': '• Todos os jogos funcionam offline.
+• Cada jogo guarda seu próprio progresso.
+• Sem anúncios e Premium são comprados uma vez e valem para todos os jogos aqui.',
+    'hub_browse': 'Ver todos',
+    'rejoin_title': 'Partida inacabada',
+    'rejoin_body': 'A mesa ainda está jogando. Um robô jogou por você. Voltar?',
+    'rejoin_yes': 'Voltar',
+    'later': 'Depois',
+    'invite_title': 'Convite para a mesa',
+    'invite_body': '{name} convidou você para uma mesa de {game}.',
+    'invite_join': 'Entrar',
+    'call_friend': 'Chamar amigo',
+    'invite_sent': 'Convite enviado',
+    'invite': 'Convidar',
+    'terms_title': 'Regras do jogo online',
+    'terms_body': '• Seja respeitoso: palavrões, insultos, discurso de ódio e assédio são proibidos.
+• Não compartilhe nem peça dados pessoais (telefone, endereço, redes sociais).
+• Proibido trapacear, aplicar golpes ou fazer propaganda.
+• Contas que violarem as regras podem ser encerradas sem aviso; as denúncias são analisadas.
+• O jogo online é para maiores de 13; o chat escrito, para maiores de 16.',
+    'terms_accept': 'Concordo',
     'transfer_title': 'Troca de celular',
     'transfer_create': 'Gerar código de transferência',
     'transfer_code_info': 'Digite este código em Perfil no novo celular: progresso, nome, liga e presentes serão transferidos. Não compartilhe; funciona uma vez.',
@@ -3786,6 +4085,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Aankopen herstellen',
     'remove_ads': 'Advertenties verwijderen',
     'premium_pack': 'Premiumpakket',
+    'hub_welcome': 'Welkom!',
+    'hub_welcome_body': '{n} spellen in één app. Weet je niet waar te beginnen? Probeer een van deze:',
+    'hub_tips': '• Alle spellen werken offline.
+• Elk spel bewaart zijn eigen voortgang.
+• Reclamevrij en Premium koop je één keer, voor alle spellen hier.',
+    'hub_browse': 'Alles bekijken',
+    'rejoin_title': 'Onvoltooide partij',
+    'rejoin_body': 'De tafel speelt nog. Een bot speelde voor je. Terug naar de tafel?',
+    'rejoin_yes': 'Terug',
+    'later': 'Later',
+    'invite_title': 'Uitnodiging voor tafel',
+    'invite_body': '{name} nodigt je uit voor {game}.',
+    'invite_join': 'Meedoen',
+    'call_friend': 'Vriend uitnodigen',
+    'invite_sent': 'Uitnodiging verstuurd',
+    'invite': 'Uitnodigen',
+    'terms_title': 'Regels voor online spelen',
+    'terms_body': '• Wees respectvol: schelden, beledigen, haatzaaien en intimidatie zijn verboden.
+• Deel of vraag geen persoonlijke gegevens (telefoon, adres, sociale media).
+• Geen valsspelen, oplichting of reclame.
+• Accounts die de regels breken kunnen zonder waarschuwing worden gesloten; meldingen worden bekeken.
+• Online spelen vanaf 13 jaar; tekstchat vanaf 16 jaar.',
+    'terms_accept': 'Ik ga akkoord',
     'transfer_title': 'Nieuwe telefoon',
     'transfer_create': 'Overdrachtscode ophalen',
     'transfer_code_info': 'Voer deze code in bij Profiel op je nieuwe telefoon: voortgang, naam, competitie en cadeaus gaan mee. Niet delen; werkt één keer.',
@@ -4063,6 +4385,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Återställ köp',
     'remove_ads': 'Ta bort annonser',
     'premium_pack': 'Premiumpaket',
+    'hub_welcome': 'Välkommen!',
+    'hub_welcome_body': '{n} spel i en app. Osäker på var du ska börja? Testa något av dessa:',
+    'hub_tips': '• Alla spel fungerar offline.
+• Varje spel sparar sina egna framsteg.
+• Reklamfritt och Premium köps en gång och gäller i alla spel här.',
+    'hub_browse': 'Bläddra bland alla',
+    'rejoin_title': 'Oavslutad match',
+    'rejoin_body': 'Bordet spelar fortfarande. En bot spelade åt dig. Hoppa in igen?',
+    'rejoin_yes': 'Gå tillbaka',
+    'later': 'Senare',
+    'invite_title': 'Bordsinbjudan',
+    'invite_body': '{name} bjuder in dig till {game}.',
+    'invite_join': 'Gå med',
+    'call_friend': 'Bjud in en vän',
+    'invite_sent': 'Inbjudan skickad',
+    'invite': 'Bjud in',
+    'terms_title': 'Regler för onlinespel',
+    'terms_body': '• Var respektfull: svordomar, förolämpningar, hat och trakasserier är förbjudna.
+• Dela inte och be inte om personuppgifter (telefon, adress, sociala medier).
+• Inget fusk, bedrägeri eller reklam.
+• Konton som bryter mot reglerna kan stängas utan varning; anmälningar granskas.
+• Onlinespel från 13 år; textchatt från 16 år.',
+    'terms_accept': 'Jag godkänner',
     'transfer_title': 'Byta telefon',
     'transfer_create': 'Hämta överföringskod',
     'transfer_code_info': 'Ange koden under Profil på nya telefonen: framsteg, namn, liga och gåvor flyttas. Dela den inte; den fungerar en gång.',
@@ -4340,6 +4685,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Gendan køb',
     'remove_ads': 'Fjern reklamer',
     'premium_pack': 'Premiumpakke',
+    'hub_welcome': 'Velkommen!',
+    'hub_welcome_body': '{n} spil i én app. Ved du ikke, hvor du skal starte? Prøv et af disse:',
+    'hub_tips': '• Alle spil virker offline.
+• Hvert spil gemmer sine egne fremskridt.
+• Reklamefri og Premium købes én gang og gælder i alle spil her.',
+    'hub_browse': 'Se alle',
+    'rejoin_title': 'Uafsluttet kamp',
+    'rejoin_body': 'Bordet spiller stadig. En bot spillede for dig. Vil du tilbage?',
+    'rejoin_yes': 'Tilbage',
+    'later': 'Senere',
+    'invite_title': 'Invitation til bordet',
+    'invite_body': '{name} inviterer dig til {game}.',
+    'invite_join': 'Deltag',
+    'call_friend': 'Inviter en ven',
+    'invite_sent': 'Invitation sendt',
+    'invite': 'Inviter',
+    'terms_title': 'Regler for onlinespil',
+    'terms_body': '• Vær respektfuld: bandeord, fornærmelser, had og chikane er forbudt.
+• Del eller bed ikke om personlige oplysninger (telefon, adresse, sociale medier).
+• Ingen snyd, svindel eller reklame.
+• Konti, der bryder reglerne, kan lukkes uden varsel; anmeldelser gennemgås.
+• Onlinespil fra 13 år; tekstchat fra 16 år.',
+    'terms_accept': 'Jeg accepterer',
     'transfer_title': 'Skift af telefon',
     'transfer_create': 'Hent overførselskode',
     'transfer_code_info': 'Indtast koden under Profil på den nye telefon: fremskridt, navn, liga og gaver flyttes. Del den ikke; den virker én gang.',
@@ -4617,6 +4985,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Gjenopprett kjøp',
     'remove_ads': 'Fjern reklame',
     'premium_pack': 'Premiumpakke',
+    'hub_welcome': 'Velkommen!',
+    'hub_welcome_body': '{n} spill i én app. Usikker på hvor du skal begynne? Prøv et av disse:',
+    'hub_tips': '• Alle spillene virker uten nett.
+• Hvert spill lagrer egen fremgang.
+• Reklamefri og Premium kjøpes én gang og gjelder i alle spillene her.',
+    'hub_browse': 'Se alle',
+    'rejoin_title': 'Uferdig kamp',
+    'rejoin_body': 'Bordet spiller fortsatt. En bot spilte for deg. Vil du tilbake?',
+    'rejoin_yes': 'Tilbake',
+    'later': 'Senere',
+    'invite_title': 'Invitasjon til bordet',
+    'invite_body': '{name} inviterer deg til {game}.',
+    'invite_join': 'Bli med',
+    'call_friend': 'Inviter en venn',
+    'invite_sent': 'Invitasjon sendt',
+    'invite': 'Inviter',
+    'terms_title': 'Regler for nettspill',
+    'terms_body': '• Vær respektfull: banning, fornærmelser, hat og trakassering er forbudt.
+• Ikke del eller be om personopplysninger (telefon, adresse, sosiale medier).
+• Ingen juks, svindel eller reklame.
+• Kontoer som bryter reglene kan stenges uten varsel; rapporter gjennomgås.
+• Nettspill fra 13 år; tekstchat fra 16 år.',
+    'terms_accept': 'Jeg godtar',
     'transfer_title': 'Bytte telefon',
     'transfer_create': 'Hent overføringskode',
     'transfer_code_info': 'Skriv inn koden under Profil på den nye telefonen: fremgang, navn, liga og gaver flyttes. Ikke del den; den virker én gang.',
@@ -4894,6 +5285,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Palauta ostot',
     'remove_ads': 'Poista mainokset',
     'premium_pack': 'Premium-paketti',
+    'hub_welcome': 'Tervetuloa!',
+    'hub_welcome_body': '{n} peliä yhdessä sovelluksessa. Mistä aloittaa? Kokeile jotakin näistä:',
+    'hub_tips': '• Kaikki pelit toimivat ilman verkkoa.
+• Jokainen peli tallentaa oman edistymisensä.
+• Mainokseton ja Premium ostetaan kerran, ja ne toimivat kaikissa tämän sovelluksen peleissä.',
+    'hub_browse': 'Selaa kaikkia',
+    'rejoin_title': 'Kesken jäänyt peli',
+    'rejoin_body': 'Pöytä pelaa yhä. Botti pelasi puolestasi. Palaatko?',
+    'rejoin_yes': 'Palaa',
+    'later': 'Myöhemmin',
+    'invite_title': 'Pöytäkutsu',
+    'invite_body': '{name} kutsuu sinut pöytään: {game}.',
+    'invite_join': 'Liity',
+    'call_friend': 'Kutsu kaveri',
+    'invite_sent': 'Kutsu lähetetty',
+    'invite': 'Kutsu',
+    'terms_title': 'Verkkopelin säännöt',
+    'terms_body': '• Ole asiallinen: kiroilu, loukkaukset, vihapuhe ja häirintä on kielletty.
+• Älä jaa tai kysy henkilötietoja (puhelin, osoite, some).
+• Ei huijaamista, petoksia tai mainontaa.
+• Sääntöjä rikkovat tilit voidaan sulkea varoittamatta; ilmoitukset tarkistetaan.
+• Verkkopeli 13 vuotta täyttäneille; tekstichatti 16 vuotta täyttäneille.',
+    'terms_accept': 'Hyväksyn',
     'transfer_title': 'Puhelimen vaihto',
     'transfer_create': 'Hae siirtokoodi',
     'transfer_code_info': 'Syötä koodi uuden puhelimen Profiiliin: eteneminen, nimi, liiga ja lahjat siirtyvät. Älä jaa sitä; toimii kerran.',
@@ -5171,6 +5585,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': '購入を復元',
     'remove_ads': '広告を削除',
     'premium_pack': 'プレミアムパック',
+    'hub_welcome': 'ようこそ！',
+    'hub_welcome_body': '1つのアプリに{n}本のゲーム。迷ったらまずはこちらから：',
+    'hub_tips': '• すべてのゲームがオフラインで遊べます。
+• 進行状況はゲームごとに保存されます。
+• 広告なし・プレミアムは一度の購入で、ここにあるすべてのゲームで有効です。',
+    'hub_browse': 'すべて見る',
+    'rejoin_title': '途中の対戦',
+    'rejoin_body': '対戦はまだ続いています。不在中はボットが代わりにプレイしました。戻りますか？',
+    'rejoin_yes': '戻る',
+    'later': '後で',
+    'invite_title': '対戦の招待',
+    'invite_body': '{name}さんから「{game}」に招待されました。',
+    'invite_join': '参加する',
+    'call_friend': 'フレンドを呼ぶ',
+    'invite_sent': '招待を送りました',
+    'invite': '招待',
+    'terms_title': 'オンライン対戦のルール',
+    'terms_body': '• 相手を尊重しましょう：暴言、侮辱、ヘイト、嫌がらせは禁止です。
+• 個人情報（電話番号、住所、SNS）を教えたり聞いたりしないでください。
+• 不正行為、詐欺、宣伝は禁止です。
+• ルール違反のアカウントは予告なく停止されることがあります。通報は確認します。
+• オンライン対戦は13歳以上、文字チャットは16歳以上が対象です。',
+    'terms_accept': '同意する',
     'transfer_title': '機種変更',
     'transfer_create': '引き継ぎコードを発行',
     'transfer_code_info': '新しい端末のプロフィールでこのコードを入力すると、進行状況・名前・リーグ・ギフトが引き継がれます。他人に教えないでください（1回限り）。',
@@ -5448,6 +5885,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': '구매 복원',
     'remove_ads': '광고 제거',
     'premium_pack': '프리미엄 팩',
+    'hub_welcome': '환영해요!',
+    'hub_welcome_body': '앱 하나에 게임 {n}개. 무엇부터 할지 모르겠다면 이것부터 해 보세요:',
+    'hub_tips': '• 모든 게임은 인터넷 없이 즐길 수 있어요.
+• 게임마다 진행 상황이 따로 저장돼요.
+• 광고 제거와 프리미엄은 한 번 구매로 여기 있는 모든 게임에 적용돼요.',
+    'hub_browse': '전체 보기',
+    'rejoin_title': '끝나지 않은 대전',
+    'rejoin_body': '대전이 아직 진행 중이에요. 자리를 비운 동안 봇이 대신 플레이했어요. 돌아갈까요?',
+    'rejoin_yes': '돌아가기',
+    'later': '나중에',
+    'invite_title': '대전 초대',
+    'invite_body': '{name}님이 {game} 대전에 초대했어요.',
+    'invite_join': '참가',
+    'call_friend': '친구 부르기',
+    'invite_sent': '초대를 보냈어요',
+    'invite': '초대',
+    'terms_title': '온라인 플레이 규칙',
+    'terms_body': '• 서로 존중하세요: 욕설, 모욕, 혐오 발언, 괴롭힘은 금지예요.
+• 개인정보(전화번호, 주소, SNS)를 공유하거나 묻지 마세요.
+• 부정행위, 사기, 광고는 금지예요.
+• 규칙을 어긴 계정은 경고 없이 정지될 수 있으며 신고는 검토됩니다.
+• 온라인 플레이는 13세 이상, 문자 채팅은 16세 이상만 가능해요.',
+    'terms_accept': '동의합니다',
     'transfer_title': '휴대폰 변경',
     'transfer_create': '이전 코드 받기',
     'transfer_code_info': '새 휴대폰의 프로필에 이 코드를 입력하면 진행 상황, 이름, 리그, 선물이 옮겨져요. 공유하지 마세요. 한 번만 쓸 수 있어요.',
@@ -5725,6 +6185,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': '恢复购买',
     'remove_ads': '去除广告',
     'premium_pack': '高级礼包',
+    'hub_welcome': '欢迎！',
+    'hub_welcome_body': '一个应用里有 {n} 款游戏。不知从哪开始？试试这些：',
+    'hub_tips': '• 所有游戏都可离线畅玩。
+• 每款游戏单独保存进度。
+• 去广告和高级版只需购买一次，适用于这里的所有游戏。',
+    'hub_browse': '浏览全部',
+    'rejoin_title': '未完成的对局',
+    'rejoin_body': '牌桌仍在进行。你离开时由机器人代打。要回去吗？',
+    'rejoin_yes': '返回牌桌',
+    'later': '稍后',
+    'invite_title': '牌桌邀请',
+    'invite_body': '{name} 邀请你加入「{game}」。',
+    'invite_join': '加入',
+    'call_friend': '叫好友来',
+    'invite_sent': '邀请已发送',
+    'invite': '邀请',
+    'terms_title': '在线游戏规则',
+    'terms_body': '• 请文明交流：禁止辱骂、侮辱、仇恨言论和骚扰。
+• 不要分享或索要个人信息（电话、地址、社交账号）。
+• 禁止作弊、诈骗和广告。
+• 违规账户可能被直接封禁；举报会被审核。
+• 在线游戏需年满13岁；文字聊天需年满16岁。',
+    'terms_accept': '我同意',
     'transfer_title': '更换手机',
     'transfer_create': '获取转移码',
     'transfer_code_info': '在新手机的个人资料中输入此码，进度、昵称、联赛和礼物都会转移。请勿分享，仅可使用一次。',
@@ -6002,6 +6485,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'खरीदारी बहाल करें',
     'remove_ads': 'विज्ञापन हटाएँ',
     'premium_pack': 'प्रीमियम पैक',
+    'hub_welcome': 'स्वागत है!',
+    'hub_welcome_body': 'एक ऐप में {n} खेल। कहाँ से शुरू करें? इनमें से कोई आज़माएँ:',
+    'hub_tips': '• सभी खेल बिना इंटरनेट चलते हैं।
+• हर खेल की प्रगति अलग सहेजी जाती है।
+• विज्ञापन-मुक्त और प्रीमियम एक बार खरीदें, यहाँ के सभी खेलों में लागू।',
+    'hub_browse': 'सब देखें',
+    'rejoin_title': 'अधूरा मैच',
+    'rejoin_body': 'मेज़ अभी चल रही है। आपकी जगह बॉट खेला। वापस आएँ?',
+    'rejoin_yes': 'वापस जाएँ',
+    'later': 'बाद में',
+    'invite_title': 'मेज़ का न्योता',
+    'invite_body': '{name} ने आपको {game} की मेज़ पर बुलाया है।',
+    'invite_join': 'शामिल हों',
+    'call_friend': 'दोस्त को बुलाएँ',
+    'invite_sent': 'न्योता भेजा गया',
+    'invite': 'न्योता दें',
+    'terms_title': 'ऑनलाइन खेल के नियम',
+    'terms_body': '• सम्मान से पेश आएँ: गाली, अपमान, नफ़रत भरी बातें और उत्पीड़न मना है।
+• निजी जानकारी (फ़ोन, पता, सोशल मीडिया) न दें, न माँगें।
+• धोखाधड़ी, ठगी और विज्ञापन मना है।
+• नियम तोड़ने वाले खाते बिना चेतावनी बंद हो सकते हैं; शिकायतों की जाँच होती है।
+• ऑनलाइन खेल 13+ उम्र के लिए है; लिखित चैट 16+ के लिए।',
+    'terms_accept': 'मैं सहमत हूँ',
     'transfer_title': 'फ़ोन बदलना',
     'transfer_create': 'ट्रांसफ़र कोड लें',
     'transfer_code_info': 'नए फ़ोन में प्रोफ़ाइल में यह कोड डालें: प्रगति, नाम, लीग और उपहार आ जाएँगे। किसी से साझा न करें; एक बार चलता है।',
@@ -6279,6 +6785,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'কেনাকাটা ফেরান',
     'remove_ads': 'বিজ্ঞাপন সরান',
     'premium_pack': 'প্রিমিয়াম প্যাক',
+    'hub_welcome': 'স্বাগতম!',
+    'hub_welcome_body': 'এক অ্যাপে {n}টি খেলা। কোথা থেকে শুরু করবে? এগুলোর একটি চেষ্টা করো:',
+    'hub_tips': '• সব খেলা ইন্টারনেট ছাড়াই চলে।
+• প্রতিটি খেলার অগ্রগতি আলাদা সংরক্ষিত হয়।
+• বিজ্ঞাপনমুক্ত ও প্রিমিয়াম একবার কিনলেই এখানকার সব খেলায় চলে।',
+    'hub_browse': 'সব দেখো',
+    'rejoin_title': 'অসমাপ্ত ম্যাচ',
+    'rejoin_body': 'টেবিল এখনও চলছে। তোমার জায়গায় বট খেলেছে। ফিরবে?',
+    'rejoin_yes': 'ফিরে যাও',
+    'later': 'পরে',
+    'invite_title': 'টেবিলের আমন্ত্রণ',
+    'invite_body': '{name} তোমাকে {game} টেবিলে ডেকেছে।',
+    'invite_join': 'যোগ দাও',
+    'call_friend': 'বন্ধুকে ডাকো',
+    'invite_sent': 'আমন্ত্রণ পাঠানো হয়েছে',
+    'invite': 'আমন্ত্রণ',
+    'terms_title': 'অনলাইন খেলার নিয়ম',
+    'terms_body': '• সম্মান রেখে কথা বলো: গালি, অপমান, ঘৃণা ছড়ানো ও হয়রানি নিষেধ।
+• ব্যক্তিগত তথ্য (ফোন, ঠিকানা, সোশ্যাল মিডিয়া) দিও না, চেয়ো না।
+• প্রতারণা, জালিয়াতি ও বিজ্ঞাপন নিষেধ।
+• নিয়ম ভাঙা অ্যাকাউন্ট সতর্কতা ছাড়াই বন্ধ হতে পারে; অভিযোগ যাচাই করা হয়।
+• অনলাইন খেলা ১৩+ বয়সের জন্য; লেখা চ্যাট ১৬+।',
+    'terms_accept': 'আমি সম্মত',
     'transfer_title': 'ফোন বদল',
     'transfer_create': 'ট্রান্সফার কোড নাও',
     'transfer_code_info': 'নতুন ফোনে প্রোফাইলে কোডটি দাও: অগ্রগতি, নাম, লিগ ও উপহার চলে আসবে। কাউকে দিও না; একবারই কাজ করে।',
@@ -6556,6 +7085,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Pulihkan pembelian',
     'remove_ads': 'Hapus iklan',
     'premium_pack': 'Paket premium',
+    'hub_welcome': 'Selamat datang!',
+    'hub_welcome_body': '{n} game dalam satu aplikasi. Bingung mulai dari mana? Coba salah satu ini:',
+    'hub_tips': '• Semua game bisa dimainkan offline.
+• Setiap game menyimpan progresnya sendiri.
+• Bebas Iklan dan Premium dibeli sekali dan berlaku di semua game di sini.',
+    'hub_browse': 'Lihat semua',
+    'rejoin_title': 'Pertandingan belum selesai',
+    'rejoin_body': 'Meja masih bermain. Bot menggantikanmu tadi. Kembali?',
+    'rejoin_yes': 'Kembali',
+    'later': 'Nanti',
+    'invite_title': 'Undangan meja',
+    'invite_body': '{name} mengajakmu ke meja {game}.',
+    'invite_join': 'Gabung',
+    'call_friend': 'Ajak teman',
+    'invite_sent': 'Undangan terkirim',
+    'invite': 'Undang',
+    'terms_title': 'Aturan bermain online',
+    'terms_body': '• Bersikaplah sopan: kata kasar, hinaan, ujaran kebencian, dan pelecehan dilarang.
+• Jangan bagikan atau meminta data pribadi (telepon, alamat, media sosial).
+• Dilarang curang, menipu, atau beriklan.
+• Akun yang melanggar dapat ditutup tanpa peringatan; laporan akan ditinjau.
+• Main online untuk usia 13+; chat teks untuk usia 16+.',
+    'terms_accept': 'Saya setuju',
     'transfer_title': 'Ganti ponsel',
     'transfer_create': 'Dapatkan kode transfer',
     'transfer_code_info': 'Masukkan kode ini di Profil pada ponsel baru: progres, nama, liga, dan hadiah ikut pindah. Jangan dibagikan; hanya sekali pakai.',
@@ -6833,6 +7385,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Pulihkan pembelian',
     'remove_ads': 'Padam iklan',
     'premium_pack': 'Pek premium',
+    'hub_welcome': 'Selamat datang!',
+    'hub_welcome_body': '{n} permainan dalam satu aplikasi. Tak pasti mula dari mana? Cuba salah satu ini:',
+    'hub_tips': '• Semua permainan boleh dimain tanpa internet.
+• Setiap permainan menyimpan kemajuannya sendiri.
+• Tanpa Iklan dan Premium dibeli sekali dan sah untuk semua permainan di sini.',
+    'hub_browse': 'Lihat semua',
+    'rejoin_title': 'Perlawanan belum tamat',
+    'rejoin_body': 'Meja masih bermain. Bot menggantikan anda tadi. Kembali?',
+    'rejoin_yes': 'Kembali',
+    'later': 'Nanti',
+    'invite_title': 'Jemputan meja',
+    'invite_body': '{name} menjemput anda ke meja {game}.',
+    'invite_join': 'Sertai',
+    'call_friend': 'Panggil rakan',
+    'invite_sent': 'Jemputan dihantar',
+    'invite': 'Jemput',
+    'terms_title': 'Peraturan permainan dalam talian',
+    'terms_body': '• Bersopan santun: kata kesat, hinaan, ucapan kebencian dan gangguan dilarang.
+• Jangan kongsi atau minta maklumat peribadi (telefon, alamat, media sosial).
+• Dilarang menipu, memperdaya atau mengiklan.
+• Akaun yang melanggar boleh ditutup tanpa amaran; laporan akan disemak.
+• Permainan dalam talian untuk 13 tahun ke atas; sembang teks untuk 16 ke atas.',
+    'terms_accept': 'Saya bersetuju',
     'transfer_title': 'Tukar telefon',
     'transfer_create': 'Dapatkan kod pemindahan',
     'transfer_code_info': 'Masukkan kod ini dalam Profil pada telefon baharu: kemajuan, nama, liga dan hadiah dipindahkan. Jangan kongsi; sekali guna.',
@@ -7110,6 +7685,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'กู้คืนการซื้อ',
     'remove_ads': 'ลบโฆษณา',
     'premium_pack': 'แพ็กพรีเมียม',
+    'hub_welcome': 'ยินดีต้อนรับ!',
+    'hub_welcome_body': '{n} เกมในแอปเดียว ไม่รู้จะเริ่มตรงไหน? ลองเกมเหล่านี้:',
+    'hub_tips': '• ทุกเกมเล่นได้แบบออฟไลน์
+• แต่ละเกมบันทึกความคืบหน้าแยกกัน
+• ไม่มีโฆษณาและพรีเมียมซื้อครั้งเดียว ใช้ได้กับทุกเกมในแอปนี้',
+    'hub_browse': 'ดูทั้งหมด',
+    'rejoin_title': 'เกมที่ยังเล่นไม่จบ',
+    'rejoin_body': 'โต๊ะยังเล่นอยู่ บอตเล่นแทนคุณระหว่างที่ไม่อยู่ กลับเข้าไปไหม?',
+    'rejoin_yes': 'กลับเข้าเกม',
+    'later': 'ภายหลัง',
+    'invite_title': 'คำเชิญเข้าโต๊ะ',
+    'invite_body': '{name} ชวนคุณเข้าโต๊ะ {game}',
+    'invite_join': 'เข้าร่วม',
+    'call_friend': 'ชวนเพื่อน',
+    'invite_sent': 'ส่งคำเชิญแล้ว',
+    'invite': 'เชิญ',
+    'terms_title': 'กฎการเล่นออนไลน์',
+    'terms_body': '• ให้เกียรติกัน: ห้ามคำหยาบ การดูหมิ่น ถ้อยคำแสดงความเกลียดชัง และการคุกคาม
+• อย่าแชร์หรือขอข้อมูลส่วนตัว (เบอร์โทร ที่อยู่ โซเชียล)
+• ห้ามโกง หลอกลวง หรือโฆษณา
+• บัญชีที่ทำผิดกฎอาจถูกปิดโดยไม่แจ้งล่วงหน้า และจะตรวจสอบทุกการรายงาน
+• เล่นออนไลน์ได้ตั้งแต่อายุ 13 ปี แชตข้อความตั้งแต่ 16 ปี',
+    'terms_accept': 'ยอมรับ',
     'transfer_title': 'เปลี่ยนโทรศัพท์',
     'transfer_create': 'รับรหัสย้ายข้อมูล',
     'transfer_code_info': 'ใส่รหัสนี้ในโปรไฟล์บนโทรศัพท์เครื่องใหม่ ความคืบหน้า ชื่อ ลีก และของขวัญจะย้ายไป อย่าบอกใคร ใช้ได้ครั้งเดียว',
@@ -7387,6 +7985,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Khôi phục giao dịch',
     'remove_ads': 'Gỡ quảng cáo',
     'premium_pack': 'Gói cao cấp',
+    'hub_welcome': 'Chào mừng!',
+    'hub_welcome_body': '{n} trò chơi trong một ứng dụng. Chưa biết bắt đầu từ đâu? Thử một trong số này:',
+    'hub_tips': '• Mọi trò chơi đều chơi được ngoại tuyến.
+• Mỗi trò chơi lưu tiến trình riêng.
+• Gói Không quảng cáo và Premium chỉ mua một lần, dùng cho mọi trò chơi ở đây.',
+    'hub_browse': 'Xem tất cả',
+    'rejoin_title': 'Ván đấu chưa xong',
+    'rejoin_body': 'Bàn vẫn đang chơi. Bot đã chơi thay bạn. Quay lại chứ?',
+    'rejoin_yes': 'Quay lại',
+    'later': 'Để sau',
+    'invite_title': 'Lời mời vào bàn',
+    'invite_body': '{name} mời bạn vào bàn {game}.',
+    'invite_join': 'Tham gia',
+    'call_friend': 'Gọi bạn bè',
+    'invite_sent': 'Đã gửi lời mời',
+    'invite': 'Mời',
+    'terms_title': 'Quy tắc chơi trực tuyến',
+    'terms_body': '• Hãy tôn trọng: cấm chửi bới, xúc phạm, kích động thù ghét và quấy rối.
+• Không chia sẻ hoặc hỏi thông tin cá nhân (điện thoại, địa chỉ, mạng xã hội).
+• Cấm gian lận, lừa đảo và quảng cáo.
+• Tài khoản vi phạm có thể bị khóa không báo trước; báo cáo sẽ được xem xét.
+• Chơi trực tuyến từ 13 tuổi; nhắn tin chữ từ 16 tuổi.',
+    'terms_accept': 'Tôi đồng ý',
     'transfer_title': 'Đổi điện thoại',
     'transfer_create': 'Lấy mã chuyển',
     'transfer_code_info': 'Nhập mã này ở Hồ sơ trên điện thoại mới: tiến trình, tên, giải đấu và quà sẽ được chuyển. Đừng chia sẻ; chỉ dùng một lần.',
@@ -7664,6 +8285,29 @@ const Map<String, Map<String, String>> kWorldStrings = {
     'restore_purchases': 'Ibalik ang mga binili',
     'remove_ads': 'Alisin ang ads',
     'premium_pack': 'Premium pack',
+    'hub_welcome': 'Maligayang pagdating!',
+    'hub_welcome_body': '{n} laro sa iisang app. Hindi alam kung saan magsisimula? Subukan ang isa rito:',
+    'hub_tips': '• Lahat ng laro ay puwedeng laruin nang offline.
+• May sariling progreso ang bawat laro.
+• Ang Walang Ads at Premium ay binibili nang isang beses at gumagana sa lahat ng laro rito.',
+    'hub_browse': 'Tingnan lahat',
+    'rejoin_title': 'Hindi pa tapos na laban',
+    'rejoin_body': 'Naglalaro pa ang mesa. Bot ang pumalit sa iyo. Babalik ka ba?',
+    'rejoin_yes': 'Bumalik',
+    'later': 'Mamaya',
+    'invite_title': 'Imbitasyon sa mesa',
+    'invite_body': 'Inimbitahan ka ni {name} sa mesa ng {game}.',
+    'invite_join': 'Sumali',
+    'call_friend': 'Tawagin ang kaibigan',
+    'invite_sent': 'Naipadala ang imbitasyon',
+    'invite': 'Imbitahan',
+    'terms_title': 'Mga patakaran sa online',
+    'terms_body': '• Maging magalang: bawal ang mura, insulto, mapoot na pananalita at panliligalig.
+• Huwag magbahagi o humingi ng personal na impormasyon (telepono, address, social media).
+• Bawal ang pandaraya, panloloko at pag-aanunsyo.
+• Maaaring isara nang walang babala ang account na lumalabag; sinusuri ang mga ulat.
+• Ang online ay para sa 13 pataas; ang text chat ay para sa 16 pataas.',
+    'terms_accept': 'Sumasang-ayon ako',
     'transfer_title': 'Pagpapalit ng telepono',
     'transfer_create': 'Kumuha ng transfer code',
     'transfer_code_info': 'Ilagay ang code sa Profile ng bagong telepono: ililipat ang progreso, pangalan, liga at regalo. Huwag ibahagi; isang beses lang gumagana.',

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show BuildContext;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/achievements.dart';
@@ -19,6 +20,7 @@ import 'game_api.dart';
 import 'services/ads.dart';
 import 'services/audio.dart';
 import 'services/purchases.dart';
+import 'services/cloud_telemetry.dart';
 
 /// Riverpod entry point. Overridden in [bootstrap] with the loaded state.
 final appStateProvider = ChangeNotifierProvider<AppState>((ref) {
@@ -67,6 +69,10 @@ class AppState extends ChangeNotifier {
   /// Merkez uygulamada satın almaları ve reklam aralığını merkez yönetir.
   bool hubManaged = false;
 
+  /// Ana ekran açılınca bir kez çalıştırılacak çevrimiçi iş (merkezden gelen
+  /// davete katılma ya da yarım kalan maça dönme).
+  Future<void> Function(BuildContext context)? pendingOnline;
+
   /// Merkez: geçiş reklamı şimdi gösterilebilir mi (tüm oyunlar için ortak süre).
   bool Function()? adGate;
 
@@ -79,11 +85,17 @@ class AppState extends ChangeNotifier {
       ..music = save.music
       ..haptics = save.haptics;
     analytics.enabled = save.analyticsConsent && !config.kidsMode && !session.emergency.analyticsDisabled;
+    if (!hubManaged) {
+      unawaited(CloudTelemetry.init(crashReports: !config.kidsMode, measurement: analytics.enabled));
+    } else {
+      unawaited(CloudTelemetry.setMeasurement(analytics.enabled));
+    }
+    CloudTelemetry.setKey('game', config.gameId);
     unawaited(audio.init().then((_) => audio.startMusic()));
     if (!hubManaged) unawaited(purchases.init(onPurchase));
     if (!needsOnboarding) unawaited(_initAds());
     unawaited(analytics.log('session_start', {'level': save.currentLevel}));
-    unawaited(analytics.flush(NoopSink()));
+    unawaited(analytics.flush(CloudTelemetry.sink));
   }
 
   Future<void> _initAds() async {
@@ -139,12 +151,14 @@ class AppState extends ChangeNotifier {
     save.adConsent = acceptAll && !save.underAge ? 'granted' : 'denied';
     save.analyticsConsent = acceptAll && !save.underAge;
     analytics.enabled = save.analyticsConsent;
+    unawaited(CloudTelemetry.setMeasurement(analytics.enabled));
     changed(saveNow: true);
   }
 
   void setAnalyticsConsent(bool v) {
     save.analyticsConsent = v && !save.underAge;
     analytics.enabled = save.analyticsConsent;
+    unawaited(CloudTelemetry.setMeasurement(analytics.enabled));
     if (!v) unawaited(analytics.clear());
     changed();
   }
@@ -288,7 +302,7 @@ class AppState extends ChangeNotifier {
     session.missions.roll(save, now);
     session.daily.registerVisit(save, now);
     unawaited(audio.resumeAll());
-    unawaited(analytics.flush(NoopSink()));
+    unawaited(analytics.flush(CloudTelemetry.sink));
     changed();
   }
 

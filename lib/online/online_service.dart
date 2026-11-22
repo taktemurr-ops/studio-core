@@ -60,6 +60,22 @@ class Online extends ChangeNotifier {
   bool get ready => profile != null;
   OnlineBackend? get backend => _backend;
 
+  /// Daha önce çevrimiçi oynamış kullanıcıyı açılışta sessizce bağlar
+  /// (davetler gelsin, yarım kalan maç sorulsun). Hiç girmemişse dokunmaz.
+  Future<bool> resumeSession() async {
+    if (ready) return true;
+    if (_backend == null) {
+      if (!OnlineConfig.configured) return false;
+      try {
+        if (Firebase.apps.isEmpty) await Firebase.initializeApp(options: OnlineConfig.options);
+        if (!await FirebaseBackend.hasSession()) return false;
+      } catch (_) {
+        return false;
+      }
+    }
+    return start();
+  }
+
   /// Gerekirse Firebase'i başlatır ve anonim oturum açar.
   Future<bool> start() async {
     if (ready) return true;
@@ -72,6 +88,7 @@ class Online extends ChangeNotifier {
       }
       profile = await _backend!.signIn();
       lastError = null;
+      _listenInvites();
       notifyListeners();
       return true;
     } catch (e) {
@@ -80,6 +97,55 @@ class Online extends ChangeNotifier {
     } finally {
       _starting = false;
     }
+  }
+
+  // ---- Arkadaş davetleri ve maça geri dönüş --------------------------------------
+
+  StreamSubscription<Invite>? _invSub;
+  final _invites = StreamController<Invite>.broadcast();
+
+  /// Uygulama açıkken gelen davetler (engellenenlerden ve eskilerden süzülmüş).
+  Stream<Invite> get invites => _invites.stream;
+
+  void _listenInvites() {
+    _invSub?.cancel();
+    final b = _backend;
+    if (b == null) return;
+    _invSub = b.invites().listen((i) {
+      final p = profile;
+      if (p == null || p.blocked.contains(i.from) || !i.fresh(DateTime.now())) {
+        unawaited(b.deleteInvite(i.id).catchError((_) {}));
+        return;
+      }
+      _invites.add(i);
+    }, onError: (_) {});
+  }
+
+  Future<void> sendInvite(String toUid, String gameId, String code) async {
+    final p = profile;
+    final b = _backend;
+    if (p == null || b == null) return;
+    await b.sendInvite(toUid, Invite('', p.uid, p.name, p.avatar, gameId, code, DateTime.now().millisecondsSinceEpoch));
+  }
+
+  Future<void> dismissInvite(Invite i) async => _backend?.deleteInvite(i.id).catchError((_) {});
+
+  /// Sürmekte olan maçı profile yazar (boş: maç bitti/çıkıldı).
+  Future<void> setActive(String matchId) async {
+    final p = profile;
+    if (p == null || p.active == matchId) return;
+    p.active = matchId;
+    await saveProfile().catchError((_) {});
+  }
+
+  /// Kapanmadan önce oynanan maç hâlâ sürüyorsa ona bağlanır.
+  Future<OnlineMatch?> resumeActive() async {
+    final p = profile;
+    final b = _backend;
+    if (p == null || b == null || p.active.isEmpty) return null;
+    final m = await b.rejoin(p.active).catchError((_) => null);
+    if (m == null) await setActive('');
+    return m;
   }
 
   /// Merkez uygulaması bütün oyunların kayıtlarını buradan okur/yazar
@@ -154,10 +220,13 @@ class OnlineMatchLink implements MatchLink {
   @override
   Stream<(int, String)> get moves => m.moves;
   @override
+  List<(int, String)> get history => m.history;
+  @override
   Future<void> send(String move, {int? asSeat}) => m.send(move, asSeat: asSeat);
   @override
   Future<void> finish(int winner, {bool? iWon}) async {
     await m.finish(winner);
+    unawaited(Online.instance.setActive(''));
     // Lig puanı: rakiplerin ortalamasına göre Elo.
     final b = Online.instance.backend;
     if (b == null) return;

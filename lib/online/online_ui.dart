@@ -13,6 +13,7 @@ import '../app/screens/play.dart';
 import '../app/widgets.dart';
 import '../core/clock.dart';
 import '../core/level_plan.dart';
+import '../core/strings.dart';
 import 'online.dart';
 import 'online_service.dart';
 
@@ -24,7 +25,146 @@ String avatarOf(int i) => avatars[i.clamp(0, avatars.length - 1)];
 Future<bool> _ensureOnline(BuildContext context, AppState app) async {
   final ok = await Online.instance.start();
   if (!ok && context.mounted) showToast(context, app.t('online_unavailable'));
+  if (!ok || !context.mounted) return false;
+  return ensureTerms(context, app);
+}
+
+/// Güncel kural sürümü; metin değişirse artırılır, herkes yeniden onaylar.
+const termsVersion = 1;
+
+/// Çevrimiçi oyun kuralları: ilk girişte (ve kurallar değişince) gösterilir,
+/// onaylanmadan lobi, sohbet ve hediye açılmaz.
+Future<bool> ensureTerms(BuildContext context, AppState app) async {
+  final p = Online.instance.profile;
+  if (p == null) return false;
+  if (p.terms >= termsVersion) return true;
+  final ok = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _TermsDialog(app: app),
+      ) ??
+      false;
+  if (ok) {
+    p.terms = termsVersion;
+    unawaited(Online.instance.saveProfile());
+  }
   return ok;
+}
+
+class _TermsDialog extends StatefulWidget {
+  final AppState app;
+  const _TermsDialog({required this.app});
+
+  @override
+  State<_TermsDialog> createState() => _TermsDialogState();
+}
+
+class _TermsDialogState extends State<_TermsDialog> {
+  bool _checked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final app = widget.app;
+    return AlertDialog(
+      key: const ValueKey('terms-dialog'),
+      title: Text(app.t('terms_title')),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(app.t('terms_body')),
+          const SizedBox(height: 12),
+          CheckboxListTile(
+            key: const ValueKey('terms-check'),
+            contentPadding: EdgeInsets.zero,
+            value: _checked,
+            onChanged: (v) => setState(() => _checked = v ?? false),
+            title: Text(app.t('terms_accept')),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(app.t('cancel'))),
+        FilledButton(
+          key: const ValueKey('terms-ok'),
+          onPressed: _checked ? () => Navigator.pop(context, true) : null,
+          child: Text(app.t('ok')),
+        ),
+      ],
+    );
+  }
+}
+
+/// Bir davete ya da yarım kalan maça götürmek için: istenen oyunu açar ve
+/// [action]'ı o oyunun ekranında çalıştırır. Oyun bu uygulamada yoksa false.
+typedef OpenForGame = Future<bool> Function(String gameId, Future<void> Function(BuildContext context, AppState app) action);
+
+/// Açılışta bir kez bağlanır: arkadaş davetlerini dinler, daha önce çevrimiçi
+/// oynamış kullanıcıyı sessizce bağlar ve yarım kalan maçı sorar.
+class OnlineHost {
+  OnlineHost._();
+  static StreamSubscription<Invite>? _sub;
+  static bool _asked = false;
+
+  static Future<void> attach(BuildContext context, Strings s, String Function(String gameId) gameName, OpenForGame open) async {
+    if (!Online.instance.available) return;
+    _sub ??= Online.instance.invites.listen((i) {
+      if (context.mounted) unawaited(_invite(context, s, i, gameName(i.gameId), open));
+    });
+    if (_asked) return;
+    _asked = true;
+    if (!await Online.instance.resumeSession()) return;
+    final m = await Online.instance.resumeActive();
+    if (m == null || !context.mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        key: const ValueKey('rejoin-dialog'),
+        title: Text(s.t('rejoin_title')),
+        content: Text(s.t('rejoin_body')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(s.t('later'))),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(s.t('rejoin_yes'))),
+        ],
+      ),
+    );
+    if (ok == true && await open(m.gameId, (c, app) => openTable(c, app, m))) return;
+    await m.leave();
+    await Online.instance.setActive('');
+  }
+
+  static Future<void> _invite(BuildContext context, Strings s, Invite i, String game, OpenForGame open) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        key: const ValueKey('invite-dialog'),
+        title: Text('${avatarOf(i.avatar)}  ${s.t('invite_title')}'),
+        content: Text(s.t('invite_body', {'name': i.name, 'game': game})),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(s.t('later'))),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(s.t('invite_join'))),
+        ],
+      ),
+    );
+    unawaited(Online.instance.dismissInvite(i));
+    if (ok == true) await open(i.gameId, (c, app) => joinByInvite(c, app, i.code));
+  }
+}
+
+/// Davetteki kodla masaya oturur.
+Future<void> joinByInvite(BuildContext context, AppState app, String code) async {
+  if (!await _ensureOnline(context, app) || !context.mounted) return;
+  final m = await Online.instance.backend!.joinByCode(code).catchError((_) => null);
+  if (!context.mounted) return;
+  if (m == null) {
+    showToast(context, app.t('code_not_found'));
+    return;
+  }
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => WaitingRoom(app: app, match: m)));
+}
+
+/// Süren bir maçın masasını açar (geri dönüşte geçmiş hamleler yeniden oynanır).
+Future<void> openTable(BuildContext context, AppState app, OnlineMatch m) async {
+  final spec = app.session.planner.run(GameModeId.online, m.seed, difficulty: 4);
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => OnlineTable(app: app, match: m, spec: spec)));
 }
 
 /// Oyunun çevrimiçi lobisi: hızlı eşleşme, arkadaş daveti, kodla katılma.
@@ -173,6 +313,7 @@ class _WaitingRoomState extends State<WaitingRoom> {
     if (m.status == MatchStatus.playing && !_started) {
       _started = true;
       final spec = app.session.planner.run(GameModeId.online, m.seed, difficulty: 4);
+      unawaited(Online.instance.setActive(m.id));
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => OnlineTable(app: app, match: m, spec: spec)));
     }
   }
@@ -183,6 +324,39 @@ class _WaitingRoomState extends State<WaitingRoom> {
     _auto?.cancel();
     if (!_started) m.leave();
     super.dispose();
+  }
+
+  /// Arkadaş listesinden seçilene uygulama içi davet gönderir.
+  Future<void> _callFriend() async {
+    final friends = await Online.instance.backend!.friends().catchError((_) => <Profile>[]);
+    if (!mounted) return;
+    final sent = <String>{};
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, set) => SafeArea(
+          child: friends.isEmpty
+              ? Padding(padding: const EdgeInsets.all(24), child: Text(app.t('no_friends'), textAlign: TextAlign.center))
+              : ListView(shrinkWrap: true, children: [
+                  for (final f in friends)
+                    ListTile(
+                      leading: Text(avatarOf(f.avatar), style: const TextStyle(fontSize: 26)),
+                      title: Text(f.name),
+                      trailing: sent.contains(f.uid)
+                          ? const Icon(Icons.check_circle)
+                          : FilledButton(
+                              onPressed: () async {
+                                await Online.instance.sendInvite(f.uid, m.gameId, m.code).catchError((_) {});
+                                set(() => sent.add(f.uid));
+                                if (mounted) showToast(context, app.t('invite_sent'));
+                              },
+                              child: Text(app.t('invite')),
+                            ),
+                    ),
+                ]),
+        ),
+      ),
+    );
   }
 
   @override
@@ -216,6 +390,15 @@ class _WaitingRoomState extends State<WaitingRoom> {
           const SizedBox(height: 12),
           const Center(child: CircularProgressIndicator()),
           const SizedBox(height: 12),
+          if (m.isHost && _private) ...[
+            FilledButton.tonalIcon(
+              key: const ValueKey('call-friend'),
+              icon: const Icon(Icons.person_add_alt_1),
+              label: Text(app.t('call_friend')),
+              onPressed: _callFriend,
+            ),
+            const SizedBox(height: 8),
+          ],
           if (m.isHost)
             OutlinedButton.icon(
               icon: const Icon(Icons.smart_toy),

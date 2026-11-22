@@ -21,6 +21,7 @@ import 'services/audio.dart';
 import 'services/prefs_backend.dart';
 import 'services/purchases.dart';
 import 'theme.dart';
+import 'services/cloud_telemetry.dart';
 
 /// Shared entry point used by every game's `main()`.
 void bootstrap(GameConfig config) {
@@ -34,9 +35,11 @@ void bootstrap(GameConfig config) {
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
       errors.record(ErrorCategory.crash, details.exceptionAsString());
+      CloudTelemetry.recordFlutter(details);
     };
     PlatformDispatcher.instance.onError = (error, stack) {
       errors.record(ErrorCategory.crash, error, fatal: true);
+      CloudTelemetry.recordError(error, stack, fatal: true);
       return true;
     };
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -39,6 +41,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _startupMessages() {
     final app = ref.read(appStateProvider);
+    final pending = app.pendingOnline;
+    if (pending != null) {
+      app.pendingOnline = null;
+      pending(context);
+    }
+    if (!app.hubManaged) {
+      unawaited(OnlineHost.attach(context, app.strings, (_) => app.title, (gameId, action) async {
+        if (gameId != app.config.gameId || !mounted) return false;
+        await action(context, app);
+        return true;
+      }));
+    }
     final r = app.startup;
     if (r == null || !mounted) return;
     if (r.safeMode) showToast(context, app.t('safe_mode'));
