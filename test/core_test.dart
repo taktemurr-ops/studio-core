@@ -49,12 +49,13 @@ void main() {
       expect(p.spec(1250).toJson(), equals(p.spec(1250).toJson()));
       expect(p.spec(1250).seed == p.spec(1251).seed, isFalse);
     });
-    test('500 worlds, sources and milestones', () {
-      expect(p.worldCount, 500);
+    test('1000 worlds, sources and milestones', () {
+      expect(p.worldCount, 1000);
       expect(p.spec(1).source, LevelSource.starter);
       expect(p.spec(5000).source, LevelSource.extended);
       expect(p.spec(40000).source, LevelSource.procedural);
-      expect(p.spec(60000).source, LevelSource.endless);
+      expect(p.spec(90000).source, LevelSource.procedural);
+      expect(p.spec(120000).source, LevelSource.endless);
       expect(p.spec(3000).milestone, isTrue);
       expect(p.spec(3000).reward, greaterThan(1000));
       expect(p.spec(250).world, 3);
