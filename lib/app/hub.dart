@@ -38,6 +38,10 @@ class HubConfig {
   /// Families of variants shown as one tile that opens its own list.
   final List<HubGroup> groups;
 
+  /// Optional headings on the home screen. Each section lists game and group
+  /// ids in order; anything not listed is shown at the end without a heading.
+  final List<HubSection> sections;
+
   const HubConfig({
     required this.hubId,
     required this.title,
@@ -46,6 +50,7 @@ class HubConfig {
     required this.icon,
     required this.games,
     this.groups = const [],
+    this.sections = const [],
   });
 
   /// Every game in the hub, including those inside groups.
@@ -54,6 +59,13 @@ class HubConfig {
   String localized(List<String> l, String lang) {
     return Strings.pick(l, lang);
   }
+}
+
+/// A heading on the hub's home screen with the games (and groups) under it.
+class HubSection {
+  final List<String> title;
+  final List<String> ids;
+  const HubSection({required this.title, required this.ids});
 }
 
 /// A tile on the hub's home screen that opens a list of variant games.
@@ -351,6 +363,8 @@ class _HubConsentPage extends StatelessWidget {
   }
 }
 
+typedef _Entry = (String, List<String>, List<String>, Color, IconData, VoidCallback, bool);
+
 class HubHome extends StatefulWidget {
   final HubConfig hub;
   final HubServices services;
@@ -398,7 +412,7 @@ class _HubHomeState extends State<HubHome> {
     final hub = widget.hub;
     final lang = widget.lang;
     final group = widget.group;
-    final entries = <(String, List<String>, List<String>, Color, IconData, VoidCallback, bool)>[
+    final entries = <_Entry>[
       if (group == null)
         for (final g in hub.groups)
           (g.id, g.title, ['${g.games.length} · ${hub.localized(g.tagline, lang)}'], g.seedColor, g.icon,
@@ -429,18 +443,28 @@ class _HubHomeState extends State<HubHome> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               sliver: SliverToBoxAdapter(child: _featuredCard(context, featured)),
             ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverGrid.builder(
-              gridDelegate: delegate,
-              itemCount: entries.length,
-              itemBuilder: (context, i) {
-                final (id, title, tagline, color, icon, onTap, isGroup) = entries[i];
-                return _tile(context, id, title, tagline, color, icon, onTap,
-                    trailing: isGroup ? Icons.chevron_right_rounded : Icons.play_arrow_rounded);
-              },
+          for (final (heading, list) in _sectioned(entries, group == null ? hub.sections : const [])) ...[
+            if (heading != null)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 16, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Text('${hub.localized(heading, lang)} · ${list.length}',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                ),
+              ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              sliver: SliverGrid.builder(
+                gridDelegate: delegate,
+                itemCount: list.length,
+                itemBuilder: (context, i) {
+                  final (id, title, tagline, color, icon, onTap, isGroup) = list[i];
+                  return _tile(context, id, title, tagline, color, icon, onTap,
+                      trailing: isGroup ? Icons.chevron_right_rounded : Icons.play_arrow_rounded);
+                },
+              ),
             ),
-          ),
+          ],
           if (sisters.isNotEmpty) ...[
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -465,6 +489,21 @@ class _HubHomeState extends State<HubHome> {
         ]);
       }),
     );
+  }
+
+  /// Girdileri bölümlere ayırır; hiçbir bölümde olmayanlar başlıksız en sona.
+  List<(List<String>?, List<_Entry>)> _sectioned(List<_Entry> entries, List<HubSection> sections) {
+    if (sections.isEmpty) return [(null, entries)];
+    final byId = {for (final e in entries) e.$1: e};
+    final used = <String>{};
+    final out = <(List<String>?, List<_Entry>)>[];
+    for (final s in sections) {
+      final list = [for (final id in s.ids) if (byId[id] != null && used.add(id)) byId[id]!];
+      if (list.isNotEmpty) out.add((s.title, list));
+    }
+    final rest = [for (final e in entries) if (!used.contains(e.$1)) e];
+    if (rest.isNotEmpty) out.add((null, rest));
+    return out;
   }
 
   /// Ana ekranın başındaki "haftanın oyunu" kartı.
