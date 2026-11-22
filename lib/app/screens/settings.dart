@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/strings.dart';
 import '../adaptive.dart';
 import '../app_state.dart';
+import '../services/reminders.dart';
 import '../widgets.dart';
 import 'onboarding.dart';
 import 'tutorial.dart';
@@ -29,6 +30,15 @@ class SettingsScreen extends ConsumerWidget {
                 DropdownMenuItem(value: l, child: Text(Strings.languageNames[l]!)),
             ],
           ),
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.notifications_active),
+          title: Text(app.t('reminder_setting')),
+          value: s.reminders,
+          onChanged: (v) async {
+            final ok = await Reminders.set(v, title: app.t('reminder_title'), body: app.t('reminder_body'));
+            app.updateSettings((x) => x.reminders = v && ok);
+          },
         ),
         SwitchListTile(
           secondary: const Icon(Icons.volume_up),

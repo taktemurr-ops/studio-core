@@ -62,6 +62,9 @@ class SaveData {
   // ---- Settings --------------------------------------------------------------
   String language = '';
   bool sound = true;
+
+  /// Günlük hatırlatma bildirimi (varsayılan kapalı; kullanıcı açar).
+  bool reminders = false;
   bool music = true;
   bool haptics = true;
   bool reducedMotion = false;
@@ -178,6 +181,7 @@ class SaveData {
         'recentResults': recentResults,
         'language': language,
         'sound': sound,
+        'reminders': reminders,
         'music': music,
         'haptics': haptics,
         'reducedMotion': reducedMotion,
@@ -266,6 +270,7 @@ class SaveData {
     d.recentResults = rr is List ? rr.whereType<bool>().toList() : <bool>[];
     d.language = _s(j['language'], '');
     d.sound = _b(j['sound'], true);
+    d.reminders = _b(j['reminders'], false);
     d.music = _b(j['music'], true);
     d.haptics = _b(j['haptics'], true);
     d.reducedMotion = _b(j['reducedMotion'], false);
