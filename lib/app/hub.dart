@@ -501,7 +501,9 @@ class _HubHomeState extends State<HubHome> {
             for (final g in picks.take(3))
               Card(
                 child: ListTile(
-                  leading: CircleAvatar(backgroundColor: g.seedColor.withValues(alpha: 0.18), child: Icon(g.icon, color: g.seedColor)),
+                  leading: hub.coverFor(g.gameId) != null
+                      ? CoverArt(cover: hub.coverFor(g.gameId)!, color: g.seedColor, size: 48, radius: 12)
+                      : CircleAvatar(backgroundColor: g.seedColor.withValues(alpha: 0.18), child: Icon(g.icon, color: g.seedColor)),
                   title: Text(hub.localized(g.title, widget.lang), style: const TextStyle(fontWeight: FontWeight.w700)),
                   subtitle: Text(hub.localized(g.tagline, widget.lang), maxLines: 2, overflow: TextOverflow.ellipsis),
                   trailing: const Icon(Icons.play_arrow_rounded),
@@ -587,7 +589,7 @@ class _HubHomeState extends State<HubHome> {
           crossAxisCount: cols,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: 2.6,
+          childAspectRatio: 3.0,
         );
         final featured = group == null && hub.games.length > 1 ? hub.games[weekIndex(DateTime.now()) % hub.games.length] : null;
         final sisters = group == null && (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
