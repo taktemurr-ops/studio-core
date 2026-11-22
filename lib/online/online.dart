@@ -163,6 +163,9 @@ abstract class OnlineBackend {
 
   /// Hediye ilet (alıcının profil sayacına işlenir).
   Future<void> recordGift(String toUid, String gift);
+
+  /// Çevrimiçi hesabı ve sunucudaki bütün verisini siler.
+  Future<void> deleteAccount();
 }
 
 // ---- Yardımcılar -----------------------------------------------------------------
@@ -385,6 +388,21 @@ class MemoryBackend implements OnlineBackend {
 
   @override
   Future<void> block(String target) async => _me!.blocked.add(target);
+
+  @override
+  Future<void> deleteAccount() async {
+    final p = server.profiles.remove(uid);
+    if (p != null) server.codes.remove(p.code);
+    server.friends.remove(uid);
+    for (final f in server.friends.values) {
+      f.remove(uid);
+    }
+    server.blobs.removeWhere((k, _) => k.startsWith('$uid/'));
+    for (final b in server.boards.values) {
+      b.remove(uid);
+    }
+    _me = null;
+  }
 
   @override
   Future<void> recordGift(String toUid, String gift) async {

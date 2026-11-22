@@ -195,6 +195,24 @@ class FirebaseBackend implements OnlineBackend {
   }
 
   @override
+  Future<void> deleteAccount() async {
+    final me = _me;
+    final friends = await db.collection('users').doc(uid).collection('friends').get();
+    for (final f in friends.docs) {
+      await db.collection('users').doc(f.id).collection('friends').doc(uid).delete().catchError((_) {});
+      await f.reference.delete();
+    }
+    final blobs = await db.collection('saves').doc(uid).collection('blobs').get();
+    for (final b in blobs.docs) {
+      await b.reference.delete();
+    }
+    if (me != null) await db.collection('codes').doc(me.code).delete().catchError((_) {});
+    await db.collection('users').doc(uid).delete();
+    await auth.currentUser?.delete();
+    _me = null;
+  }
+
+  @override
   Future<void> recordGift(String toUid, String gift) =>
       db.collection('users').doc(toUid).update({'gifts.$gift': FieldValue.increment(1)});
 }

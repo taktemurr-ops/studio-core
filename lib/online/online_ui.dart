@@ -600,6 +600,26 @@ class _OnlineProfileScreenState extends State<OnlineProfileScreen> {
               if (mounted) showToast(context, app.t(ok ? 'cloud_done' : 'code_not_found'));
             },
           ),
+          const SizedBox(height: 24),
+          TextButton.icon(
+            icon: const Icon(Icons.delete_forever, color: Colors.red),
+            label: Text(app.t('delete_account'), style: const TextStyle(color: Colors.red)),
+            onPressed: () async {
+              final yes = await showDialog<bool>(
+                context: context,
+                builder: (c) => AlertDialog(
+                  content: Text(app.t('delete_account_q')),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(c, false), child: Text(app.t('cancel'))),
+                    FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(app.t('delete_account'))),
+                  ],
+                ),
+              );
+              if (yes != true) return;
+              await Online.instance.deleteAccount();
+              if (mounted) Navigator.pop(context);
+            },
+          ),
         ]),
       ),
     );

@@ -82,6 +82,13 @@ class Online extends ChangeNotifier {
     }
   }
 
+  /// Hesabı ve sunucudaki verileri sil; çevrimiçi baştan başlar.
+  Future<void> deleteAccount() async {
+    await _backend?.deleteAccount();
+    profile = null;
+    notifyListeners();
+  }
+
   Future<void> saveProfile() async {
     final p = profile;
     if (p == null) return;
