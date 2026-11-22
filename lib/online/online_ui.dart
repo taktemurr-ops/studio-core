@@ -81,7 +81,7 @@ class _OnlineLobbyState extends State<OnlineLobby> {
         IconButton(
             icon: const Icon(Icons.account_circle),
             tooltip: app.t('profile'),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(app: app)))),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OnlineProfileScreen(app: app)))),
       ]),
       body: ContentWidth(
         child: ListView(padding: const EdgeInsets.all(16), children: [
@@ -475,15 +475,15 @@ class _OnlineTableState extends State<OnlineTable> {
 }
 
 /// Profil: ad, avatar, 16+ beyanı, arkadaşlar, hediyeler, lig, bulut kayıt.
-class ProfileScreen extends StatefulWidget {
+class OnlineProfileScreen extends StatefulWidget {
   final AppState app;
-  const ProfileScreen({super.key, required this.app});
+  const OnlineProfileScreen({super.key, required this.app});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<OnlineProfileScreen> createState() => _OnlineProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _OnlineProfileScreenState extends State<OnlineProfileScreen> {
   final _name = TextEditingController();
   final _friend = TextEditingController();
   List<Profile> _friends = const [];
