@@ -486,6 +486,7 @@ class OnlineProfileScreen extends StatefulWidget {
 class _OnlineProfileScreenState extends State<OnlineProfileScreen> {
   final _name = TextEditingController();
   final _friend = TextEditingController();
+  final _transfer = TextEditingController();
   List<Profile> _friends = const [];
 
   AppState get app => widget.app;
@@ -600,6 +601,47 @@ class _OnlineProfileScreenState extends State<OnlineProfileScreen> {
               if (mounted) showToast(context, app.t(ok ? 'cloud_done' : 'code_not_found'));
             },
           ),
+          const SizedBox(height: 16),
+          SectionTitle(app.t('transfer_title')),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.phone_android),
+            label: Text(app.t('transfer_create')),
+            onPressed: () async {
+              final code = await Online.instance.createTransfer();
+              if (!mounted || code == null) return;
+              await showDialog<void>(
+                context: context,
+                builder: (c) => AlertDialog(
+                  title: SelectableText(code, style: const TextStyle(letterSpacing: 3, fontWeight: FontWeight.w800)),
+                  content: Text(app.t('transfer_code_info')),
+                  actions: [
+                    TextButton(onPressed: () => Clipboard.setData(ClipboardData(text: code)), child: const Icon(Icons.copy)),
+                    FilledButton(onPressed: () => Navigator.pop(c), child: Text(app.t('cloud_done'))),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _transfer,
+                maxLength: 12,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(hintText: app.t('transfer_enter'), counterText: ''),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: () async {
+                final ok = await Online.instance.claimTransfer(_transfer.text);
+                if (!mounted) return;
+                showToast(context, app.t(ok ? 'transfer_done' : 'code_not_found'));
+              },
+              child: const Icon(Icons.download),
+            ),
+          ]),
           const SizedBox(height: 24),
           TextButton.icon(
             icon: const Icon(Icons.delete_forever, color: Colors.red),

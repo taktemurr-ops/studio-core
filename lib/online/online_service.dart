@@ -82,6 +82,27 @@ class Online extends ChangeNotifier {
     }
   }
 
+  /// Merkez uygulaması bütün oyunların kayıtlarını buradan okur/yazar
+  /// (telefon değişiminde hepsi birlikte taşınır).
+  Future<Map<String, String>> Function()? exportAll;
+  Future<void> Function(Map<String, String> blobs)? importAll;
+
+  Future<String?> createTransfer() async {
+    final b = _backend;
+    if (b == null || exportAll == null) return null;
+    return b.createTransfer(await exportAll!());
+  }
+
+  Future<bool> claimTransfer(String code) async {
+    final b = _backend;
+    if (b == null) return false;
+    final blobs = await b.claimTransfer(code.trim());
+    if (blobs == null) return false;
+    await importAll?.call(blobs);
+    notifyListeners();
+    return true;
+  }
+
   /// Hesabı ve sunucudaki verileri sil; çevrimiçi baştan başlar.
   Future<void> deleteAccount() async {
     await _backend?.deleteAccount();

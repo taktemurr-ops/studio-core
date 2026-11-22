@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../core/game_session.dart';
 import '../core/monetization.dart';
+import '../core/save_data.dart';
 import '../core/save_store.dart';
 import '../core/strings.dart';
 import '../core/telemetry.dart';
@@ -21,6 +22,7 @@ import 'services/ads.dart';
 import 'services/audio.dart';
 import 'services/prefs_backend.dart';
 import 'services/purchases.dart';
+import '../online/online_service.dart';
 import 'studio_apps.dart';
 import 'theme.dart';
 
@@ -175,6 +177,27 @@ class HubServices {
     required this.audio,
   });
 
+  /// Telefon değişimi için: bütün oyunların kayıtları (oyun kimliği → kayıt).
+  void registerTransfer(List<GameConfig> games) {
+    Online.instance.exportAll = () async {
+      for (final st in _states.values) {
+        await st.flushSave();
+      }
+      final out = <String, String>{};
+      for (final g in games) {
+        final d = await SaveStore(backend, prefix: g.gameId).load();
+        out[g.gameId] = d.encode();
+      }
+      return out;
+    };
+    Online.instance.importAll = (blobs) async {
+      for (final e in blobs.entries) {
+        await SaveStore(backend, prefix: e.key).save(SaveData.decode(e.value));
+      }
+      _states.clear();
+    };
+  }
+
   /// Lazily starts a game's session the first time it is opened.
   Future<AppState> stateFor(GameConfig config) async {
     final cached = _states[config.gameId];
@@ -268,6 +291,7 @@ void bootstrapHub(HubConfig hub) {
       audio: AudioService(),
     );
     await services.loadShared();
+    services.registerTransfer(hub.allGames);
     runApp(HubApp(hub: hub, services: services));
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Adaptive.applyOrientationPolicy();

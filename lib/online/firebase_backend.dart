@@ -195,6 +195,42 @@ class FirebaseBackend implements OnlineBackend {
   }
 
   @override
+  Future<String> createTransfer(Map<String, String> blobs) async {
+    final code = makeCode(_r, 12);
+    final ref = db.collection('transfers').doc(code);
+    await ref.set({'by': uid, 'profile': _me?.toJson() ?? {}, 'created': FieldValue.serverTimestamp()});
+    for (final e in blobs.entries) {
+      await ref.collection('blobs').doc(e.key).set({'v': e.value});
+    }
+    return code;
+  }
+
+  @override
+  Future<Map<String, String>?> claimTransfer(String code) async {
+    final ref = db.collection('transfers').doc(code.toUpperCase());
+    final s = await ref.get();
+    if (!s.exists) return null;
+    final old = Profile.fromJson({...Map<String, dynamic>.from(s.data()!['profile'] as Map), 'uid': uid});
+    final me = _me!;
+    me
+      ..name = old.name
+      ..avatar = old.avatar
+      ..age16 = old.age16;
+    me.rating.addAll(old.rating);
+    me.gifts.addAll(old.gifts);
+    await saveProfile(me);
+    final out = <String, String>{};
+    final q = await ref.collection('blobs').get();
+    for (final d in q.docs) {
+      out[d.id] = d.data()['v'] as String;
+      await saveBlob(d.id, out[d.id]!);
+      await d.reference.delete();
+    }
+    await ref.delete();
+    return out;
+  }
+
+  @override
   Future<void> deleteAccount() async {
     final me = _me;
     final friends = await db.collection('users').doc(uid).collection('friends').get();

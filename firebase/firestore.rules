@@ -45,6 +45,16 @@ service cloud.firestore {
                       && (request.resource.data.kind != 't' || request.resource.data.value.size() <= 120);
       }
     }
+    // Telefon değişimi: kodu bilen (12 karakter, tahmin edilemez) tek tek okur; listeleme yok.
+    match /transfers/{code} {
+      allow get, delete: if signedIn();
+      allow create: if signedIn() && request.resource.data.by == request.auth.uid;
+      match /blobs/{key} {
+        allow get, delete: if signedIn();
+        allow list: if signedIn();
+        allow create: if signedIn() && get(/databases/$(db)/documents/transfers/$(code)).data.by == request.auth.uid;
+      }
+    }
     // Şikâyetler: yalnızca yazılır; Firebase konsolundan okunur.
     match /reports/{r} {
       allow create: if signedIn() && request.resource.data.by == request.auth.uid;

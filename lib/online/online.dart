@@ -166,6 +166,14 @@ abstract class OnlineBackend {
 
   /// Çevrimiçi hesabı ve sunucudaki bütün verisini siler.
   Future<void> deleteAccount();
+
+  /// Telefon değişimi: profil ve yedeklerin anlık kopyasını tahmin edilemez
+  /// bir koda bağlar. Kod yeni cihazda bir kez kullanılır.
+  Future<String> createTransfer(Map<String, String> blobs);
+
+  /// Kodu kullanır: eski profili (ad, avatar, lig, hediyeler) bu hesaba
+  /// taşır ve yedekleri döndürür (oyun kimliği → kayıt). Kod yoksa null.
+  Future<Map<String, String>?> claimTransfer(String code);
 }
 
 // ---- Yardımcılar -----------------------------------------------------------------
@@ -266,6 +274,7 @@ class MemoryServer {
   final blobs = <String, String>{};
   final matches = <String, _MemMatchData>{};
   final reports = <Map<String, String>>[];
+  final transfers = <String, (Map<String, Object?>, Map<String, String>)>{};
   final r = math.Random(7);
 }
 
@@ -388,6 +397,30 @@ class MemoryBackend implements OnlineBackend {
 
   @override
   Future<void> block(String target) async => _me!.blocked.add(target);
+
+  @override
+  Future<String> createTransfer(Map<String, String> blobs) async {
+    final code = makeCode(server.r, 12);
+    server.transfers[code] = (_me!.toJson(), Map.of(blobs));
+    return code;
+  }
+
+  @override
+  Future<Map<String, String>?> claimTransfer(String code) async {
+    final t = server.transfers.remove(code.toUpperCase());
+    if (t == null) return null;
+    final old = Profile.fromJson(Map<String, dynamic>.from(t.$1));
+    _me!
+      ..name = old.name
+      ..avatar = old.avatar
+      ..age16 = old.age16;
+    _me!.rating.addAll(old.rating);
+    _me!.gifts.addAll(old.gifts);
+    for (final e in t.$2.entries) {
+      server.blobs['$uid/${e.key}'] = e.value;
+    }
+    return t.$2;
+  }
 
   @override
   Future<void> deleteAccount() async {
