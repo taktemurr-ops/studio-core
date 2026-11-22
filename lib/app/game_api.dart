@@ -30,8 +30,15 @@ abstract class MatchLink {
   /// Koltuk adları (oyuncu takma adları; bot koltukları için boş).
   List<String> get names;
 
-  /// Bu cihazın hamlesini yayınlar.
-  Future<void> send(String move);
+  /// Bu cihazın hamlesini yayınlar. [asSeat]: maçın ev sahibi, botların ve
+  /// bağlantısı kopan oyuncuların yerine oynarken o koltuk adına gönderir.
+  Future<void> send(String move, {int? asSeat});
+
+  /// Botların hamlelerini bu cihaz mı hesaplıyor (maçın ev sahibi).
+  bool get isHost;
+
+  /// Bağlantısı kopan oyuncular: bu koltuklara artık bot oynar.
+  Set<int> get dropped;
 
   /// Rakiplerin hamleleri, sırayla.
   Stream<(int seat, String move)> get moves;
