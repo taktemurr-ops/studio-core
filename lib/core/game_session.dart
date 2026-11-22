@@ -213,6 +213,13 @@ class GameSession {
           coins = 0;
           xp = (xp / 4).ceil();
           break;
+        case GameModeId.versus:
+          // Aynı cihazda oyun: ödül çiftliğine dönmesin.
+          coins = 0;
+          xp = (xp / 4).ceil();
+          break;
+        case GameModeId.online:
+          break;
       }
       reward = Reward(coins: coins, xp: xp, gems: spec.milestone ? 25 : 0);
       reward.applyTo(save);
