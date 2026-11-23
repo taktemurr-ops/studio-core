@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'covers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Visual layer for the five family hubs. Does not touch game state or saves.
 class HubGalleryItem {
@@ -24,8 +25,11 @@ class HubGallery extends StatefulWidget {
   final String subtitle;
   final List<HubGalleryItem> games;
   final String? openingId;
+  final int totalGames;
+  final bool isGroup;
   const HubGallery({super.key, required this.hubId, required this.title,
-    required this.subtitle, required this.games, required this.openingId});
+    required this.subtitle, required this.games, required this.openingId,
+    required this.totalGames, this.isGroup = false});
 
   @override
   State<HubGallery> createState() => _HubGalleryState();
@@ -35,6 +39,42 @@ class _HubGalleryState extends State<HubGallery> {
   int tab = 0;
   String search = '';
   final favorites = <String>{};
+  bool favoritesReady = false;
+
+  String get _favoriteKey => 'hub.gallery.favorites.${widget.hubId}';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getStringList(_favoriteKey) ?? const <String>[];
+      if (!mounted) return;
+      setState(() { favorites.addAll(stored); favoritesReady = true; });
+    } catch (_) {
+      if (mounted) setState(() => favoritesReady = true);
+    }
+  }
+
+  Future<void> _toggleFavorite(String id) async {
+    final previous = Set<String>.of(favorites);
+    setState(() { if (!favorites.add(id)) favorites.remove(id); });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!await prefs.setStringList(_favoriteKey, favorites.toList()..sort())) {
+        throw StateError('Could not persist favorites');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { favorites..clear()..addAll(previous); });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Favoriler kaydedilemedi. Tekrar deneyin.')));
+    }
+  }
   static const gold = Color(0xFFFFC92D);
 
   bool get puzzle => widget.hubId.contains('bulmaca');
@@ -74,6 +114,9 @@ class _HubGalleryState extends State<HubGallery> {
           SliverToBoxAdapter(child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
             child: Row(children: [
+              if (widget.isGroup) IconButton(
+                tooltip: 'Geri', icon: Icon(Icons.arrow_back_rounded, color: ink),
+                onPressed: () => Navigator.of(context).maybePop()),
               Container(
                 padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(color: accent.withValues(alpha: 0.20),
@@ -93,7 +136,7 @@ class _HubGalleryState extends State<HubGallery> {
                 icon: Icon(Icons.search_rounded, color: ink)),
               IconButton(tooltip: 'Hakkında', onPressed: () => showAboutDialog(context: context,
                 applicationName: widget.title,
-                children: [Text('${widget.games.length} oyun, tek merkez uygulama.')]),
+                children: [Text('${widget.totalGames} oyun, tek merkez uygulama.')]),
                 icon: Icon(Icons.settings_outlined, color: ink)),
             ]),
           )),
@@ -126,13 +169,13 @@ class _HubGalleryState extends State<HubGallery> {
             child: _panel(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Oyun merkezim', style: TextStyle(color: ink, fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-              Text('Bu merkezde ${widget.games.length} oyun ve ${favorites.length} favori bulunuyor.',
+              Text('Bu merkezde ${widget.totalGames} oyun ve ${favorites.length} favori bulunuyor.',
                 style: TextStyle(color: faded)),
               const SizedBox(height: 8),
               Text('Her oyunun mevcut kayıt ve ilerleme sistemi korunur.',
                 style: TextStyle(color: faded)),
             ])))),
-          if (tab != 3 && available.isEmpty) SliverToBoxAdapter(child: Padding(
+          if (tab != 3 && favoritesReady && available.isEmpty) SliverToBoxAdapter(child: Padding(
             padding: const EdgeInsets.all(28),
             child: Text(tab == 2 ? 'Henüz favori oyun seçmedin.' : 'Aramana uygun oyun yok.',
               textAlign: TextAlign.center, style: TextStyle(color: faded)))),
@@ -144,7 +187,7 @@ class _HubGalleryState extends State<HubGallery> {
               return SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns, crossAxisSpacing: 12, mainAxisSpacing: 12,
-                  childAspectRatio: 0.88),
+                  childAspectRatio: 0.80),
                 delegate: SliverChildBuilderDelegate((context, i) => _gameTile(available[i]),
                   childCount: available.length),
               );
@@ -189,7 +232,7 @@ class _HubGalleryState extends State<HubGallery> {
         ]),
         const SizedBox(height: 17),
         Row(children: [
-          _pill(Icons.videogame_asset_rounded, '${widget.games.length} Oyun'),
+          _pill(Icons.videogame_asset_rounded, '${widget.totalGames} Oyun'),
           const SizedBox(width: 9),
           _pill(Icons.layers_rounded, 'Tek Merkez'),
         ]),
@@ -243,9 +286,7 @@ class _HubGalleryState extends State<HubGallery> {
               constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
               padding: EdgeInsets.zero, iconSize: 21,
               tooltip: favorites.contains(g.id) ? 'Favorilerden çıkar' : 'Favorilere ekle',
-              onPressed: () => setState(() {
-                if (!favorites.add(g.id)) favorites.remove(g.id);
-              }),
+              onPressed: () => _toggleFavorite(g.id),
               icon: Icon(favorites.contains(g.id) ? Icons.favorite : Icons.favorite_border,
                 color: favorites.contains(g.id) ? const Color(0xFFFE4B9C) : faded)),
           ]),
