@@ -21,4 +21,24 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(CoverArt), findsNWidgets(kinds.length * 3));
   });
+
+  testWidgets('arcade kapakları hatasız çizilir', (tester) async {
+    const kinds = [
+      'snake', 'bricks', 'space', 'runner', 'sky', 'ball', 'target', 'balloons', 'slice', 'mole', 'stack',
+      'helix', 'ring', 'knife', 'lander', 'missile', 'tank', 'cannon', 'rope', 'hole', 'pinball', 'trail',
+      'bomb', 'dig', 'boulder', 'walkers', 'bug', 'bullets', 'fish', 'castle', 'ski', 'apps',
+    ];
+    const labels = ['', 'basket', 'soccer', 'bowling', 'golf', 'volley', 'tennis'];
+    await tester.pumpWidget(MaterialApp(
+      home: SingleChildScrollView(
+        child: Wrap(children: [
+          for (final k in kinds)
+            for (final v in [0, 1, 2])
+              for (final l in (k == 'ball' ? labels : const ['']))
+                CoverArt(cover: GameCover(k, v: v, label: l), color: Colors.indigo, size: 40),
+        ]),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+  });
 }

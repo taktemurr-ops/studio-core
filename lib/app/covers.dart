@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+part 'covers_arcade.dart';
+
 /// Bir oyunun içeriğini anlatan küçük vektör kapak resmi. Merkez listesinde,
 /// "haftanın oyunu" kartında ve oyunun ana ekranında simge yerine çizilir;
 /// böylece adı yanıltıcı olabilen oyunlar (ör. kâğıt oyunu "Golf") ilk
@@ -12,7 +14,10 @@ class GameCover {
   /// grid, nonogram, blocks, hexes, bubbles, gems, tubes, maze, pipes,
   /// shelf, pairs, lens, chain, fruit, pins, war, map, pool, hockey, foosball,
   /// pingpong, ships, dots, marbles, cube, hanoi, cars, arrows, jigsaw,
-  /// tangram, lights.
+  /// tangram, lights; arcade: snake, bricks, space, runner, sky, ball,
+  /// target, balloons, slice, mole, stack, helix, ring, knife, lander,
+  /// missile, tank, cannon, rope, hole, pinball, trail, bomb, dig, boulder,
+  /// walkers, bug, bullets, fish, castle, ski, apps.
   final String kind;
 
   /// Kartta ya da ızgarada gösterilecek kısa yazı (ör. "A", "7", "21").
@@ -898,6 +903,7 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
         }
       }
     default:
+      if (_paintArcadeCover(c, cover, seed)) return;
       _bg(c, seed);
       _text(c, cover.label.isEmpty ? '?' : cover.label, const Offset(50, 50), 40, Colors.white);
   }
