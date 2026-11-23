@@ -553,7 +553,15 @@ class _HubHomeState extends State<HubHome> {
       ));
       widget.services.active = null;
       state.onPaused(); // flush saves when returning to the list
+    } catch (error, stack) {
+      debugPrint('Hub game launch failed: $error\\n$stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Oyun açılamadı. Lütfen tekrar deneyin.')),
+        );
+      }
     } finally {
+      widget.services.active = null;
       if (mounted) setState(() => _opening = null);
     }
   }
