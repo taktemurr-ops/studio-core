@@ -595,6 +595,19 @@ class _HubHomeState extends State<HubHome> {
         openingId: _opening,
         isGroup: group != null,
         totalGames: group?.games.length ?? hub.allGames.length,
+        favoriteGames: [
+          for (final g in hub.allGames)
+            HubGalleryItem(
+              id: g.gameId,
+              title: hub.localized(g.title, lang),
+              subtitle: hub.localized(g.tagline, lang),
+              color: g.seedColor,
+              icon: g.icon,
+              cover: hub.coverFor(g.gameId),
+              group: false,
+              open: () => _open(g),
+            ),
+        ],
         games: [
           for (final (id, title, tagline, color, icon, onTap, isGroup) in entries)
             HubGalleryItem(
