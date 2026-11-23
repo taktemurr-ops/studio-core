@@ -228,7 +228,7 @@ class _HubGalleryState extends State<HubGallery> {
                 child: Icon(g.icon, size: 42, color: accent))
             : LayoutBuilder(builder: (context, c) =>
                 CoverArt(cover: g.cover!, color: g.color,
-                  size: c.maxWidth.clamp(45.0, 110.0), radius: 14)))),
+                  size: c.maxWidth.clamp(45.0, 110.0).toDouble(), radius: 14)))),
           const SizedBox(height: 6),
           Text(g.title, maxLines: 2, overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center, style: TextStyle(fontSize: 12,
