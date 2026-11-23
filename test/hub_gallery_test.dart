@@ -46,6 +46,10 @@ void main() {
     await tester.tap(find.text('Oyna'));
     expect(opened, 1);
 
+    await tester.tap(find.text('Keşfet'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byTooltip('Favorilere ekle').first);
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Favorilere ekle').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Koleksiyon'));
