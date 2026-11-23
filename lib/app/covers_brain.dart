@@ -1,0 +1,128 @@
+part of 'covers.dart';
+
+/// Zihin antrenmanı egzersizlerinin kapak resimleri.
+bool _paintBrainCover(Canvas c, GameCover cover, Color seed) {
+  final v = cover.v;
+  const cols = [Color(0xFFE76F51), Color(0xFF2A9D8F), Color(0xFFE9C46A), Color(0xFF457B9D), Color(0xFF8E7DBE), Color(0xFF6A994E)];
+  const paper = Color(0xFFF7F1E6);
+  const dim = Color(0xFF3B4A66);
+  RRect box(Offset o, double w, double h, [double r = 4]) =>
+      RRect.fromRectAndRadius(Rect.fromCenter(center: o, width: w, height: h), Radius.circular(r));
+  switch (cover.kind) {
+    case 'pads':
+      _bg(c, seed, tint: const Color(0xFF243142));
+      for (var i = 0; i < 4; i++) {
+        final o = Offset(32 + (i % 2) * 36.0, 32 + (i ~/ 2) * 36.0);
+        final lit = i == v % 4;
+        final col = cols[i];
+        if (lit) c.drawCircle(o, 24, _p(col.withValues(alpha: 0.35)));
+        c.drawRRect(box(o, 30, 30, 8), _p(lit ? col : col.withValues(alpha: 0.45)));
+      }
+      c.drawCircle(const Offset(50, 50), 6, _p(paper));
+    case 'inkword':
+      _bg(c, seed, tint: const Color(0xFF2A2D4A));
+      final words = cover.label.isEmpty ? const ['KIRMIZI', 'MAVİ', 'YEŞİL'] : cover.label.split(' ');
+      for (var i = 0; i < 3; i++) {
+        final w = words[(i + v) % words.length];
+        _text(c, w, Offset(50, 28 + i * 22.0), w.length > 6 ? 11 : 14, cols[(i * 2 + v + 1) % cols.length]);
+      }
+    case 'numgrid':
+      _bg(c, seed);
+      const n = 4;
+      for (var y = 0; y < n; y++) {
+        for (var x = 0; x < n; x++) {
+          final k = (x * 7 + y * 5 + v * 3) % 16 + 1;
+          final o = Offset(23 + x * 18.0, 23 + y * 18.0);
+          c.drawRRect(box(o, 16, 16, 3), _p(k <= 3 ? const Color(0xFFE9C46A) : paper));
+          _text(c, '$k', o, 9, _ink);
+        }
+      }
+    case 'memgrid':
+      _bg(c, seed, tint: const Color(0xFF243142));
+      for (var y = 0; y < 4; y++) {
+        for (var x = 0; x < 4; x++) {
+          final on = (x * 5 + y * 3 + v) % 4 == 0;
+          final o = Offset(23 + x * 18.0, 23 + y * 18.0);
+          c.drawRRect(box(o, 15, 15, 3), _p(on ? const Color(0xFF7FD1B9) : dim));
+        }
+      }
+    case 'nback':
+      _bg(c, seed);
+      final letters = [const ['A', 'K', 'A', 'M'], const ['7', '3', '7', '1'], const ['■', '●', '■', '▲']][v % 3];
+      for (var i = 0; i < 4; i++) {
+        final o = Offset(17 + i * 22.0, 50);
+        final same = i == 2;
+        c.drawRRect(box(o, 18, 26, 4).shift(const Offset(0, 2)), _p(Colors.black26));
+        c.drawRRect(box(o, 18, 26, 4), _p(same ? const Color(0xFFE9C46A) : paper));
+        _text(c, letters[i], o, 13, _ink);
+      }
+      c.drawArc(const Rect.fromLTWH(17, 26, 44, 26), math.pi, math.pi, false, _stroke(Colors.white, 2));
+    case 'mathq':
+      _bg(c, seed, tint: const Color(0xFF2E4057));
+      final a = 3 + v * 4, b = 2 + v;
+      c.drawRRect(box(const Offset(50, 40), 76, 30, 8), _p(paper));
+      _text(c, '$a + $b', const Offset(50, 40), 16, _ink);
+      for (var i = 0; i < 3; i++) {
+        final o = Offset(24 + i * 26.0, 74);
+        final ok = i == 1;
+        c.drawRRect(box(o, 22, 18, 5), _p(ok ? const Color(0xFF6A994E) : Colors.white.withValues(alpha: 0.85)));
+        _text(c, '${a + b + i - 1}', o, 10, ok ? Colors.white : _ink);
+      }
+    case 'reflex':
+      _bg(c, seed, tint: const Color(0xFF1F2A3A));
+      final col = v == 1 ? const Color(0xFFE76F51) : const Color(0xFF6A994E);
+      for (var r = 3; r >= 1; r--) {
+        c.drawCircle(const Offset(50, 50), 12.0 + r * 9, _p(col.withValues(alpha: 0.12 * r)));
+      }
+      c.drawCircle(const Offset(50, 50), 18, _p(col));
+      c.drawCircle(const Offset(50, 50), 18, _stroke(Colors.white, 2));
+    case 'pattern':
+      _bg(c, seed);
+      for (var i = 0; i < 4; i++) {
+        final o = Offset(16 + i * 22.0, 50);
+        c.drawRRect(box(o, 19, 19, 4), _p(paper));
+        if (i == 3) {
+          _text(c, '?', o, 13, _ink);
+          continue;
+        }
+        c.save();
+        c.translate(o.dx, o.dy);
+        c.rotate(i * math.pi / 4 * (v + 1));
+        final p = Path()
+          ..moveTo(0, -6)
+          ..lineTo(6, 5)
+          ..lineTo(-6, 5)
+          ..close();
+        c.drawPath(p, _p(cols[(v + 3) % cols.length]));
+        c.restore();
+      }
+    case 'rotate':
+      _bg(c, seed, tint: const Color(0xFF2A2D4A));
+      void shape(Offset o, double a, Color col) {
+        c.save();
+        c.translate(o.dx, o.dy);
+        c.rotate(a);
+        for (final q in const [Offset(-6, -12), Offset(-6, -4), Offset(-6, 4), Offset(2, 4)]) {
+          c.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(q.dx, q.dy, 8, 8), const Radius.circular(1.5)), _p(col));
+        }
+        c.restore();
+      }
+      shape(const Offset(30, 50), 0, const Color(0xFFE9C46A));
+      shape(const Offset(72, 50), math.pi / 2 * (v + 1), const Color(0xFF7FD1B9));
+      c.drawArc(const Rect.fromLTWH(38, 26, 26, 22), math.pi * 1.1, math.pi * 0.8, false, _stroke(Colors.white, 2));
+    case 'daily':
+      _bg(c, seed);
+      c.drawRRect(box(const Offset(50, 54), 66, 60, 8), _p(paper));
+      c.drawRRect(RRect.fromRectAndCorners(const Rect.fromLTWH(17, 24, 66, 14), topLeft: const Radius.circular(8), topRight: const Radius.circular(8)),
+          _p(const Color(0xFFE76F51)));
+      for (var i = 0; i < 3; i++) {
+        final y = 48 + i * 13.0;
+        final done = i < (v % 3) + 1;
+        c.drawCircle(Offset(28, y), 4.5, _p(done ? const Color(0xFF6A994E) : dim.withValues(alpha: 0.3)));
+        c.drawRRect(box(Offset(56, y), 40, 5, 2.5), _p(dim.withValues(alpha: done ? 0.5 : 0.25)));
+      }
+    default:
+      return false;
+  }
+  return true;
+}

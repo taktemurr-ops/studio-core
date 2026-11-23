@@ -59,4 +59,19 @@ void main() {
     ));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('zihin kapakları hatasız çizilir', (tester) async {
+    const kinds = ['pads', 'inkword', 'numgrid', 'memgrid', 'nback', 'mathq', 'reflex', 'pattern', 'rotate', 'daily'];
+    await tester.pumpWidget(MaterialApp(
+      home: SingleChildScrollView(
+        child: Wrap(children: [
+          for (final k in kinds)
+            for (final v in [0, 1, 2])
+              for (final l in const ['', 'RED BLUE GREEN'])
+                CoverArt(cover: GameCover(k, v: v, label: l), color: Colors.indigo, size: 40),
+        ]),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+  });
 }
