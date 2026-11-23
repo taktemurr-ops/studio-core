@@ -104,7 +104,7 @@ class _HubGalleryState extends State<HubGallery> {
   Widget build(BuildContext context) {
     final available = widget.games.where((g) =>
         (tab != 2 || favorites.contains(g.id)) &&
-        (search.isEmpty || (g.title + ' ' + g.subtitle).toLowerCase().contains(search.toLowerCase()))).toList();
+        (search.isEmpty || '${g.title} ${g.subtitle}'.toLowerCase().contains(search.toLowerCase()))).toList();
     final featured = widget.games.isEmpty ? null : widget.games.firstWhere(
       (g) => !g.group, orElse: () => widget.games.first);
     return Scaffold(
