@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 part 'covers_arcade.dart';
 part 'covers_brain.dart';
+part 'covers_ozgun.dart';
 part 'covers_word.dart';
 
 /// Bir oyunun içeriğini anlatan küçük vektör kapak resmi. Merkez listesinde,
@@ -910,6 +911,7 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
       if (_paintArcadeCover(c, cover, seed)) return;
       if (_paintWordCover(c, cover, seed)) return;
       if (_paintBrainCover(c, cover, seed)) return;
+      if (_paintOzgunCover(c, cover, seed)) return;
       _bg(c, seed);
       _text(c, cover.label.isEmpty ? '?' : cover.label, const Offset(50, 50), 40, Colors.white);
   }

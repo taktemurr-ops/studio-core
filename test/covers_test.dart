@@ -74,4 +74,20 @@ void main() {
     ));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('özgün oyun kapakları hatasız çizilir', (tester) async {
+    const kinds = [
+      'kilimc', 'cinic', 'ebruc', 'tulipc', 'caravanc', 'callic', 'shadowc', 'nbhdc', 'gearc', 'lightc', 'rotworldc', 'paintc',
+      'dominoc', 'honeyc', 'foldc', 'aquac', 'stallc', 'starsc', 'trainc', 'soundc', 'trioc', 'mushc', 'sandc',
+    ];
+    await tester.pumpWidget(MaterialApp(
+      home: SingleChildScrollView(
+        child: Wrap(children: [
+          for (final k in kinds)
+            for (final v in [0, 1, 2]) CoverArt(cover: GameCover(k, v: v), color: Colors.brown, size: 40),
+        ]),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+  });
 }
