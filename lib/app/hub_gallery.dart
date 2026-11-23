@@ -24,11 +24,12 @@ class HubGallery extends StatefulWidget {
   final String title;
   final String subtitle;
   final List<HubGalleryItem> games;
+  final List<HubGalleryItem> favoriteGames;
   final String? openingId;
   final int totalGames;
   final bool isGroup;
   const HubGallery({super.key, required this.hubId, required this.title,
-    required this.subtitle, required this.games, required this.openingId,
+    required this.subtitle, required this.games, this.favoriteGames = const [], required this.openingId,
     required this.totalGames, this.isGroup = false});
 
   @override
@@ -102,7 +103,9 @@ class _HubGalleryState extends State<HubGallery> {
 
   @override
   Widget build(BuildContext context) {
-    final available = widget.games.where((g) =>
+    final source = tab == 2 && widget.favoriteGames.isNotEmpty
+        ? widget.favoriteGames : widget.games;
+    final available = source.where((g) =>
         (tab != 2 || favorites.contains(g.id)) &&
         (search.isEmpty || '${g.title} ${g.subtitle}'.toLowerCase().contains(search.toLowerCase()))).toList();
     final featured = widget.games.isEmpty ? null : widget.games.firstWhere(
