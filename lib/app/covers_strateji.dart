@@ -115,6 +115,60 @@ bool _paintStratejiCover(Canvas c, GameCover cover, Color seed) {
         c.drawPath(Path()..addPolygon([o + const Offset(-5, -1), o + const Offset(0, -6), o + const Offset(5, -1)], true), _p(const Color(0xFF7A3B28)));
       }
       c.drawCircle(const Offset(62, 56), 4, _stroke(const Color(0xFF3E6FB0), 2));
+    case 'dicebagc': // zar macerası: torba ve üç zar
+      _bg(c, seed, tint: const Color(0xFF4A2E57));
+      final bag = Path()
+        ..moveTo(30, 40)
+        ..quadraticBezierTo(22, 78, 50, 82)
+        ..quadraticBezierTo(78, 78, 70, 40)
+        ..close();
+      c.drawPath(bag, _p(const Color(0xFFB38B5D)));
+      c.drawLine(const Offset(32, 42), const Offset(68, 42), _stroke(const Color(0xFF6E4E2E), 3));
+      const faces = [Color(0xFFB0563B), Color(0xFF3E6FB0), Color(0xFF7A4E7E)];
+      for (var i = 0; i < 3; i++) {
+        c.save();
+        c.translate(34.0 + i * 16, 30.0 - (i == 1 ? 8 : 0));
+        c.rotate((i - 1) * 0.25 + v * 0.05);
+        final r = RRect.fromRectAndRadius(const Rect.fromLTWH(-8, -8, 16, 16), const Radius.circular(3.5));
+        c.drawRRect(r, _p(const Color(0xFFF4EBDD)));
+        c.drawRRect(r, _stroke(faces[i], 1.4));
+        for (var d = 0; d <= i; d++) {
+          c.drawCircle(Offset(-4.0 + d * 4, -4.0 + d * 4), 1.6, _p(faces[i]));
+        }
+        c.restore();
+      }
+      c.drawCircle(const Offset(50, 64), 5, _p(const Color(0xFFD9A441)));
+    case 'seasoncrownc': // dört mevsim krallık: dört renkli dilim ve taç
+      _bg(c, seed, tint: const Color(0xFF8C6A3F));
+      const sc = [Color(0xFF8DBF6A), Color(0xFFE0A93B), Color(0xFFC0703A), Color(0xFF7FA7C9)];
+      for (var k = 0; k < 4; k++) {
+        c.drawArc(Rect.fromCircle(center: const Offset(50, 54), radius: 30), -math.pi / 2 + k * math.pi / 2 + v * 0.1, math.pi / 2, true, _p(sc[k]));
+      }
+      c.drawCircle(const Offset(50, 54), 16, _p(const Color(0xFFF4EBDD)));
+      final crown = Path()
+        ..moveTo(40, 60)
+        ..lineTo(38, 46)
+        ..lineTo(44, 52)
+        ..lineTo(50, 43)
+        ..lineTo(56, 52)
+        ..lineTo(62, 46)
+        ..lineTo(60, 60)
+        ..close();
+      c.drawPath(crown, _p(const Color(0xFFD9A441)));
+      c.drawPath(crown, _stroke(const Color(0xFF7A5A20), 1));
+    case 'mapjournalc': // harita defteri: kareli sayfa, renkli parçalar, dağ
+      _bg(c, seed, tint: const Color(0xFF4A7A6B));
+      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(18, 18, 64, 64), const Radius.circular(4)), _p(const Color(0xFFF2EAD8)));
+      for (var i = 0; i <= 6; i++) {
+        c.drawLine(Offset(22 + i * 9.3, 22), Offset(22 + i * 9.3, 78), _stroke(const Color(0x22000000), 0.6));
+        c.drawLine(Offset(22, 22 + i * 9.3), Offset(78, 22 + i * 9.3), _stroke(const Color(0x22000000), 0.6));
+      }
+      const mjc = [Color(0xFF4F7F52), Color(0xFFB0563B), Color(0xFFD9B44A), Color(0xFF4A86B8)];
+      const cells = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (3, 1, 3), (4, 1, 3), (4, 2, 3), (1, 3, 1), (2, 3, 1), (2, 4, 1), (4, 4, 2), (5, 4, 2), (5, 5, 2)];
+      for (final (x, y, t) in cells) {
+        c.drawRect(Rect.fromLTWH(22 + x * 9.3 + 0.4, 22 + y * 9.3 + 0.4, 8.5, 8.5), _p(mjc[(t + v) % 4]));
+      }
+      c.drawPath(Path()..addPolygon(const [Offset(52, 62), Offset(58, 50), Offset(64, 62)], true), _p(const Color(0xFF8C8178)));
     default:
       return false;
   }

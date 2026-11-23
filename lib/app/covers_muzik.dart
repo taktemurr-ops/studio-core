@@ -93,6 +93,51 @@ bool _paintMuzikCover(Canvas c, GameCover cover, Color seed) {
         c.drawCircle(o, 11, _p(lanes[(i * 2 + v) % lanes.length]));
       }
       c.drawCircle(const Offset(50, 50), 32, _stroke(const Color(0xFFE9B949), 3));
+    case 'makamc':
+      _bg(c, seed, tint: const Color(0xFF3A2418));
+      // Perde çizgisi: 53 komalı oktavın işaretleri ve öne çıkan makam sesleri.
+      for (var k = 0; k <= 26; k++) {
+        final x = 14 + k * 72 / 26;
+        c.drawLine(Offset(x, 62), Offset(x, k % 13 == 0 ? 50 : 56), _stroke(Colors.white.withValues(alpha: 0.35), 1));
+      }
+      const pts = [0, 4, 9, 11, 15, 20, 22, 26];
+      for (var i = 0; i < pts.length; i++) {
+        final x = 14 + pts[i] * 72 / 26;
+        c.drawCircle(Offset(x, 72 - ((i * 5 + v * 3) % 4) * 5.0), 3.6, _p(lanes[(i + v) % lanes.length]));
+      }
+      final arc = Path()..moveTo(14, 34);
+      arc.quadraticBezierTo(50, 8 + v * 2.0, 86, 34);
+      c.drawPath(arc, _stroke(const Color(0xFFE9B949), 3));
+      c.drawCircle(const Offset(86, 34), 5, _p(paper));
+    case 'gardenc':
+      _bg(c, seed, tint: const Color(0xFF2F3D2B));
+      for (var r = 0; r < 3; r++) {
+        c.drawRect(Rect.fromLTWH(8, 30 + r * 22.0, 84, 4), _p(const Color(0xFF4A3B2A)));
+      }
+      for (var i = 0; i < 5; i++) {
+        final row = (i * 2 + v) % 3;
+        final o = Offset(18 + i * 16.0, 24 + row * 22.0);
+        c.drawLine(o, Offset(o.dx, o.dy + 8), _stroke(const Color(0xFF6FA35A), 2));
+        for (var k = 0; k < 5; k++) {
+          final a = k * 2 * math.pi / 5;
+          c.drawCircle(o + Offset(math.cos(a) * 3.6, math.sin(a) * 3.6), 3.2, _p(lanes[(row * 2 + i) % lanes.length]));
+        }
+        c.drawCircle(o, 2.2, _p(paper));
+      }
+    case 'akortc':
+      _bg(c, seed, tint: const Color(0xFF4A2E1F));
+      c.drawRRect(box(const Offset(50, 30), 12, 50, 3), _p(const Color(0xFF6E4A2F)));
+      c.drawOval(const Rect.fromLTWH(30, 48, 40, 40), _p(const Color(0xFFB07A4F)));
+      c.drawCircle(const Offset(50, 66), 6, _p(const Color(0xFF6E4A2F)));
+      for (var i = 0; i < 3; i++) {
+        c.drawLine(Offset(46 + i * 4.0, 8), Offset(46 + i * 4.0, 84), _stroke(i == v % 3 ? const Color(0xFFE9B949) : paper, i == v % 3 ? 2 : 1));
+      }
+      // Vuru dalgası
+      final w = Path()..moveTo(10, 20);
+      for (var x = 10; x <= 34; x += 2) {
+        w.lineTo(x.toDouble(), 20 + math.sin(x * 0.7) * 5 * (1 - (x - 10) / 30));
+      }
+      c.drawPath(w, _stroke(lanes[1], 2));
     default:
       return false;
   }

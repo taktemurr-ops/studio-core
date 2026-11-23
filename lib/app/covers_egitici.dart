@@ -293,6 +293,47 @@ bool _paintEgiticiCover(Canvas c, GameCover cover, Color seed) {
         c.drawCircle(o + const Offset(7, 9), 4, _p(ink));
       }
       _text(c, '7×8', const Offset(50, 28), 13, kid[0]);
+    case 'feelc':
+      _bg(c, seed, tint: const Color(0xFFFFE8E0));
+      for (var k = 0; k < 2; k++) {
+        final o = Offset(34 + k * 32.0, 50);
+        c.drawCircle(o, 16, _p(const [Color(0xFFFFDDB8), Color(0xFFD9A066), Color(0xFFB5764A)][(k + v) % 3]));
+        c.drawCircle(o + const Offset(-5, -4), 2, _p(ink));
+        c.drawCircle(o + const Offset(5, -4), 2, _p(ink));
+        c.drawArc(Rect.fromCenter(center: o + Offset(0, k == 0 ? 3 : 9), width: 14, height: 9), k == 0 ? 0 : math.pi, math.pi, false, _stroke(ink, 2));
+      }
+      c.drawCircle(const Offset(72, 47), 2.4, _p(const Color(0xFF8EC5E8)));
+    case 'oppc':
+      _bg(c, seed, tint: const Color(0xFFE3EEF7));
+      c.drawCircle(const Offset(32, 52), 18, _p(kid[(v) % kid.length]));
+      c.drawCircle(const Offset(72, 60), 7, _p(kid[(v + 3) % kid.length]));
+      _text(c, '↔', const Offset(52, 30), 18, ink);
+    case 'recyc':
+      _bg(c, seed, tint: const Color(0xFFDDEFE7));
+      const bins = [Color(0xFF3A86C8), Color(0xFFF2C14E), Color(0xFF5BAA6E)];
+      for (var k = 0; k < 3; k++) {
+        final o = Offset(28 + k * 22.0, 62);
+        c.drawRRect(card(o, 18, 24, 4), _p(bins[(k + v) % 3]));
+        c.drawRRect(card(o + const Offset(0, -13), 21, 4, 2), _p(ink));
+      }
+      for (var k = 0; k < 3; k++) {
+        final a = math.pi * 2 * k / 3 - math.pi / 2;
+        c.drawArc(Rect.fromCenter(center: const Offset(50, 28), width: 22, height: 22), a, 1.6, false, _stroke(const Color(0xFF4C956C), 3));
+      }
+    case 'dirc':
+      _bg(c, seed, tint: const Color(0xFFFFEFD6));
+      c.drawRRect(card(const Offset(50, 56), 30, 22, 4), _p(const Color(0xFFC69C6D)));
+      c.drawCircle(const Offset(80, 60), 7, _p(kid[v % kid.length]));
+      c.drawCircle(const Offset(50, 36), 7, _p(kid[(v + 2) % kid.length]));
+      _text(c, '→', const Offset(20, 60), 16, ink);
+    case 'habitc':
+      _bg(c, seed, tint: const Color(0xFFE8F3DF));
+      c.drawCircle(const Offset(30, 34), 10, _p(const Color(0xFFF6C85F)));
+      c.drawRRect(card(const Offset(56, 58), 10, 34, 4), _p(kid[(v + 1) % kid.length]));
+      c.drawRRect(card(const Offset(56, 38), 16, 8, 3), _p(cream));
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(74 + k * 5.0, 30 - k * 5.0), 3.2 - k * 0.6, _stroke(const Color(0xFF8EC5E8), 1.5));
+      }
     default:
       return false;
   }

@@ -8,6 +8,7 @@ part 'covers_brain.dart';
 part 'covers_egitici.dart';
 part 'covers_muzik.dart';
 part 'covers_ozgun.dart';
+part 'covers_ozgun2.dart';
 part 'covers_parti.dart';
 part 'covers_simulasyon.dart';
 part 'covers_strateji.dart';
@@ -918,6 +919,7 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
       if (_paintWordCover(c, cover, seed)) return;
       if (_paintBrainCover(c, cover, seed)) return;
       if (_paintOzgunCover(c, cover, seed)) return;
+      if (_paintOzgun2Cover(c, cover, seed)) return;
       if (_paintBilgiCover(c, cover, seed)) return;
       if (_paintMuzikCover(c, cover, seed)) return;
       if (_paintPartiCover(c, cover, seed)) return;

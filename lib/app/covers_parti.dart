@@ -220,6 +220,44 @@ bool _paintPartiCover(Canvas c, GameCover cover, Color seed) {
         ..close(), _p(sun));
       person(const Offset(20, 74), sea, 0.8);
       person(const Offset(80, 74), coral, 0.8);
+    case 'brokenpenc':
+      _bg(c, seed, tint: const Color(0xFF5A4E8C));
+      // Üç kart: çizim → yazı → çizim; aralarında kırık kalem.
+      card(const Offset(26, 46), 30, 36, -0.16, coral);
+      c.drawCircle(const Offset(26, 44), 7, _stroke(sea, 2.5));
+      c.drawLine(const Offset(20, 52), const Offset(32, 52), _stroke(sea, 2.5));
+      card(const Offset(50, 54), 30, 36, 0.04, sun);
+      for (var k = 0; k < 3; k++) {
+        c.drawRRect(box(Offset(50, 46.0 + k * 7), 20 - k * 4.0, 3.5, 1.5), _p(ink));
+      }
+      card(const Offset(74, 46), 30, 36, 0.18, leaf);
+      c.drawPath(Path()
+        ..moveTo(66, 52)
+        ..quadraticBezierTo(74, 30 + v % 3 * 2.0, 82, 52), _stroke(plum, 2.5));
+      c.save();
+      c.translate(50, 84);
+      c.rotate(-0.25);
+      c.drawRRect(box(const Offset(-12, 0), 20, 6, 2), _p(sun));
+      c.drawRRect(box(const Offset(12, 2), 18, 6, 2), _p(sun));
+      c.drawPath(Path()
+        ..moveTo(21, -1)
+        ..lineTo(28, 2)
+        ..lineTo(21, 5)
+        ..close(), _p(ink));
+      c.restore();
+    case 'heatdialc':
+      _bg(c, seed, tint: const Color(0xFFB5513B));
+      for (var k = 0; k < 12; k++) {
+        final a0 = math.pi - k / 12 * math.pi;
+        final col = Color.lerp(sea, coral, k / 11)!;
+        c.drawArc(Rect.fromCircle(center: const Offset(50, 66), radius: 30), -a0, math.pi / 12 + 0.02, true, _p(col));
+      }
+      final ta = math.pi - (0.25 + (v % 5) * 0.12) * math.pi;
+      c.drawArc(Rect.fromCircle(center: const Offset(50, 66), radius: 30), -ta - 0.18, 0.36, true, _p(sun));
+      c.drawArc(Rect.fromCircle(center: const Offset(50, 66), radius: 30), math.pi, math.pi, false, _stroke(ink, 2.5));
+      c.drawLine(const Offset(50, 66), Offset(50 + 26 * math.cos(ta + 0.3), 66 - 26 * math.sin(ta + 0.3)), _stroke(ink, 3.5));
+      c.drawCircle(const Offset(50, 66), 4, _p(ink));
+      c.drawLine(const Offset(20, 66), const Offset(80, 66), _stroke(ink, 2.5));
     default:
       return false;
   }

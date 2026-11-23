@@ -121,6 +121,31 @@ bool _paintBrainCover(Canvas c, GameCover cover, Color seed) {
         c.drawCircle(Offset(28, y), 4.5, _p(done ? const Color(0xFF6A994E) : dim.withValues(alpha: 0.3)));
         c.drawRRect(box(Offset(56, y), 40, 5, 2.5), _p(dim.withValues(alpha: done ? 0.5 : 0.25)));
       }
+    case 'facename':
+      _bg(c, seed, tint: const Color(0xFF2B3A4A));
+      const skins = [Color(0xFFEBC0A0), Color(0xFF8D5A3B), Color(0xFFD5A07A)];
+      const hairs = [Color(0xFF3B2A20), Color(0xFF1F1A17), Color(0xFFD9B26F)];
+      for (var i = 0; i < 2; i++) {
+        final cx = 32.0 + i * 36;
+        final k = (i + v) % 3;
+        c.drawCircle(Offset(cx, 44), 15, _p(hairs[k]));
+        c.drawOval(Rect.fromCenter(center: Offset(cx, 48), width: 24, height: 28), _p(skins[k]));
+        c.drawCircle(Offset(cx - 5, 47), 1.8, _p(_ink));
+        c.drawCircle(Offset(cx + 5, 47), 1.8, _p(_ink));
+        c.drawArc(Rect.fromCenter(center: Offset(cx, 53), width: 9, height: 5), 0.3, math.pi - 0.6, false, _stroke(const Color(0xFF9E4A47), 1.4));
+        c.drawRRect(box(Offset(cx, 74), 30, 11, 5), _p(paper));
+        c.drawRRect(box(Offset(cx, 74), 18, 3, 1.5), _p(dim.withValues(alpha: 0.6)));
+      }
+    case 'dualtask':
+      _bg(c, seed);
+      c.drawRRect(box(const Offset(50, 32), 76, 34, 8), _p(paper));
+      c.drawLine(const Offset(20, 40), const Offset(80, 40), _stroke(dim.withValues(alpha: 0.3), 4));
+      c.drawLine(const Offset(38, 40), const Offset(62, 40), _stroke(const Color(0xFF6A994E), 4));
+      c.drawCircle(Offset(46 + (v % 3) * 4.0, 31), 7, _p(const Color(0xFF457B9D)));
+      c.drawRRect(box(const Offset(31, 72), 28, 18, 6), _p(const Color(0xFFE76F51)));
+      c.drawRRect(box(const Offset(69, 72), 28, 18, 6), _p(const Color(0xFF6A994E)));
+      _text(c, '✗', const Offset(31, 72), 12, paper);
+      _text(c, '✓', const Offset(69, 72), 12, paper);
     default:
       return false;
   }

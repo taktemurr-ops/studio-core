@@ -1,7 +1,7 @@
 part of 'covers.dart';
 
 /// Bilgi Yarışması oyunlarının kapak resimleri (100×100 mantıksal alan).
-/// Türler: quizc, timelinec, platec, globec, atomc, pawc, duelc, scalec.
+/// Türler: quizc, timelinec, platec, globec, atomc, pawc, duelc, scalec, gaugec, stairc, tfcardc, platterc.
 bool _paintBilgiCover(Canvas c, GameCover cover, Color seed) {
   final v = cover.v;
   const ink = Color(0xFF22303F);
@@ -163,6 +163,83 @@ bool _paintBilgiCover(Canvas c, GameCover cover, Color seed) {
               ..close(),
             _p(paper));
         if ((k == 0) == v.isEven) c.drawCircle(Offset(x, y - 4), 5, _p(const Color(0xFF22303F)));
+      }
+    case 'gaugec':
+      // Tahmin: bir sayı kadranı ve üzerinde kaydırıcı.
+      _bg(c, seed, tint: const Color(0xFF7A5CA8));
+      final arc = Rect.fromCircle(center: const Offset(50, 58), radius: 30);
+      c.drawArc(arc, 3.30, 2.82, false, _stroke(paper.withValues(alpha: 0.35), 8));
+      c.drawArc(arc, 3.30, 1.2 + (v % 3) * 0.5, false, _stroke(const Color(0xFFE9B949), 8));
+      final ang = 3.30 + 1.2 + (v % 3) * 0.5;
+      final tip = Offset(50 + 24 * math.cos(ang), 58 + 24 * math.sin(ang));
+      c.drawLine(const Offset(50, 58), tip, _stroke(paper, 3));
+      c.drawCircle(const Offset(50, 58), 4, _p(paper));
+      final bar = box(const Offset(50, 80), 60, 6, 3);
+      c.drawRRect(bar, _p(paper.withValues(alpha: 0.4)));
+      c.drawCircle(Offset(34 + (v % 3) * 12.0, 80), 6, _p(paper));
+      _text(c, '≈', const Offset(50, 22), 18, paper);
+    case 'stairc':
+      // Sırala: küçükten büyüğe dizilmiş sütunlar ve sıra numaraları.
+      _bg(c, seed, tint: const Color(0xFF3A8D8C));
+      const shades = [Color(0xFF8FB8DE), Color(0xFF4F9A6E), Color(0xFFE9B949), Color(0xFFE07A5F)];
+      for (var k = 0; k < 4; k++) {
+        final h = 16.0 + k * 13;
+        final r = RRect.fromRectAndRadius(Rect.fromLTWH(18 + k * 17.0, 82 - h, 13, h), const Radius.circular(3));
+        _shadowRRect(c, r);
+        c.drawRRect(r, _p(shades[(k + v) % 4]));
+        _text(c, '${k + 1}', Offset(24.5 + k * 17.0, 88), 9, paper);
+      }
+      c.drawLine(const Offset(16, 30), const Offset(82, 18), _stroke(paper.withValues(alpha: 0.7), 2));
+      c.drawPath(
+          Path()
+            ..moveTo(84, 17)
+            ..lineTo(76, 15)
+            ..lineTo(78, 23)
+            ..close(),
+          _p(paper.withValues(alpha: 0.7)));
+    case 'tfcardc':
+      // Doğru mu uydurma mı: iki kart, biri onay biri çarpı.
+      _bg(c, seed, tint: const Color(0xFF4F6D7A));
+      for (var k = 0; k < 2; k++) {
+        final o = Offset(32 + k * 36.0, 52 + (k == v % 2 ? -4.0 : 4.0));
+        final r = box(o, 30, 40, 7);
+        _shadowRRect(c, r);
+        c.drawRRect(r, _p(paper));
+        if (k == 0) {
+          c.drawPath(
+              Path()
+                ..moveTo(o.dx - 8, o.dy)
+                ..lineTo(o.dx - 2, o.dy + 7)
+                ..lineTo(o.dx + 9, o.dy - 8),
+              _stroke(const Color(0xFF4F9A6E), 4));
+        } else {
+          c.drawLine(o + const Offset(-7, -7), o + const Offset(7, 7), _stroke(const Color(0xFFC8553D), 4));
+          c.drawLine(o + const Offset(7, -7), o + const Offset(-7, 7), _stroke(const Color(0xFFC8553D), 4));
+        }
+      }
+      _text(c, '?', const Offset(50, 18), 16, paper);
+    case 'platterc':
+      // Dünya mutfağı: tabak, çatal-bıçak ve tütme.
+      _bg(c, seed, tint: const Color(0xFFB5643C));
+      c.drawCircle(const Offset(50, 58), 25, _p(paper));
+      c.drawCircle(const Offset(50, 58), 17, _stroke(ink.withValues(alpha: 0.18), 2));
+      const foods = [Color(0xFFE9B949), Color(0xFF4F9A6E), Color(0xFFC8553D)];
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(44 + k * 6.0, 58 + (k.isEven ? -3.0 : 3.0)), 5, _p(foods[(k + v) % 3]));
+      }
+      c.drawLine(const Offset(17, 40), const Offset(17, 78), _stroke(paper, 3));
+      for (var k = 0; k < 3; k++) {
+        c.drawLine(Offset(14 + k * 3.0, 34), Offset(14 + k * 3.0, 44), _stroke(paper, 1.6));
+      }
+      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(80, 34, 6, 44), const Radius.circular(3)), _p(paper));
+      for (var k = 0; k < 3; k++) {
+        final x = 40.0 + k * 10;
+        c.drawPath(
+            Path()
+              ..moveTo(x, 30)
+              ..quadraticBezierTo(x - 4, 24, x, 18)
+              ..quadraticBezierTo(x + 4, 12, x, 8),
+            _stroke(paper.withValues(alpha: 0.6), 1.6));
       }
     default:
       return false;
