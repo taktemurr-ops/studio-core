@@ -41,4 +41,22 @@ void main() {
     ));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('kelime kapakları hatasız çizilir', (tester) async {
+    const kinds = [
+      'letters', 'guessrows', 'wheel', 'crossgrid', 'hive', 'wordrack', 'quote', 'ladderw', 'chainw', 'petal',
+      'keyboard', 'pairsw', 'fall', 'sudokuw',
+    ];
+    await tester.pumpWidget(MaterialApp(
+      home: SingleChildScrollView(
+        child: Wrap(children: [
+          for (final k in kinds)
+            for (final v in [0, 1, 2])
+              for (final l in const ['', 'KELİME', 'ΛΕΞΗ'])
+                CoverArt(cover: GameCover(k, v: v, label: l), color: Colors.teal, size: 40),
+        ]),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+  });
 }

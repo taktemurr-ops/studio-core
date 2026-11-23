@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 part 'covers_arcade.dart';
+part 'covers_word.dart';
 
 /// Bir oyunun içeriğini anlatan küçük vektör kapak resmi. Merkez listesinde,
 /// "haftanın oyunu" kartında ve oyunun ana ekranında simge yerine çizilir;
@@ -17,7 +18,9 @@ class GameCover {
   /// tangram, lights; arcade: snake, bricks, space, runner, sky, ball,
   /// target, balloons, slice, mole, stack, helix, ring, knife, lander,
   /// missile, tank, cannon, rope, hole, pinball, trail, bomb, dig, boulder,
-  /// walkers, bug, bullets, fish, castle, ski, apps.
+  /// walkers, bug, bullets, fish, castle, ski, apps; kelime: letters,
+  /// guessrows, wheel, crossgrid, hive, wordrack, quote, ladderw, chainw,
+  /// petal, keyboard, pairsw, fall, sudokuw.
   final String kind;
 
   /// Kartta ya da ızgarada gösterilecek kısa yazı (ör. "A", "7", "21").
@@ -904,6 +907,7 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
       }
     default:
       if (_paintArcadeCover(c, cover, seed)) return;
+      if (_paintWordCover(c, cover, seed)) return;
       _bg(c, seed);
       _text(c, cover.label.isEmpty ? '?' : cover.label, const Offset(50, 50), 40, Colors.white);
   }
