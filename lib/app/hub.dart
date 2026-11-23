@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'covers.dart';
+import 'hub_gallery.dart';
 export 'covers.dart' show GameCover, CoverArt;
 import '../core/game_session.dart';
 import '../core/monetization.dart';
@@ -578,6 +579,23 @@ class _HubHomeState extends State<HubHome> {
       for (final g in group?.games ?? hub.games)
         (g.gameId, g.title, g.tagline, g.seedColor, g.icon, () => _open(g), false),
     ];
+    if (group == null) {
+      return HubGallery(
+        hubId: hub.hubId,
+        title: hub.localized(hub.title, lang),
+        subtitle: hub.localized(hub.tagline, lang),
+        openingId: _opening,
+        games: [
+          for (final (id, title, tagline, color, icon, onTap, isGroup) in entries)
+            HubGalleryItem(
+              id: id, title: hub.localized(title, lang),
+              subtitle: tagline.length == 1 ? tagline.first : hub.localized(tagline, lang),
+              color: color, icon: icon, cover: hub.coverFor(id),
+              group: isGroup, open: onTap,
+            ),
+        ],
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(hub.localized(group?.title ?? hub.title, lang)),
