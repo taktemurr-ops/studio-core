@@ -587,7 +587,7 @@ class _HubHomeState extends State<HubHome> {
       for (final g in group?.games ?? hub.games)
         (g.gameId, g.title, g.tagline, g.seedColor, g.icon, () => _open(g), false),
     ];
-    {
+    if (hub.hubId.startsWith('merkez-')) {
       return HubGallery(
         hubId: hub.hubId,
         title: hub.localized(group?.title ?? hub.title, lang),
