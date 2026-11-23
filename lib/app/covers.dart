@@ -9,6 +9,7 @@ part 'covers_egitici.dart';
 part 'covers_muzik.dart';
 part 'covers_ozgun.dart';
 part 'covers_parti.dart';
+part 'covers_simulasyon.dart';
 part 'covers_strateji.dart';
 part 'covers_word.dart';
 
@@ -922,6 +923,7 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
       if (_paintPartiCover(c, cover, seed)) return;
       if (_paintStratejiCover(c, cover, seed)) return;
       if (_paintEgiticiCover(c, cover, seed)) return;
+      if (_paintSimulasyonCover(c, cover, seed)) return;
       _bg(c, seed);
       _text(c, cover.label.isEmpty ? '?' : cover.label, const Offset(50, 50), 40, Colors.white);
   }

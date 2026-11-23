@@ -1,0 +1,247 @@
+part of 'covers.dart';
+
+/// Boşta ve Simülasyon oyunlarının kapak resimleri (100×100 tuval).
+bool _paintSimulasyonCover(Canvas c, GameCover cover, Color seed) {
+  final v = cover.v;
+  RRect box(Offset o, double w, double h, [double r = 4]) =>
+      RRect.fromRectAndRadius(Rect.fromCenter(center: o, width: w, height: h), Radius.circular(r));
+
+  switch (cover.kind) {
+    case 'simlantern':
+      _bg(c, seed, tint: const Color(0xFF1D2540));
+      final rope = Path()
+        ..moveTo(6, 26)
+        ..quadraticBezierTo(50, 50, 94, 26);
+      c.drawPath(rope, _stroke(const Color(0xFF8A7A6A), 1.5));
+      for (var k = 0; k < 5; k++) {
+        final u = (k + 0.5) / 5;
+        final o = Offset(6 + u * 88, 26 + 4 * u * (1 - u) * 24 + 10);
+        c.drawCircle(o, 11, _p(const Color(0xFFFFD27D).withValues(alpha: 0.25)));
+        c.drawRRect(box(o, 12, 16, 6), _p([const Color(0xFFE4572E), const Color(0xFFF2A516), const Color(0xFFE88DB0)][(k + v) % 3]));
+      }
+      for (var k = 0; k < 4; k++) {
+        c.drawRect(Rect.fromLTWH(4 + k * 24.0, 70.0 - (k % 2) * 8, 20, 30), _p(const Color(0xFF2B2F4A)));
+        c.drawRect(Rect.fromLTWH(11 + k * 24.0, 78.0 - (k % 2) * 8, 6, 7), _p(const Color(0xFFFFD27D)));
+      }
+    case 'simpots':
+      _bg(c, seed, tint: const Color(0xFF8C5A3C));
+      for (var k = 0; k < 3; k++) {
+        final s = 0.7 + k * 0.2;
+        final m = Offset(22 + k * 28.0, 62 - k * 4.0);
+        final pot = Path()
+          ..moveTo(m.dx - 6 * s, m.dy - 18 * s)
+          ..lineTo(m.dx + 6 * s, m.dy - 18 * s)
+          ..quadraticBezierTo(m.dx + 16 * s, m.dy, m.dx + 9 * s, m.dy + 12 * s)
+          ..lineTo(m.dx - 9 * s, m.dy + 12 * s)
+          ..quadraticBezierTo(m.dx - 16 * s, m.dy, m.dx - 6 * s, m.dy - 18 * s)
+          ..close();
+        c.drawPath(pot, _p([const Color(0xFFD08C5B), const Color(0xFF3E7CB1), const Color(0xFFE9B949)][(k + v) % 3]));
+        c.drawLine(Offset(m.dx - 10 * s, m.dy), Offset(m.dx + 10 * s, m.dy), _stroke(const Color(0x66FFFFFF), 2));
+      }
+      _text(c, '+', const Offset(36, 30), 18, Colors.white);
+      _text(c, '=', const Offset(64, 30), 18, Colors.white);
+    case 'simpet':
+      _bg(c, seed, tint: const Color(0xFF8EC5E8));
+      for (final o in const [Offset(36, 54), Offset(50, 46), Offset(64, 54), Offset(50, 60)]) {
+        c.drawCircle(o, 16, _p(Colors.white));
+      }
+      c.drawCircle(const Offset(44, 52), 2.6, _p(const Color(0xFF2B2B3A)));
+      c.drawCircle(const Offset(56, 52), 2.6, _p(const Color(0xFF2B2B3A)));
+      c.drawArc(Rect.fromCenter(center: const Offset(50, 57), width: 8, height: 6), 0, math.pi, false,
+          _stroke(const Color(0xFF2B2B3A), 1.6));
+      c.drawCircle(const Offset(40, 58), 3, _p(const Color(0x66F28CA0)));
+      c.drawCircle(const Offset(60, 58), 3, _p(const Color(0x66F28CA0)));
+      _text(c, '★', Offset(78, 20 + v * 4.0), 14, const Color(0xFFFFD166));
+    case 'simmine':
+      _bg(c, seed, tint: const Color(0xFF4A3B33));
+      c.drawRect(const Rect.fromLTWH(44, 10, 12, 80), _p(const Color(0xFF6B5A4A)));
+      c.drawRect(Rect.fromLTWH(45, 24.0 + v * 12, 10, 12), _p(const Color(0xFFE9B949)));
+      for (var k = 0; k < 3; k++) {
+        final y = 30.0 + k * 22;
+        c.drawRect(Rect.fromLTWH(10, y, 32, 12), _p(const Color(0xFF2E241E)));
+        c.drawRect(Rect.fromLTWH(58, y + 6, 32, 12), _p(const Color(0xFF2E241E)));
+        final gem = Path()
+          ..moveTo(26, y + 1)
+          ..lineTo(31, y + 6)
+          ..lineTo(26, y + 11)
+          ..lineTo(21, y + 6)
+          ..close();
+        c.drawPath(gem, _p([const Color(0xFF7FD1E8), const Color(0xFFB38CD9), const Color(0xFF8FE0A8)][k]));
+      }
+    case 'simfactory':
+      _bg(c, seed, tint: const Color(0xFF5B7DA8));
+      c.drawRect(const Rect.fromLTWH(8, 66, 84, 8), _p(const Color(0xFF3B3F4A)));
+      for (var k = 0; k < 6; k++) {
+        c.drawCircle(Offset(12 + k * 15.0, 74), 4, _p(const Color(0xFF6B7180)));
+      }
+      for (var k = 0; k < 3; k++) {
+        c.drawRRect(box(Offset(24 + k * 26.0, 56), 16, 16, 3),
+            _p([const Color(0xFFE4572E), const Color(0xFFE9B949), const Color(0xFF4F9A6E)][(k + v) % 3]));
+      }
+      c.drawRect(const Rect.fromLTWH(66, 16, 10, 30), _p(const Color(0xFF3B3F4A)));
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(74 + k * 5.0, 12 - k * 2.0), 5.0 + k, _p(const Color(0x88FFFFFF)));
+      }
+    case 'simdiner':
+      _bg(c, seed, tint: const Color(0xFFB5433A));
+      c.drawRect(const Rect.fromLTWH(0, 70, 100, 30), _p(const Color(0xFF7A4E33)));
+      c.drawOval(Rect.fromCenter(center: const Offset(50, 56), width: 56, height: 14), _p(const Color(0xFFF4F1EA)));
+      c.drawArc(Rect.fromCenter(center: const Offset(50, 56), width: 48, height: 44), math.pi, math.pi, true,
+          _p(const Color(0xFFC9CED6)));
+      c.drawCircle(const Offset(50, 32), 3.5, _p(const Color(0xFF8A9099)));
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(24 + k * 26.0, 86), 6, _p(const Color(0xFFE9B949).withValues(alpha: k <= v ? 1.0 : 0.4)));
+      }
+    case 'simfarm':
+      _bg(c, seed, tint: const Color(0xFF8DBF6A));
+      c.drawCircle(const Offset(80, 18), 9, _p(const Color(0xFFFFD166)));
+      for (var r = 0; r < 3; r++) {
+        final y = 46.0 + r * 16;
+        c.drawRRect(box(Offset(50, y), 84, 12, 4), _p(const Color(0xFF7A5230)));
+        for (var k = 0; k < 6; k++) {
+          final x = 14 + k * 14.0;
+          c.drawLine(Offset(x, y + 2), Offset(x, y - 8), _stroke(const Color(0xFF3F7A3F), 2));
+          c.drawCircle(Offset(x, y - 9), 3, _p([const Color(0xFFE3C567), const Color(0xFFD64933), const Color(0xFFE88D2A)][(r + v) % 3]));
+        }
+      }
+    case 'simaqua':
+      _bg(c, seed, tint: const Color(0xFF2E7FA8));
+      c.drawRect(const Rect.fromLTWH(0, 82, 100, 18), _p(const Color(0xFFE6D3A3)));
+      for (var k = 0; k < 4; k++) {
+        final x = 14 + k * 24.0;
+        final p = Path()
+          ..moveTo(x, 86)
+          ..quadraticBezierTo(x + 6, 70, x + 2, 54 + k * 3.0);
+        c.drawPath(p, _stroke(const Color(0xFF3F8F5A), 3));
+      }
+      for (var k = 0; k < 3; k++) {
+        final o = Offset(30 + k * 22.0, 34.0 + (k * 13 + v * 5) % 26);
+        c.drawOval(Rect.fromCenter(center: o, width: 18, height: 10), _p([const Color(0xFFF2A516), const Color(0xFFE4572E), const Color(0xFF7FD1E8)][k]));
+        c.drawPath(
+            Path()
+              ..moveTo(o.dx - 8, o.dy)
+              ..lineTo(o.dx - 14, o.dy - 5)
+              ..lineTo(o.dx - 14, o.dy + 5)
+              ..close(),
+            _p([const Color(0xFFF2A516), const Color(0xFFE4572E), const Color(0xFF7FD1E8)][k]));
+      }
+    case 'simzen':
+      _bg(c, seed, tint: const Color(0xFFD8CBB0));
+      for (var k = 0; k < 6; k++) {
+        c.drawArc(Rect.fromCenter(center: const Offset(36, 62), width: 20.0 + k * 10, height: 14.0 + k * 7), 0, math.pi * 2, false,
+            _stroke(const Color(0x669C8B6E), 1.4));
+      }
+      c.drawOval(Rect.fromCenter(center: const Offset(36, 62), width: 16, height: 10), _p(const Color(0xFF7B7468)));
+      c.drawRRect(box(const Offset(72, 74), 22, 10, 3), _p(const Color(0xFF8C5A3C)));
+      c.drawLine(const Offset(72, 70), const Offset(70, 46), _stroke(const Color(0xFF6B4A2B), 3));
+      for (final o in const [Offset(62, 44), Offset(72, 38), Offset(80, 46)]) {
+        c.drawCircle(o, 8.0 + v, _p(const Color(0xFF4F8F4A)));
+      }
+    case 'simants':
+      _bg(c, seed, tint: const Color(0xFF8C6A4A));
+      c.drawRect(const Rect.fromLTWH(0, 0, 100, 22), _p(const Color(0xFF8DBF6A)));
+      final tunnel = Path()
+        ..moveTo(50, 22)
+        ..lineTo(50, 40)
+        ..lineTo(26, 54)
+        ..moveTo(50, 40)
+        ..lineTo(74, 60)
+        ..lineTo(60, 80);
+      c.drawPath(tunnel, _stroke(const Color(0xFF5A3F2A), 7));
+      for (final o in const [Offset(26, 56), Offset(74, 62), Offset(58, 82)]) {
+        c.drawOval(Rect.fromCenter(center: o, width: 20, height: 12), _p(const Color(0xFF5A3F2A)));
+      }
+      for (var k = 0; k < 3 + v; k++) {
+        final o = Offset(20 + k * 17.0, 13);
+        c.drawCircle(o, 2.2, _p(const Color(0xFF2B1D14)));
+        c.drawCircle(o + const Offset(4, 0), 2.8, _p(const Color(0xFF2B1D14)));
+      }
+    case 'simtown':
+      _bg(c, seed, tint: const Color(0xFF7FB3D5));
+      c.drawRect(const Rect.fromLTWH(0, 72, 100, 28), _p(const Color(0xFF8DBF6A)));
+      const roofs = [Color(0xFFB5433A), Color(0xFF3E7CB1), Color(0xFFE9B949), Color(0xFF7A4E7E)];
+      for (var k = 0; k < 4; k++) {
+        final x = 8 + k * 22.0;
+        final h = 22.0 + (k * 7 + v * 3) % 14;
+        c.drawRect(Rect.fromLTWH(x, 72 - h, 18, h), _p(const Color(0xFFF4EBDC)));
+        c.drawPath(
+            Path()
+              ..moveTo(x - 2, 72 - h)
+              ..lineTo(x + 9, 60 - h)
+              ..lineTo(x + 20, 72 - h)
+              ..close(),
+            _p(roofs[k]));
+        c.drawRect(Rect.fromLTWH(x + 6, 64, 6, 8), _p(const Color(0xFF6B4A2B)));
+      }
+    case 'simstyle':
+      _bg(c, seed, tint: const Color(0xFFE88DB0));
+      c.drawLine(const Offset(50, 14), const Offset(50, 22), _stroke(const Color(0xFF6B6B6B), 2));
+      final hanger = Path()
+        ..moveTo(28, 34)
+        ..lineTo(50, 22)
+        ..lineTo(72, 34);
+      c.drawPath(hanger, _stroke(const Color(0xFF6B6B6B), 2));
+      final dress = Path()
+        ..moveTo(40, 32)
+        ..lineTo(60, 32)
+        ..lineTo(64, 50)
+        ..lineTo(76, 86)
+        ..lineTo(24, 86)
+        ..lineTo(36, 50)
+        ..close();
+      c.drawPath(dress, _p([const Color(0xFF3E7CB1), const Color(0xFFF4F1EA), const Color(0xFF4F9A6E)][v % 3]));
+      for (var k = 0; k < 5; k++) {
+        c.drawCircle(Offset(34 + k * 8.0, 70.0 + (k % 2) * 6), 2.4, _p(const Color(0xFFE9B949)));
+      }
+    case 'simcook':
+      _bg(c, seed, tint: const Color(0xFFE9B949));
+      c.drawRRect(box(const Offset(50, 64), 60, 26, 8), _p(const Color(0xFF3B3F4A)));
+      c.drawLine(const Offset(80, 62), const Offset(94, 56), _stroke(const Color(0xFF3B3F4A), 5));
+      c.drawOval(Rect.fromCenter(center: const Offset(50, 52), width: 58, height: 12), _p(const Color(0xFF6B7180)));
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(38 + k * 12.0, 52), 4.5, _p([const Color(0xFFD64933), const Color(0xFF4F9A6E), const Color(0xFFF2C14E)][(k + v) % 3]));
+      }
+      for (var k = 0; k < 3; k++) {
+        final p = Path()..moveTo(38 + k * 12.0, 42);
+        p.quadraticBezierTo(34 + k * 12.0, 34, 40 + k * 12.0, 26);
+        c.drawPath(p, _stroke(const Color(0x99FFFFFF), 2));
+      }
+    case 'simbee':
+      _bg(c, seed, tint: const Color(0xFFF2C14E));
+      for (var row = 0; row < 3; row++) {
+        final w = 44.0 - row * 9;
+        c.drawRRect(box(Offset(42, 74 - row * 14.0), w, 14, 7), _p(const Color(0xFFD99A1E)));
+        c.drawRRect(box(Offset(42, 74 - row * 14.0), w, 14, 7), _stroke(const Color(0xFF8A5A14), 1.4));
+      }
+      c.drawCircle(const Offset(42, 78), 3.5, _p(const Color(0xFF4A2E0A)));
+      for (var k = 0; k < 2 + v; k++) {
+        final o = Offset(70 + k * 9.0, 24 + k * 14.0);
+        c.drawOval(Rect.fromCenter(center: o, width: 12, height: 8), _p(const Color(0xFFF2C14E)));
+        c.drawLine(o + const Offset(-1, -4), o + const Offset(-1, 4), _stroke(const Color(0xFF2B2B2B), 1.6));
+        c.drawOval(Rect.fromCenter(center: o + const Offset(1, -5), width: 8, height: 6), _p(const Color(0xCCFFFFFF)));
+      }
+    case 'simtea':
+      _bg(c, seed, tint: const Color(0xFF4F7F52));
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(20 + k * 30.0, 18), 16, _p(const Color(0xFF3F6F42)));
+      }
+      c.drawOval(Rect.fromCenter(center: const Offset(50, 76), width: 72, height: 14), _p(const Color(0xFF9C6B3E)));
+      for (var g = 0; g < 2; g++) {
+        final x = 38 + g * 24.0;
+        final glass = Path()
+          ..moveTo(x - 7, 46)
+          ..quadraticBezierTo(x, 60, x - 5, 72)
+          ..lineTo(x + 5, 72)
+          ..quadraticBezierTo(x, 60, x + 7, 46)
+          ..close();
+        c.drawPath(glass, _p(const Color(0xDDB2361F)));
+        c.drawPath(glass, _stroke(const Color(0x88FFFFFF), 1));
+        final steam = Path()..moveTo(x, 42);
+        steam.quadraticBezierTo(x - 4, 36, x + v * 1.0, 28);
+        c.drawPath(steam, _stroke(const Color(0x99FFFFFF), 1.6));
+      }
+    default:
+      return false;
+  }
+  return true;
+}
