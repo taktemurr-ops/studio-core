@@ -237,6 +237,9 @@ class AppState extends ChangeNotifier {
 
   Future<void> maybeInterstitial(LevelOutcome o) async {
     if (!o.showInterstitial || !ads.available) return;
+    // Çocuk oyunlarında geçiş reklamı yok (aile politikası); yalnızca
+    // ebeveynin isteğiyle açılan ödüllü reklamlar kalabilir.
+    if (config.kidsMode) return;
     final gate = adGate;
     if (gate != null && !gate()) return;
     await audio.pauseAll();
