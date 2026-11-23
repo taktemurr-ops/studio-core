@@ -579,12 +579,14 @@ class _HubHomeState extends State<HubHome> {
       for (final g in group?.games ?? hub.games)
         (g.gameId, g.title, g.tagline, g.seedColor, g.icon, () => _open(g), false),
     ];
-    if (group == null) {
+    {
       return HubGallery(
         hubId: hub.hubId,
-        title: hub.localized(hub.title, lang),
-        subtitle: hub.localized(hub.tagline, lang),
+        title: hub.localized(group?.title ?? hub.title, lang),
+        subtitle: hub.localized(group?.tagline ?? hub.tagline, lang),
         openingId: _opening,
+        isGroup: group != null,
+        totalGames: group?.games.length ?? hub.allGames.length,
         games: [
           for (final (id, title, tagline, color, icon, onTap, isGroup) in entries)
             HubGalleryItem(
