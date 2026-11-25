@@ -30,6 +30,7 @@ import 'hub.dart';
 import 'screens/daily.dart';
 import 'screens/profile.dart';
 import 'screens/settings.dart';
+import 'parental_gate.dart';
 import 'screens/shop.dart';
 import 'services/ads.dart';
 import 'services/audio.dart';
@@ -1652,7 +1653,12 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
                 leading: Icon(a.icon, color: a.color),
                 title: Text(hub.localized(a.title, lang)),
                 trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-                onTap: () => launchUrl(a.playUrl, mode: LaunchMode.externalApplication),
+                onTap: () async {
+                  // Çocuk uygulamasında dış bağlantı ebeveyn kapısının arkasında.
+                  final st = _anchor;
+                  if (st != null && !await parentalGate(context, st)) return;
+                  await launchUrl(a.playUrl, mode: LaunchMode.externalApplication);
+                },
               ),
           ],
         ]),
