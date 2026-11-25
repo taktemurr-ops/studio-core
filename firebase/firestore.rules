@@ -45,6 +45,13 @@ service cloud.firestore {
         allow create: if signedIn() && request.auth.uid in get(/databases/$(db)/documents/matches/$(id)).data.uids
                       && request.resource.data.by == request.auth.uid;
       }
+      // Gerçek zamanlı oyunlar: anlık durum ve girdi mesajları (yalnızca eklenir).
+      match /live/{p} {
+        allow read: if signedIn();
+        allow create: if signedIn() && request.auth.uid in get(/databases/$(db)/documents/matches/$(id)).data.uids
+                      && request.resource.data.by == request.auth.uid
+                      && request.resource.data.d is string && request.resource.data.d.size() <= 4000;
+      }
       match /events/{e} {
         allow read: if signedIn();
         allow create: if signedIn() && request.auth.uid in get(/databases/$(db)/documents/matches/$(id)).data.uids

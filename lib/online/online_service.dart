@@ -211,9 +211,21 @@ class Online extends ChangeNotifier {
 }
 
 /// Çevrimiçi maçı oyun motorunun beklediği [MatchLink]'e çevirir.
-class OnlineMatchLink implements MatchLink {
+class OnlineMatchLink implements MatchLink, RealtimeLink {
   final OnlineMatch m;
   OnlineMatchLink(this.m);
+
+  @override
+  Stream<(int, String)> get pulses {
+    final x = m;
+    return x is RealtimeMatch ? x.pulses : const Stream<(int, String)>.empty();
+  }
+
+  @override
+  Future<void> pulse(String data, {int? asSeat}) async {
+    final x = m;
+    if (x is RealtimeMatch) await x.pulse(data, asSeat: asSeat);
+  }
 
   @override
   int get mySeat => m.mySeat;

@@ -52,6 +52,17 @@ abstract class MatchLink {
   Future<void> finish(int winner, {bool? iWon});
 }
 
+/// Çevrimiçi maçta gerçek zamanlı kanal (ör. [OnlineMatchLink]): hamle
+/// günlüğünün yanında, saniyede birkaç kez gönderilen anlık durum ve girdi
+/// mesajları için. Mesajlar aynı anda birden çok koltuktan gelebilir.
+/// Dinlemeye başlayınca son birkaç mesaj (bu cihazınkiler dahil) bir kez
+/// gelir; sonra yalnızca diğer koltukların mesajları. Eşitleme protokolü:
+/// `core/net_sync.dart`.
+abstract class RealtimeLink {
+  Stream<(int seat, String data)> get pulses;
+  Future<void> pulse(String data, {int? asSeat});
+}
+
 class PlayContext {
   final LevelSpec spec;
 

@@ -10,6 +10,7 @@
 ///   matches/{id}                maç (oyun, koltuklar, tohum, durum, kalp atışları)
 ///   matches/{id}/moves/{n}      hamleler (n: sıra numarası)
 ///   matches/{id}/events/{auto}  sohbet ve hediyeler
+///   matches/{id}/live/{auto}    gerçek zamanlı oyunların anlık durum/girdi mesajları
 ///   reports/{auto}              şikâyetler (yalnızca yazılır; panelden okunur)
 library;
 
@@ -317,7 +318,7 @@ class FirebaseBackend implements OnlineBackend {
       db.collection('users').doc(toUid).update({'gifts.$gift': FieldValue.increment(1)});
 }
 
-class _FsMatch implements OnlineMatch {
+class _FsMatch implements OnlineMatch, RealtimeMatch {
   final FirebaseBackend b;
   final DocumentReference<Map<String, dynamic>> ref;
   Map<String, dynamic> _d = {};
@@ -440,6 +441,43 @@ class _FsMatch implements OnlineMatch {
       'by': b.uid,
       'ts': FieldValue.serverTimestamp(),
     });
+  }
+
+  // ---- gerçek zamanlı kanal (matches/{id}/live) ----
+
+  late final StreamController<(int, String)> _pulses = StreamController.broadcast(onListen: _listenPulses);
+  bool _pulsesOn = false;
+
+  void _listenPulses() {
+    if (_pulsesOn) return;
+    _pulsesOn = true;
+    var first = true;
+    _subs.add(ref.collection('live').orderBy('ts', descending: true).limit(kRecentPulses).snapshots().listen((q) {
+      final fresh = <(int, int, String)>[];
+      for (final c in q.docChanges) {
+        if (c.type != DocumentChangeType.added || c.doc.metadata.hasPendingWrites) continue;
+        final x = c.doc.data();
+        if (x == null) continue;
+        // İlk partide kendi eski mesajlarımız da gelir (geri dönüş için).
+        if (!first && x['by'] == b.uid) continue;
+        final ts = x['ts'];
+        if (ts is! Timestamp) continue;
+        fresh.add((ts.seconds * 1000000 + ts.nanoseconds ~/ 1000, (x['seat'] as num?)?.toInt() ?? -1, x['d'] as String? ?? ''));
+      }
+      first = false;
+      fresh.sort((a, b) => a.$1.compareTo(b.$1));
+      for (final f in fresh) {
+        _pulses.add((f.$2, f.$3));
+      }
+    }, onError: (Object _) {}));
+  }
+
+  @override
+  Stream<(int, String)> get pulses => _pulses.stream;
+
+  @override
+  Future<void> pulse(String data, {int? asSeat}) async {
+    await ref.collection('live').add({'seat': asSeat ?? mySeat, 'd': data, 'by': b.uid, 'ts': FieldValue.serverTimestamp()});
   }
 
   @override

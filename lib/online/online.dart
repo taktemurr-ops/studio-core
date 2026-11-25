@@ -194,6 +194,19 @@ abstract class OnlineMatch {
   Future<void> fillWithBotsAndStart();
 }
 
+/// Gerçek zamanlı oyunlar için hızlı kanal (anlık durum ve girdi). Hamle
+/// günlüğünden ayrıdır: mesajlar aynı anda birden çok koltuktan gelebilir,
+/// sıra numarası çakışmaz. Dinlemeye başlayınca son [kRecentPulses] mesaj
+/// (kendi gönderdiklerimiz dahil) bir kez verilir; sonra yalnızca diğer
+/// koltukların mesajları gelir.
+abstract class RealtimeMatch {
+  Stream<(int, String)> get pulses;
+  Future<void> pulse(String data, {int? asSeat});
+}
+
+/// Geri dönüşte yeniden verilen son mesaj sayısı.
+const kRecentPulses = 16;
+
 /// Arka uç sözleşmesi.
 abstract class OnlineBackend {
   /// Oturum aç (gerekirse anonim hesap oluştur); profili döndür.
@@ -365,6 +378,7 @@ class _MemMatchData {
   MatchStatus status = MatchStatus.waiting;
   int winner = -2;
   final moves = <(int, String, String)>[]; // seat, move, sender uid
+  final pulses = <(int, String, String)>[]; // seat, data, sender uid
   final events = <(TableEvent, String)>[];
   final ctl = StreamController<void>.broadcast();
   final int rating;
@@ -591,10 +605,28 @@ class MemoryBackend implements OnlineBackend {
   }
 }
 
-class _MemMatch implements OnlineMatch {
+class _MemMatch implements OnlineMatch, RealtimeMatch {
   final MemoryBackend b;
   final _MemMatchData d;
-  int _movesSeen = 0, _eventsSeen = 0;
+  int _movesSeen = 0, _eventsSeen = 0, _pulsesSeen = 0;
+  late final StreamController<(int, String)> _pulses = StreamController.broadcast(onListen: _pulseListen);
+
+  void _pulseListen() {
+    for (var i = math.max(0, d.pulses.length - kRecentPulses); i < d.pulses.length; i++) {
+      _pulses.add((d.pulses[i].$1, d.pulses[i].$2));
+    }
+    _pulsesSeen = d.pulses.length;
+  }
+
+  @override
+  Stream<(int, String)> get pulses => _pulses.stream;
+
+  @override
+  Future<void> pulse(String data, {int? asSeat}) async {
+    d.pulses.add((asSeat ?? mySeat, data, b.uid));
+    d.ctl.add(null);
+  }
+
   late final StreamController<(int, String)> _moves = StreamController.broadcast(onListen: _pump);
   late final StreamController<TableEvent> _events = StreamController.broadcast(onListen: _pump);
   late final StreamSubscription<void> _sub;
@@ -617,6 +649,10 @@ class _MemMatch implements OnlineMatch {
     }
     while (_eventsSeen < d.events.length) {
       _events.add(d.events[_eventsSeen++].$1);
+    }
+    while (_pulsesSeen < d.pulses.length) {
+      final p = d.pulses[_pulsesSeen++];
+      if (p.$3 != b.uid && _pulses.hasListener) _pulses.add((p.$1, p.$2));
     }
   }
 
