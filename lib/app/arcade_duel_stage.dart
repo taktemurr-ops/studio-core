@@ -62,6 +62,12 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
   late final int side; // 0 alt, 1 üst
   MatchLink? get link => widget.ctx.match;
 
+  /// Gerçek zamanlı kanal (çevrimiçi maçta).
+  RealtimeLink? get _rt {
+    final Object? l = link;
+    return l is RealtimeLink ? l : null;
+  }
+
   // yerel girdi (bu cihazın ekran koordinatları)
   bool _down = false;
   double _px = -1, _py = -1;
@@ -98,13 +104,11 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
           if (names[i].isNotEmpty) i
       },
       send: (d) {
-        final rt = link;
-        if (rt is RealtimeLink) unawaited(rt.pulse(d).catchError((Object _) {}));
+        final rt = _rt;
+        if (rt != null) unawaited(rt.pulse(d).catchError((Object _) {}));
       },
     );
-    if (l is RealtimeLink) {
-      _sub = l.pulses.listen((p) => sync.receive(p.$1, p.$2, _now));
-    }
+    _sub = _rt?.pulses.listen((p) => sync.receive(p.$1, p.$2, _now));
     _show(_duel.netState());
     _ticker = createTicker(_onFrame)..start();
   }

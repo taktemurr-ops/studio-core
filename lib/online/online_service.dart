@@ -215,16 +215,17 @@ class OnlineMatchLink implements MatchLink, RealtimeLink {
   final OnlineMatch m;
   OnlineMatchLink(this.m);
 
-  @override
-  Stream<(int, String)> get pulses {
-    final x = m;
-    return x is RealtimeMatch ? x.pulses : const Stream<(int, String)>.empty();
+  RealtimeMatch? get _rt {
+    final Object x = m;
+    return x is RealtimeMatch ? x : null;
   }
 
   @override
+  Stream<(int, String)> get pulses => _rt?.pulses ?? const Stream<(int, String)>.empty();
+
+  @override
   Future<void> pulse(String data, {int? asSeat}) async {
-    final x = m;
-    if (x is RealtimeMatch) await x.pulse(data, asSeat: asSeat);
+    await _rt?.pulse(data, asSeat: asSeat);
   }
 
   @override
