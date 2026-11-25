@@ -35,6 +35,10 @@ abstract class GameRules<P> {
   /// Aynı cihazda en çok kaç kişi oynayabilir (0: tek kişilik oyun).
   int get localPlayers => 0;
 
+  /// Kurallara bağlı ek metinler (anahtar -> dillere göre liste), ör. bir
+  /// modun oyuna özel adı ('mode_endless' → "Maç"). GameConfig.strings önce gelir.
+  Map<String, List<String>> get strings => const {};
+
   /// Numaralı ana bölüm sayısı (harita). Sonrası sonsuz üretimle sürer.
   /// Üretim + çözücü türleri 100.000, sonsuz + sahne türleri 50.000 kullanır.
   int get levelCount => LevelPlanner.mainLevelCount;

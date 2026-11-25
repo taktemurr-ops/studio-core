@@ -63,7 +63,11 @@ class AppState extends ChangeNotifier {
 
   SaveData get save => session.save;
 
-  Strings get strings => Strings(save.language, extra: config.strings);
+  Strings get strings {
+    final extra = config.rules.strings;
+    return Strings(save.language, extra: extra.isEmpty ? config.strings : {...extra, ...config.strings});
+  }
+
   String t(String key, [Map<String, Object> p = const {}]) => strings.t(key, p);
 
   String get title => config.localized(config.title, strings.lang);
