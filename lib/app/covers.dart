@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 part 'covers_arcade.dart';
+part 'covers_balance.dart';
 part 'covers_bilgi.dart';
 part 'covers_brain.dart';
 part 'covers_egitici.dart';
@@ -916,6 +917,7 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
       }
     default:
       if (_paintArcadeCover(c, cover, seed)) return;
+      if (_paintBalanceCover(c, cover, seed)) return;
       if (_paintWordCover(c, cover, seed)) return;
       if (_paintBrainCover(c, cover, seed)) return;
       if (_paintOzgunCover(c, cover, seed)) return;

@@ -9,7 +9,7 @@ void main() {
       'xo', 'connect', 'backgammon', 'mancala', 'dice', 'race', 'grid', 'nonogram', 'blocks', 'hexes', 'bubbles',
       'gems', 'tubes', 'maze', 'pipes', 'shelf', 'pairs', 'lens', 'chain', 'fruit', 'pins', 'map', 'war', 'yok',
       'pool', 'hockey', 'foosball', 'pingpong', 'ships', 'dots', 'marbles', 'cube', 'hanoi', 'cars', 'arrows', 'jigsaw',
-      'tangram', 'lights',
+      'tangram', 'lights', 'balance',
     ];
     await tester.pumpWidget(MaterialApp(
       home: Wrap(children: [
