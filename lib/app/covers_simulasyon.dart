@@ -240,6 +240,58 @@ bool _paintSimulasyonCover(Canvas c, GameCover cover, Color seed) {
         steam.quadraticBezierTo(x - 4, 36, x + v * 1.0, 28);
         c.drawPath(steam, _stroke(const Color(0x99FFFFFF), 1.6));
       }
+    case 'simtulip':
+      _bg(c, seed, tint: const Color(0xFF6FA84F));
+      final house = Path()
+        ..moveTo(8, 40)
+        ..lineTo(50, 14)
+        ..lineTo(92, 40)
+        ..lineTo(92, 92)
+        ..lineTo(8, 92)
+        ..close();
+      c.drawPath(house, _p(const Color(0x55E1F4F0)));
+      c.drawPath(house, _stroke(const Color(0xFF6B4F3A), 2));
+      for (var k = 1; k < 4; k++) {
+        c.drawLine(Offset(8 + k * 21.0, 92), Offset(8 + k * 21.0, 40 - (k == 2 ? 26 : 10)), _stroke(const Color(0x886B4F3A), 1));
+      }
+      const cols = [Color(0xFFD7263D), Color(0xFFF4C430), Color(0xFF7B4FB8), Color(0xFFF7F4EA)];
+      for (var k = 0; k < 5; k++) {
+        final x = 18 + k * 16.0;
+        c.drawLine(Offset(x, 86), Offset(x, 62), _stroke(const Color(0xFF3E8E41), 2));
+        final cup = Path()
+          ..moveTo(x - 6, 52)
+          ..quadraticBezierTo(x - 6, 64, x, 64)
+          ..quadraticBezierTo(x + 6, 64, x + 6, 52)
+          ..lineTo(x + 3, 56)
+          ..lineTo(x, 50)
+          ..lineTo(x - 3, 56)
+          ..close();
+        c.drawPath(cup, _p(cols[(k + v) % 4]));
+        if ((k + v) % 2 == 0) c.drawLine(Offset(x, 62), Offset(x + 1, 54), _stroke(const Color(0xFF7B1E2B), 1.2));
+      }
+    case 'simcaravan':
+      _bg(c, seed, tint: const Color(0xFFD9A066));
+      c.drawRect(const Rect.fromLTWH(10, 34, 62, 40), _p(const Color(0xFFD9B98C)));
+      c.drawArc(const Rect.fromLTWH(30, 22, 22, 22), 3.14159, 3.14159, true, _p(const Color(0xFF3E7C8C)));
+      final gate = Path()
+        ..moveTo(34, 74)
+        ..lineTo(34, 56)
+        ..arcToPoint(const Offset(48, 56), radius: const Radius.circular(7))
+        ..lineTo(48, 74)
+        ..close();
+      c.drawPath(gate, _p(const Color(0xFF5B3A22)));
+      for (var k = 0; k < 3; k++) {
+        c.drawRRect(box(Offset(18 + k * 46.0 / 2 + (k > 0 ? 18 : 0), 46), 6, 9, 3), _p(const Color(0xFFFFD27A)));
+      }
+      c.drawLine(const Offset(0, 86), const Offset(100, 86), _stroke(const Color(0x88B07D48), 3));
+      for (var k = 0; k < 1 + v % 2 + 1; k++) {
+        final o = Offset(74 + k * 12.0, 78);
+        c.drawOval(Rect.fromCenter(center: o, width: 14, height: 7), _p(const Color(0xFFB07D48)));
+        c.drawCircle(o + const Offset(-2, -4), 3, _p(const Color(0xFFB07D48)));
+        c.drawLine(o + const Offset(6, -1), o + const Offset(9, -8), _stroke(const Color(0xFFB07D48), 2));
+        c.drawLine(o + const Offset(-4, 3), o + const Offset(-4, 9), _stroke(const Color(0xFFB07D48), 1.4));
+        c.drawLine(o + const Offset(4, 3), o + const Offset(4, 9), _stroke(const Color(0xFFB07D48), 1.4));
+      }
     default:
       return false;
   }
