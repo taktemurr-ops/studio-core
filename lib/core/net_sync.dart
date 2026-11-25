@@ -1,7 +1,7 @@
 /// Gerçek zamanlı çevrimiçi oyunlar için eşitleme: yetkili ev sahibi.
 ///
-/// Ev sahibi (maçı kuran koltuk) oyunu kendi cihazında yürütür ve saniyede
-/// ~10-15 kez anlık durum ("S") yayınlar. Diğer oyuncular yalnızca girdi
+/// Ev sahibi (maçı kuran koltuk) oyunu kendi cihazında yürütür ve yalnızca
+/// durum değişince, en çok saniyede 10 kez anlık durum ("S") yayınlar. Diğer oyuncular yalnızca girdi
 /// ("I") gönderir: sürekli girdi (parmak konumu gibi) ve sıra numaralı
 /// eylemler (kart oyna, "Yakala!" ...). Eylemler ev sahibinin anlık
 /// durumunda onaylanana kadar her girdi mesajında yeniden gönderilir; böylece
@@ -17,6 +17,11 @@
 /// Geri dönüş: kanal dinlenmeye başlanınca son birkaç mesajı (kendi
 /// gönderdiklerimiz dahil) bir kez verir. Uygulaması kapanıp açılan ev
 /// sahibi kendi son anlık durumundan devam eder ([takeResume]).
+///
+/// Her mesaj kendinden öncekini kapsar (anlık durum tam durumdur; girdi
+/// mesajı onaylanmamış bütün eylemleri taşır). Bu yüzden aktarım ara
+/// mesajları atlayabilir: Firestore'da her koltuk birkaç belgelik bir halkanın
+/// üzerine yazar (`online/live_ring.dart`), okuyan yalnızca son hâli görebilir.
 ///
 /// Bu dosya saf Dart'tır; aktarım [send] ve [receive] ile dışarıdan bağlanır.
 library;
@@ -61,10 +66,10 @@ class NetSync {
   final Set<int> humans;
   final void Function(String data) send;
 
-  /// Anlık durumlar arasında en az süre (12,5 Hz).
+  /// Anlık durumlar arasında en az süre (10 Hz).
   final int snapGapMs;
 
-  /// Girdi mesajları arasında en az süre (~15 Hz).
+  /// Girdi mesajları arasında en az süre (10 Hz).
   final int inputGapMs;
 
   /// Değişiklik olmasa da gönderme aralığı (canlılık).
@@ -95,14 +100,14 @@ class NetSync {
     required Set<int> humans,
     required this.send,
     int firstHost = 0,
-    this.snapGapMs = 80,
-    this.inputGapMs = 66,
-    this.keepAliveMs = 500,
+    this.snapGapMs = 100,
+    this.inputGapMs = 100,
+    this.keepAliveMs = 1000,
     this.snapKeepAliveMs = 1000,
     this.hostTimeoutMs = 3000,
     this.idleMs = 2500,
     this.graceMs = 8000,
-    this.delayMs = 120,
+    this.delayMs = 160,
     this.startMs = 0,
   }) : humans = {...humans, mySeat} {
     host = firstHost;
@@ -248,13 +253,17 @@ class NetSync {
     final axes = encodeNums(_myAxes);
     final want = _pending.isNotEmpty || axes != _sentAxes;
     if (!(want && now - _lastInAt >= inputGapMs) && now - _lastInAt < keepAliveMs) return;
-    send('I|$_ackBase|${_pending.join('~')}|$axes');
+    final acts = _pending.length > kMaxActsPerInput ? _pending.sublist(0, kMaxActsPerInput) : _pending;
+    send('I|$_ackBase|${acts.join('~')}|$axes');
     _sentAxes = axes;
     _lastInAt = now;
   }
 
   /// En son alınan anlık durum.
   NetSnap? get latest => _latest;
+
+  /// Son anlık durumun alındığı an (misafir; hiç gelmediyse null).
+  int? get lastSnapAt => _lastSnapAt;
 
   NetSnap? _parseSnap(int seat, String data, int now) {
     final p = data.split('|');
@@ -386,6 +395,87 @@ class NetSync {
     final d = _demoted;
     _demoted = false;
     return d;
+  }
+}
+
+/// Bir girdi mesajında en çok bu kadar eylem gider (kalanı onaydan sonra).
+const kMaxActsPerInput = 32;
+
+// ---- Bağlantı bildirimleri -----------------------------------------------------------
+
+/// Ekranda gösterilecek bağlantı bildirimi (metinleri: `core/net_texts.dart`).
+enum NetNote {
+  none,
+
+  /// Diğer oyuncular / ev sahibi bekleniyor.
+  waiting,
+
+  /// Ev sahibinden bir süredir ses yok.
+  reconnecting,
+
+  /// Ev sahibi düştü, oyunu bu cihaz sürdürüyor.
+  nowHost,
+
+  /// Ev sahibi değişti, oyun sürüyor.
+  hostChanged,
+
+  /// Bir oyuncunun bağlantısı koptu, yerine yapay zekâ oynuyor ([NetNotes.seat]).
+  botPlaying,
+}
+
+/// [NetSync] durumundan ekran bildirimi üretir. Her karede [update] çağrılır.
+class NetNotes {
+  /// Kısa süreli bildirimlerin ekranda kalma süresi.
+  final int flashMs;
+
+  /// Ev sahibinden bu kadar ses gelmezse "yeniden bağlanıyor".
+  final int quietMs;
+
+  NetNotes({this.flashMs = 3000, this.quietMs = 1200});
+
+  int? _host;
+  int _ep = 0;
+  NetNote _flash = NetNote.none;
+  int _flashUntil = 0;
+  NetNote note = NetNote.none;
+
+  /// [NetNote.botPlaying] için koltuk.
+  int seat = -1;
+
+  NetNote update(NetSync s, int now) {
+    final h = _host;
+    if (h != null && (s.host != h || s.ep != _ep)) {
+      _flash = s.isHost ? NetNote.nowHost : NetNote.hostChanged;
+      _flashUntil = now + flashMs;
+    }
+    _host = s.host;
+    _ep = s.ep;
+    seat = -1;
+    if (now < _flashUntil) return note = _flash;
+    if (!s.isHost) {
+      final at = s.lastSnapAt;
+      if (at == null) return note = NetNote.waiting;
+      if (now - at > quietMs) return note = NetNote.reconnecting;
+      final l = s.latest;
+      for (var i = 0; i < s.seats; i++) {
+        if (i != s.mySeat && s.humans.contains(i) && (l?.isBot(i) ?? false)) {
+          seat = i;
+          return note = NetNote.botPlaying;
+        }
+      }
+      return note = NetNote.none;
+    }
+    var waiting = false;
+    for (var i = 0; i < s.seats; i++) {
+      if (i == s.mySeat || !s.humans.contains(i)) continue;
+      if (s.heardAt(i) == null && s.live(i, now)) {
+        waiting = true;
+      } else if (!s.live(i, now)) {
+        seat = i;
+        return note = NetNote.botPlaying;
+      }
+    }
+    return note = waiting ? NetNote.waiting : NetNote.none;
   }
 }
 

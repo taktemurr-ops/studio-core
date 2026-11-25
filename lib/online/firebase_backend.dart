@@ -10,7 +10,7 @@
 ///   matches/{id}                maç (oyun, koltuklar, tohum, durum, kalp atışları)
 ///   matches/{id}/moves/{n}      hamleler (n: sıra numarası)
 ///   matches/{id}/events/{auto}  sohbet ve hediyeler
-///   matches/{id}/live/{auto}    gerçek zamanlı oyunların anlık durum/girdi mesajları
+///   matches/{id}/live/{s}_{k}   gerçek zamanlı kanal: koltuk s'nin k. halka yuvası (üzerine yazılır, TTL: expireAt)
 ///   reports/{auto}              şikâyetler (yalnızca yazılır; panelden okunur)
 library;
 
@@ -20,6 +20,7 @@ import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'live_ring.dart';
 import 'online.dart';
 
 class FirebaseBackend implements OnlineBackend {
@@ -443,31 +444,28 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
     });
   }
 
-  // ---- gerçek zamanlı kanal (matches/{id}/live) ----
+  // ---- gerçek zamanlı kanal (matches/{id}/live, bkz. live_ring.dart) ----
 
   late final StreamController<(int, String)> _pulses = StreamController.broadcast(onListen: _listenPulses);
   bool _pulsesOn = false;
+  bool _liveClosed = false;
+  final LiveWriter _liveW = LiveWriter();
+  late final LiveReader _liveR = LiveReader(b.uid, writer: _liveW);
+
+  CollectionReference<Map<String, dynamic>> get _live => ref.collection('live');
 
   void _listenPulses() {
     if (_pulsesOn) return;
     _pulsesOn = true;
-    var first = true;
-    _subs.add(ref.collection('live').orderBy('ts', descending: true).limit(kRecentPulses).snapshots().listen((q) {
-      final fresh = <(int, int, String)>[];
+    _subs.add(_live.snapshots().listen((q) {
+      final docs = <LiveDoc>[];
       for (final c in q.docChanges) {
-        if (c.type != DocumentChangeType.added || c.doc.metadata.hasPendingWrites) continue;
-        final x = c.doc.data();
-        if (x == null) continue;
-        // İlk partide kendi eski mesajlarımız da gelir (geri dönüş için).
-        if (!first && x['by'] == b.uid) continue;
-        final ts = x['ts'];
-        if (ts is! Timestamp) continue;
-        fresh.add((ts.seconds * 1000000 + ts.nanoseconds ~/ 1000, (x['seat'] as num?)?.toInt() ?? -1, x['d'] as String? ?? ''));
+        if (c.type == DocumentChangeType.removed || c.doc.metadata.hasPendingWrites) continue;
+        final d = LiveDoc.parse(c.doc.data());
+        if (d != null) docs.add(d);
       }
-      first = false;
-      fresh.sort((a, b) => a.$1.compareTo(b.$1));
-      for (final f in fresh) {
-        _pulses.add((f.$2, f.$3));
+      for (final p in _liveR.take(docs)) {
+        _pulses.add(p);
       }
     }, onError: (Object _) {}));
   }
@@ -477,7 +475,21 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
 
   @override
   Future<void> pulse(String data, {int? asSeat}) async {
-    await ref.collection('live').add({'seat': asSeat ?? mySeat, 'd': data, 'by': b.uid, 'ts': FieldValue.serverTimestamp()});
+    if (_liveClosed) return;
+    final (id, d) = _liveW.next(asSeat ?? mySeat, data, b.uid, DateTime.now());
+    await _live.doc(id).set({...d.toMap(), 'expireAt': Timestamp.fromDate(d.expireAt)});
+  }
+
+  /// Maç bitti: canlı belgeleri sil (TTL ilkesi kalanları zaten temizler).
+  Future<void> _clearLive() async {
+    _liveClosed = true;
+    final q = await _live.get();
+    if (q.docs.isEmpty) return;
+    final batch = b.db.batch();
+    for (final d in q.docs) {
+      batch.delete(d.reference);
+    }
+    await batch.commit();
   }
 
   @override
@@ -487,7 +499,11 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
   }
 
   @override
-  Future<void> finish(int winner) => ref.update({'status': 'done', 'winner': winner});
+  Future<void> finish(int winner) async {
+    await ref.update({'status': 'done', 'winner': winner});
+    // Yalnızca gerçek zamanlı kanalı kullanan maçlarda (sıra tabanlı maçlar okuma yapmaz).
+    if (_pulsesOn || _liveW.used) await _clearLive().catchError((Object _) {});
+  }
 
   @override
   Future<void> leave() async {

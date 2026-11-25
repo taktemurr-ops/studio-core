@@ -8,15 +8,18 @@ import '../core/arcade.dart';
 import '../core/arcade_duel.dart';
 import '../core/game_rules.dart';
 import '../core/net_sync.dart';
+import '../core/net_texts.dart';
 import 'arcade_stage.dart';
 import 'game_api.dart';
 import 'services/audio.dart';
 
 /// İki kişilik çevrimiçi masa oyunu ekranı (yetkili ev sahibi eşitlemesi).
 ///
-/// * Ev sahibi simülasyonu 60 Hz yürütür, ~12 Hz anlık durum yayınlar.
-/// * Misafir yalnızca parmak girdisini (~15 Hz) gönderir; ekranı gelen anlık
-///   durumlardan ara kareyle (120 ms geriden) çizer.
+/// * Ev sahibi simülasyonu 60 Hz yürütür, en çok 10 Hz anlık durum yayınlar
+///   (durum değişmezse yalnızca saniyede bir canlılık).
+/// * Misafir yalnızca parmak girdisini gönderir (en çok 10 Hz, yalnızca
+///   değişince; konum [_grid] birimlik ızgaraya yuvarlanır); ekranı gelen
+///   anlık durumlardan ara kareyle (160 ms geriden) çizer.
 /// * Rakibin bağlantısı koparsa yerine yapay zekâ oynar; ev sahibi koparsa
 ///   misafir son durumdan maçı devralır.
 /// * Koltuk 1'deki oyuncu masayı ters çevrilmiş görür (kendisi hep altta).
@@ -49,6 +52,11 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
   late final ArcadeSim view; // gösterim kopyası
   late final ArcadeSim _probe; // misafirde maç sonu denetimi
   late final NetSync sync;
+  final NetNotes _notes = NetNotes();
+
+  /// Misafir parmak konumu bu kadar birimlik ızgaraya yuvarlanır: küçük
+  /// titreşimler yeni girdi mesajı (Firestore yazması) doğurmaz.
+  static const double _grid = 4;
   late final Ticker _ticker;
   StreamSubscription<(int, String)>? _sub;
   final Stopwatch _clock = Stopwatch()..start();
@@ -165,6 +173,7 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
       if (l != null) _duel.applyNetState(decodeNums(l.payload));
       _acc = 0;
     }
+    if (link != null) _notes.update(sync, now);
     if (_ended) return;
     if (sync.isHost) {
       _hostFrame(dt, now);
@@ -203,7 +212,8 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
     final local = _localInput();
     if (local.tap) _taps++;
     if (local.swipe == 0) _ups++;
-    sync.setAxes([_down ? 1 : 0, _px.roundToDouble(), _py.roundToDouble(), _taps.toDouble(), _ups.toDouble()]);
+    double q(double v) => v < 0 ? v.roundToDouble() : (v / _grid).roundToDouble() * _grid;
+    sync.setAxes([_down ? 1 : 0, q(_px), q(_py), _taps.toDouble(), _ups.toDouble()]);
     sync.pump(now);
     final fr = sync.frame(now);
     if (fr == null) return;
@@ -259,7 +269,7 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
     final head = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(children: [
-        Flexible(child: _chip(ctx.seatName(me), true)),
+        Flexible(child: _chip(netYou(ctx.lang), true)),
         Expanded(
           child: Text(view.goalText,
               textAlign: TextAlign.center,
@@ -267,13 +277,22 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
         ),
-        Flexible(child: _chip('${oppBot ? '🤖 ' : ''}${ctx.seatName(opp)}', false)),
+        Flexible(child: _chip(netSeatLabel(ctx.lang, ctx.seatName(opp), bot: oppBot), false)),
       ]),
     );
+    final note = netNoteText(ctx.lang, _notes.note, _notes.seat >= 0 ? ctx.seatName(_notes.seat) : '');
     return ColoredBox(
       color: const Color(0xFF1A1B2E),
       child: Column(children: [
         head,
+        if (note.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(note,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                style: const TextStyle(color: Color(0xFFFFD166), fontSize: 13, fontWeight: FontWeight.w700)),
+          ),
         Expanded(
           child: LayoutBuilder(builder: (context, box) {
             _scale = math.min(box.maxWidth / kWorldW, box.maxHeight / kWorldH);

@@ -20,5 +20,8 @@
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {"collectionGroup": "live", "fieldPath": "expireAt", "ttl": true, "indexes": []},
+    {"collectionGroup": "live", "fieldPath": "d", "indexes": []}
+  ]
 }

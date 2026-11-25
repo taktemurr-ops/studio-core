@@ -45,12 +45,28 @@ service cloud.firestore {
         allow create: if signedIn() && request.auth.uid in get(/databases/$(db)/documents/matches/$(id)).data.uids
                       && request.resource.data.by == request.auth.uid;
       }
-      // Gerçek zamanlı oyunlar: anlık durum ve girdi mesajları (yalnızca eklenir).
+      // Gerçek zamanlı oyunlar (lib/online/live_ring.dart): koltuk başına
+      // {koltuk}_{yuva} adlı en çok 10 belgelik halka; yuvaların üzerine yazılır.
+      // Her belgede expireAt vardır (en çok 1 gün sonrası); Firestore TTL ilkesi
+      // (firestore.indexes.json → fieldOverrides: live.expireAt ttl) terk edilmiş
+      // maçların belgelerini siler. Maç bitince masadakiler halkayı siler.
       match /live/{p} {
+        function member() {
+          return signedIn() && request.auth.uid in get(/databases/$(db)/documents/matches/$(id)).data.uids;
+        }
+        function validLive() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(['seat', 'seq', 'd', 'by', 'expireAt'])
+              && d.by == request.auth.uid
+              && d.seat is int && d.seat >= 0 && d.seat < 16
+              && p.matches('^[0-9]{1,2}_[0-9]$') && p.split('_')[0] == string(d.seat)
+              && d.seq is int
+              && d.d is string && d.d.size() <= 4000
+              && d.expireAt is timestamp && d.expireAt <= request.time + duration.value(1, 'd');
+        }
         allow read: if signedIn();
-        allow create: if signedIn() && request.auth.uid in get(/databases/$(db)/documents/matches/$(id)).data.uids
-                      && request.resource.data.by == request.auth.uid
-                      && request.resource.data.d is string && request.resource.data.d.size() <= 4000;
+        allow create, update: if member() && validLive();
+        allow delete: if member();
       }
       match /events/{e} {
         allow read: if signedIn();

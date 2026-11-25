@@ -7,6 +7,8 @@ library;
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'live_ring.dart';
+
 // ---- Modeller -------------------------------------------------------------------
 
 class Profile {
@@ -195,17 +197,19 @@ abstract class OnlineMatch {
 }
 
 /// Gerçek zamanlı oyunlar için hızlı kanal (anlık durum ve girdi). Hamle
-/// günlüğünden ayrıdır: mesajlar aynı anda birden çok koltuktan gelebilir,
-/// sıra numarası çakışmaz. Dinlemeye başlayınca son [kRecentPulses] mesaj
-/// (kendi gönderdiklerimiz dahil) bir kez verilir; sonra yalnızca diğer
-/// koltukların mesajları gelir.
+/// günlüğünden ayrıdır: mesajlar aynı anda birden çok koltuktan gelebilir.
+/// Depolama koltuk başına küçük bir belge halkasıdır (`live_ring.dart`):
+/// ara mesajlar atlanabilir, her koltuktan gelenler sırayla gelir.
+/// Dinlemeye başlayınca halkadaki mesajlar (kendi gönderdiklerimiz dahil)
+/// bir kez verilir; sonra yalnızca diğer cihazların mesajları gelir.
+/// Maç bitince ([OnlineMatch.finish]) halka silinir.
 abstract class RealtimeMatch {
   Stream<(int, String)> get pulses;
   Future<void> pulse(String data, {int? asSeat});
 }
 
-/// Geri dönüşte yeniden verilen son mesaj sayısı.
-const kRecentPulses = 16;
+/// Geri dönüşte yeniden verilen en çok mesaj sayısı (koltuk başına).
+const kRecentPulses = kLiveRing;
 
 /// Arka uç sözleşmesi.
 abstract class OnlineBackend {
@@ -378,7 +382,12 @@ class _MemMatchData {
   MatchStatus status = MatchStatus.waiting;
   int winner = -2;
   final moves = <(int, String, String)>[]; // seat, move, sender uid
-  final pulses = <(int, String, String)>[]; // seat, data, sender uid
+  /// Canlı kanal belgeleri (Firestore'daki halkanın aynısı): kimlik → belge.
+  final live = <String, LiveDoc>{};
+
+  /// Canlı kanal yazma günlüğü (dinleyicilere iletim için).
+  final pulses = <LiveDoc>[];
+  int liveWrites = 0;
   final events = <(TableEvent, String)>[];
   final ctl = StreamController<void>.broadcast();
   final int rating;
@@ -610,10 +619,13 @@ class _MemMatch implements OnlineMatch, RealtimeMatch {
   final _MemMatchData d;
   int _movesSeen = 0, _eventsSeen = 0, _pulsesSeen = 0;
   late final StreamController<(int, String)> _pulses = StreamController.broadcast(onListen: _pulseListen);
+  final LiveWriter _liveW = LiveWriter();
+  late final LiveReader _liveR = LiveReader(b.uid, writer: _liveW);
+  bool _liveClosed = false;
 
   void _pulseListen() {
-    for (var i = math.max(0, d.pulses.length - kRecentPulses); i < d.pulses.length; i++) {
-      _pulses.add((d.pulses[i].$1, d.pulses[i].$2));
+    for (final p in _liveR.take(d.live.values)) {
+      _pulses.add(p);
     }
     _pulsesSeen = d.pulses.length;
   }
@@ -623,7 +635,11 @@ class _MemMatch implements OnlineMatch, RealtimeMatch {
 
   @override
   Future<void> pulse(String data, {int? asSeat}) async {
-    d.pulses.add((asSeat ?? mySeat, data, b.uid));
+    if (_liveClosed) return;
+    final (id, doc) = _liveW.next(asSeat ?? mySeat, data, b.uid, DateTime.now());
+    d.live[id] = doc;
+    d.pulses.add(doc);
+    d.liveWrites++;
     d.ctl.add(null);
   }
 
@@ -650,10 +666,12 @@ class _MemMatch implements OnlineMatch, RealtimeMatch {
     while (_eventsSeen < d.events.length) {
       _events.add(d.events[_eventsSeen++].$1);
     }
-    while (_pulsesSeen < d.pulses.length) {
-      final p = d.pulses[_pulsesSeen++];
-      if (p.$3 != b.uid && _pulses.hasListener) _pulses.add((p.$1, p.$2));
+    if (_pulses.hasListener && _pulsesSeen < d.pulses.length) {
+      for (final p in _liveR.take(d.pulses.sublist(_pulsesSeen))) {
+        _pulses.add(p);
+      }
     }
+    _pulsesSeen = d.pulses.length;
   }
 
   @override
@@ -701,6 +719,8 @@ class _MemMatch implements OnlineMatch, RealtimeMatch {
   Future<void> finish(int winner) async {
     d.status = MatchStatus.done;
     d.winner = winner;
+    _liveClosed = true;
+    d.live.clear();
     d.ctl.add(null);
   }
 
