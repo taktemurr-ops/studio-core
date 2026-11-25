@@ -138,6 +138,55 @@ bool _paintMuzikCover(Canvas c, GameCover cover, Color seed) {
         w.lineTo(x.toDouble(), 20 + math.sin(x * 0.7) * 5 * (1 - (x - 10) / 30));
       }
       c.drawPath(w, _stroke(lanes[1], 2));
+    case 'rhythmdictc': // Ritim Diktesi: tek çizgili dizek üstünde ritim kalıbı, kalem ve kulak dalgası
+      _bg(c, seed, tint: night);
+      c.drawRRect(box(const Offset(50, 54), 80, 40, 8), _p(paper));
+      c.drawLine(const Offset(16, 60), const Offset(84, 60), _stroke(night, 1.4));
+      for (final x in const [16.0, 50.0, 84.0]) {
+        c.drawLine(Offset(x, 48), Offset(x, 72), _stroke(night, 1));
+      }
+      // Dörtlük, iki sekizlik (çubuklu), ikilik
+      noteHead(const Offset(24, 60), 6, night);
+      c.drawLine(const Offset(28, 59), const Offset(28, 42), _stroke(night, 1.4));
+      noteHead(const Offset(34, 60), 6, lanes[(v) % lanes.length]);
+      noteHead(const Offset(44, 60), 6, lanes[(v) % lanes.length]);
+      c.drawLine(const Offset(38, 59), const Offset(38, 44), _stroke(lanes[v % lanes.length], 1.4));
+      c.drawLine(const Offset(48, 59), const Offset(48, 44), _stroke(lanes[v % lanes.length], 1.4));
+      c.drawLine(const Offset(38, 44), const Offset(48, 44), _stroke(lanes[v % lanes.length], 3));
+      c.drawOval(Rect.fromCenter(center: const Offset(62, 60), width: 9, height: 6), _stroke(night, 1.6));
+      c.drawLine(const Offset(66, 59), const Offset(66, 42), _stroke(night, 1.4));
+      // Kalem
+      c.save();
+      c.translate(76, 62);
+      c.rotate(0.6);
+      c.drawRRect(box(Offset.zero, 6, 26, 2), _p(lanes[2]));
+      c.drawPath(Path()..addPolygon(const [Offset(-3, 13), Offset(3, 13), Offset(0, 19)], true), _p(const Color(0xFF6E4A2F)));
+      c.restore();
+      // Kulak dalgası
+      for (var k = 0; k < 3; k++) {
+        c.drawArc(Rect.fromCircle(center: const Offset(18, 20), radius: 5.0 + k * 5), -0.7, 1.4, false,
+            _stroke(paper.withValues(alpha: 0.8 - k * 0.2), 1.8));
+      }
+    case 'pitchholdc': // Ton Tutma: hedef bant içinde kalan ses dalgası ve mikrofon
+      _bg(c, seed, tint: const Color(0xFF2B2350));
+      c.drawRRect(box(const Offset(58, 48), 76, 16, 8), _p(lanes[1].withValues(alpha: 0.3)));
+      c.drawLine(const Offset(20, 48), const Offset(96, 48), _stroke(lanes[1], 1));
+      final w = Path()..moveTo(22, 70);
+      for (var x = 22; x <= 94; x += 2) {
+        final settle = ((x - 22) / 30).clamp(0.0, 1.0);
+        final y = 70 - settle * 22 + math.sin(x * 0.5 + v) * (5 - settle * 3);
+        w.lineTo(x.toDouble(), y);
+      }
+      c.drawPath(w, _stroke(lanes[2], 2.4));
+      c.drawCircle(const Offset(94, 48), 3.2, _p(lanes[2]));
+      // Mikrofon
+      c.drawRRect(box(const Offset(14, 34), 10, 18, 5), _p(paper));
+      c.drawArc(Rect.fromCenter(center: const Offset(14, 38), width: 16, height: 16), 0, math.pi, false, _stroke(paper, 1.6));
+      c.drawLine(const Offset(14, 46), const Offset(14, 54), _stroke(paper, 1.6));
+      c.drawLine(const Offset(9, 54), const Offset(19, 54), _stroke(paper, 1.6));
+      for (var k = 0; k < 5; k++) {
+        c.drawRRect(box(Offset(30 + k * 12.0, 86), 8, 4, 2), _p(k < 3 + v % 3 ? lanes[(k + 1) % lanes.length] : paper.withValues(alpha: 0.2)));
+      }
     default:
       return false;
   }

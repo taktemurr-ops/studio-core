@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -7,6 +8,7 @@ part 'covers_balance.dart';
 part 'covers_bilgi.dart';
 part 'covers_brain.dart';
 part 'covers_egitici.dart';
+part 'covers_kart2.dart';
 part 'covers_muzik.dart';
 part 'covers_ozgun.dart';
 part 'covers_ozgun2.dart';
@@ -916,21 +918,34 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
         }
       }
     default:
-      if (_paintArcadeCover(c, cover, seed)) return;
-      if (_paintBalanceCover(c, cover, seed)) return;
-      if (_paintWordCover(c, cover, seed)) return;
-      if (_paintBrainCover(c, cover, seed)) return;
-      if (_paintOzgunCover(c, cover, seed)) return;
-      if (_paintOzgun2Cover(c, cover, seed)) return;
-      if (_paintBilgiCover(c, cover, seed)) return;
-      if (_paintMuzikCover(c, cover, seed)) return;
-      if (_paintPartiCover(c, cover, seed)) return;
-      if (_paintStratejiCover(c, cover, seed)) return;
-      if (_paintEgiticiCover(c, cover, seed)) return;
-      if (_paintSimulasyonCover(c, cover, seed)) return;
+      if (_paintFamilyCover(c, cover, seed)) return;
       _bg(c, seed);
       _text(c, cover.label.isEmpty ? '?' : cover.label, const Offset(50, 50), 40, Colors.white);
   }
+}
+
+/// Aile kapak dosyalarındaki (covers_*.dart) çizimler; tür tanınmazsa false.
+bool _paintFamilyCover(Canvas c, GameCover cover, Color seed) =>
+    _paintArcadeCover(c, cover, seed) ||
+    _paintBalanceCover(c, cover, seed) ||
+    _paintWordCover(c, cover, seed) ||
+    _paintBrainCover(c, cover, seed) ||
+    _paintOzgunCover(c, cover, seed) ||
+    _paintOzgun2Cover(c, cover, seed) ||
+    _paintBilgiCover(c, cover, seed) ||
+    _paintMuzikCover(c, cover, seed) ||
+    _paintPartiCover(c, cover, seed) ||
+    _paintStratejiCover(c, cover, seed) ||
+    _paintEgiticiCover(c, cover, seed) ||
+    _paintSimulasyonCover(c, cover, seed) ||
+    _paintKart2Cover(c, cover, seed);
+
+/// Türün özgün bir aile çizimi var mı (yedek etikete düşmüyor mu). Testler için.
+bool coverHasFamilyArt(GameCover cover) {
+  final rec = ui.PictureRecorder();
+  final ok = _paintFamilyCover(Canvas(rec), cover, const Color(0xFF808080));
+  rec.endRecording().dispose();
+  return ok;
 }
 
 void _die(Canvas c, Offset o, double s, int n, double a) {

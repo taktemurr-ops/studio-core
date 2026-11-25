@@ -292,6 +292,89 @@ bool _paintSimulasyonCover(Canvas c, GameCover cover, Color seed) {
         c.drawLine(o + const Offset(-4, 3), o + const Offset(-4, 9), _stroke(const Color(0xFFB07D48), 1.4));
         c.drawLine(o + const Offset(4, 3), o + const Offset(4, 9), _stroke(const Color(0xFFB07D48), 1.4));
       }
+    case 'simspace': // Boşta Uzay: gezegen ufku, güneş panelli istasyon, yükselen roket
+      _bg(c, seed, tint: const Color(0xFF111833));
+      for (var k = 0; k < 12; k++) {
+        c.drawCircle(Offset(((k * 41 + v * 7) % 94) + 3.0, ((k * 29) % 56) + 3.0), k % 3 == 0 ? 1.3 : 0.8, _p(Colors.white70));
+      }
+      c.drawCircle(const Offset(50, 150), 70, _p(const Color(0xFF3E6FB0)));
+      c.drawCircle(const Offset(50, 150), 70, _stroke(const Color(0x668FC1F0), 3));
+      // İstasyon
+      c.drawRRect(box(const Offset(32, 34), 18, 9, 3), _p(const Color(0xFFD9DEE8)));
+      c.drawCircle(const Offset(32, 34), 4, _p(const Color(0xFFF2A516)));
+      for (final dx in const [-20.0, 20.0]) {
+        c.drawRect(Rect.fromCenter(center: Offset(32 + dx, 34), width: 14, height: 8), _p(const Color(0xFF2E5FA8)));
+        c.drawLine(Offset(32 + dx * 0.45, 34), Offset(32 + dx * 0.55, 34), _stroke(const Color(0xFFD9DEE8), 1.4));
+        for (var i = 1; i < 3; i++) {
+          final x = 32 + dx - 7 + i * 4.7;
+          c.drawLine(Offset(x, 30), Offset(x, 38), _stroke(const Color(0x88FFFFFF), 0.6));
+        }
+      }
+      // Roket
+      c.save();
+      c.translate(70, 54 - (v % 3) * 4.0);
+      c.rotate(0.35);
+      final body = Path()
+        ..moveTo(0, -16)
+        ..quadraticBezierTo(7, -6, 6, 10)
+        ..lineTo(-6, 10)
+        ..quadraticBezierTo(-7, -6, 0, -16)
+        ..close();
+      c.drawPath(Path()..addPolygon(const [Offset(-4, 10), Offset(0, 22), Offset(4, 10)], true), _p(const Color(0xFFF2A516)));
+      c.drawPath(Path()..addPolygon(const [Offset(-6, 4), Offset(-11, 12), Offset(-6, 10)], true), _p(const Color(0xFFE4572E)));
+      c.drawPath(Path()..addPolygon(const [Offset(6, 4), Offset(11, 12), Offset(6, 10)], true), _p(const Color(0xFFE4572E)));
+      c.drawPath(body, _p(const Color(0xFFF1F3F8)));
+      c.drawCircle(const Offset(0, -3), 3, _p(const Color(0xFF4FA3D9)));
+      c.restore();
+      // Biriken kaynak (yıldız parçaları)
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(16 + k * 9.0, 66), 3, _p(const Color(0xFFFFD27D)));
+      }
+    case 'simzoo': // Hayvanat Bahçesi: giriş kemeri, çit, zürafa, fil ve ağaç
+      _bg(c, seed, tint: const Color(0xFF8CC0DE));
+      c.drawRect(const Rect.fromLTWH(0, 70, 100, 30), _p(const Color(0xFF7DB356)));
+      // Ağaç
+      c.drawRect(const Rect.fromLTWH(84, 50, 5, 22), _p(const Color(0xFF8A5A36)));
+      c.drawCircle(const Offset(86, 46), 11, _p(const Color(0xFF4E8A3A)));
+      // Zürafa
+      const gir = Color(0xFFF2B84B);
+      const spot = Color(0xFFB0763A);
+      c.drawOval(Rect.fromCenter(center: const Offset(30, 62), width: 26, height: 14), _p(gir));
+      c.drawPath(Path()..addPolygon(const [Offset(36, 58), Offset(42, 22), Offset(48, 22), Offset(42, 60)], true), _p(gir));
+      c.drawOval(Rect.fromCenter(center: const Offset(48, 21), width: 14, height: 8), _p(gir));
+      c.drawLine(const Offset(44, 17), const Offset(43, 12), _stroke(spot, 1.6));
+      c.drawCircle(const Offset(49, 19), 1.2, _p(const Color(0xFF3D2B1F)));
+      for (final x in const [22.0, 28.0, 34.0, 38.0]) {
+        c.drawLine(Offset(x, 66), Offset(x, 80), _stroke(gir, 3));
+      }
+      for (final (x, y) in const [(26.0, 60.0), (33.0, 63.0), (41.0, 44.0), (43.0, 32.0), (22.0, 64.0)]) {
+        c.drawCircle(Offset(x, y), 2, _p(spot));
+      }
+      // Fil
+      const ele = Color(0xFF9AA3AE);
+      c.drawOval(Rect.fromCenter(center: const Offset(66, 66), width: 28, height: 20), _p(ele));
+      c.drawCircle(const Offset(78, 58), 9, _p(ele));
+      c.drawOval(Rect.fromCenter(center: const Offset(74, 58), width: 9, height: 12), _p(const Color(0xFF838C97)));
+      c.drawPath(
+          Path()
+            ..moveTo(84, 60)
+            ..quadraticBezierTo(90, 70, 86, 78),
+          _stroke(ele, 4));
+      c.drawCircle(const Offset(80, 55), 1.3, _p(const Color(0xFF2B2F3A)));
+      for (final x in const [58.0, 64.0, 70.0, 75.0]) {
+        c.drawLine(Offset(x, 72), Offset(x, 82), _stroke(ele, 4));
+      }
+      // Çit
+      for (var k = 0; k < 11; k++) {
+        c.drawRect(Rect.fromLTWH(k * 9.5, 80, 3, 14), _p(const Color(0xFFB07D48)));
+      }
+      c.drawLine(const Offset(0, 84), const Offset(100, 84), _stroke(const Color(0xFFB07D48), 2));
+      // Giriş kemeri
+      c.drawArc(const Rect.fromLTWH(8, 4, 40, 14), math.pi, math.pi, false, _stroke(const Color(0xFF8A5A36), 3));
+      c.drawRRect(box(const Offset(28, 12), 22, 6, 2), _p(const Color(0xFFFFF3D6)));
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(22 + k * 6.0, 12), 1.2, _p([const Color(0xFFE4572E), const Color(0xFF4E8A3A), const Color(0xFF2E5FA8)][(k + v) % 3]));
+      }
     default:
       return false;
   }

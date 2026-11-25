@@ -90,4 +90,33 @@ void main() {
     ));
     expect(tester.takeException(), isNull);
   });
+  testWidgets('ikinci tur özgün kapakları hatasız ve tanınmış olarak çizilir', (tester) async {
+    const kinds = [
+      'tarneebc', 'trixc', 'balootc', 'hokmc', 'twentyninec', 'carromc', 'pacisic', // kâğıt ve masa
+      'jobsc', 'bodyc', 'dinoc', 'fruitvegc', // eğitici
+      'digitspanc', 'searchgridc', 'wordmemc', // zihin
+      'rhythmdictc', 'pitchholdc', // müzik
+      'astroc', 'artlitc', // bilgi
+      'autobattlerc', 'dungeonkeeperc', // strateji
+      'wordbombc', 'fivesecc', 'mostlikelyc', // parti
+      'simspace', 'simzoo', 'balance', // boşta ve arcade
+    ];
+    // Bilinmeyen tür yedek çizime (etiket metni) düşer; yeni türlerin hiçbiri düşmemeli.
+    for (final k in kinds) {
+      for (final v in [0, 1, 2, 3]) {
+        expect(coverHasFamilyArt(GameCover(k, v: v)), isTrue, reason: k);
+      }
+    }
+    expect(coverHasFamilyArt(const GameCover('yok')), isFalse);
+    await tester.pumpWidget(MaterialApp(
+      home: SingleChildScrollView(
+        child: Wrap(children: [
+          for (final k in kinds)
+            for (final v in [0, 1, 2]) CoverArt(cover: GameCover(k, v: v), color: Colors.deepPurple, size: 40),
+        ]),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CoverArt), findsNWidgets(kinds.length * 3));
+  });
 }

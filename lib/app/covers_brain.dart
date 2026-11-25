@@ -146,6 +146,55 @@ bool _paintBrainCover(Canvas c, GameCover cover, Color seed) {
       c.drawRRect(box(const Offset(69, 72), 28, 18, 6), _p(const Color(0xFF6A994E)));
       _text(c, '✗', const Offset(31, 72), 12, paper);
       _text(c, '✓', const Offset(69, 72), 12, paper);
+    case 'digitspanc': // Rakam Dizisi: gösterilen rakamlar, ardından gizlenen kutular
+      _bg(c, seed, tint: const Color(0xFF243142));
+      final digits = cover.label.isEmpty ? '3815' : cover.label;
+      for (var i = 0; i < 4; i++) {
+        final o = Offset(20 + i * 20.0, 36);
+        c.drawRRect(box(o, 16, 22, 5), _p(paper));
+        _text(c, digits[i % digits.length], o, 14, cols[(i + v) % cols.length]);
+      }
+      for (var i = 0; i < 4; i++) {
+        final o = Offset(20 + i * 20.0, 68);
+        final filled = i < 2 + v % 2;
+        c.drawRRect(box(o, 16, 22, 5), _p(filled ? cols[1] : dim));
+        if (filled) {
+          _text(c, digits[i % digits.length], o, 14, paper);
+        } else {
+          c.drawCircle(o, 2.4, _p(paper.withValues(alpha: 0.6)));
+        }
+      }
+      c.drawLine(const Offset(50, 49), const Offset(50, 55), _stroke(paper.withValues(alpha: 0.7), 2));
+      c.drawPath(Path()..addPolygon(const [Offset(46, 54), Offset(54, 54), Offset(50, 58)], true), _p(paper.withValues(alpha: 0.7)));
+    case 'searchgridc': // Görsel Arama: aynı şekiller arasında tek farklı şekil ve büyüteç halkası
+      _bg(c, seed, tint: const Color(0xFF2A2D4A));
+      final odd = (7 + v * 5) % 25;
+      for (var i = 0; i < 25; i++) {
+        final o = Offset(18 + (i % 5) * 16.0, 18 + (i ~/ 5) * 16.0);
+        if (i == odd) {
+          c.drawPath(Path()..addPolygon([o + const Offset(0, -5), o + const Offset(5, 4), o + const Offset(-5, 4)], true), _p(cols[2]));
+        } else {
+          c.drawCircle(o, 4.6, _p(cols[(v + 1) % cols.length].withValues(alpha: 0.85)));
+        }
+      }
+      final f = Offset(18 + (odd % 5) * 16.0, 18 + (odd ~/ 5) * 16.0);
+      c.drawCircle(f, 9.5, _stroke(paper, 2.4));
+      c.drawLine(f + const Offset(7, 7), f + const Offset(14, 14), _stroke(paper, 3.2));
+    case 'wordmemc': // Kelime Hafızası: kelime kartları, biri çevrilmiş, işaretli liste
+      _bg(c, seed, tint: const Color(0xFF2B3A55));
+      final words = cover.label.isEmpty ? const ['ELMA', 'DENİZ', 'KİTAP'] : cover.label.split(' ');
+      for (var i = 0; i < 3; i++) {
+        final o = Offset(34, 26 + i * 22.0);
+        c.drawRRect(box(o, 46, 17, 5), _p(i == v % 3 ? cols[(i + v) % cols.length] : paper));
+        _text(c, words[i % words.length], o, 9, i == v % 3 ? paper : dim);
+      }
+      c.drawRRect(box(const Offset(76, 50), 22, 50, 6), _p(dim));
+      for (var i = 0; i < 4; i++) {
+        final y = 32 + i * 12.0;
+        final ok = i < 2 + v % 2;
+        c.drawCircle(Offset(70, y), 3, _p(ok ? cols[5] : paper.withValues(alpha: 0.25)));
+        c.drawLine(Offset(76, y), Offset(84, y), _stroke(paper.withValues(alpha: 0.5), 2));
+      }
     default:
       return false;
   }

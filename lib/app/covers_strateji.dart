@@ -169,6 +169,82 @@ bool _paintStratejiCover(Canvas c, GameCover cover, Color seed) {
         c.drawRect(Rect.fromLTWH(22 + x * 9.3 + 0.4, 22 + y * 9.3 + 0.4, 8.5, 8.5), _p(mjc[(t + v) % 4]));
       }
       c.drawPath(Path()..addPolygon(const [Offset(52, 62), Offset(58, 50), Offset(64, 62)], true), _p(const Color(0xFF8C8178)));
+    case 'autobattlerc': // Otomatik Savaşçı: iki yarım tahta, karşılıklı birlikler, çapraz kılıç, yedek sıra
+      _bg(c, seed, tint: const Color(0xFF26222F));
+      for (var y = 0; y < 4; y++) {
+        for (var x = 0; x < 5; x++) {
+          c.drawRect(Rect.fromLTWH(15 + x * 14.0, 10 + y * 14.0, 13.2, 13.2),
+              _p((x + y).isEven ? const Color(0xFF4A4458) : const Color(0xFF3B3647)));
+        }
+      }
+      c.drawLine(const Offset(15, 38), const Offset(85, 38), _stroke(const Color(0xFFD9B44A).withValues(alpha: 0.6), 1));
+      void unit(Offset o, Color col, bool up) {
+        final p = Path()
+          ..moveTo(o.dx - 5, o.dy - 5)
+          ..lineTo(o.dx + 5, o.dy - 5)
+          ..lineTo(o.dx + 5, o.dy + 1)
+          ..quadraticBezierTo(o.dx, o.dy + 7, o.dx - 5, o.dy + 1)
+          ..close();
+        c.drawPath(p.shift(const Offset(0, 1)), _p(Colors.black38));
+        c.drawPath(p, _p(col));
+        c.drawLine(o + Offset(0, up ? -3 : 3), o + Offset(0, up ? 2 : -2), _stroke(Colors.white70, 1.2));
+      }
+      const red = Color(0xFFB0563B);
+      const blue = Color(0xFF4A86B8);
+      for (final x in const [1, 2, 3]) {
+        unit(Offset(22 + x * 14.0, 17), red, false);
+      }
+      for (final x in const [0, 2, 4]) {
+        unit(Offset(22 + x * 14.0, 59 - ((x + v) % 2) * 14.0), blue, true);
+      }
+      // Çapraz kılıçlar
+      c.drawLine(const Offset(44, 32), const Offset(56, 44), _stroke(const Color(0xFFE8E2D6), 2.2));
+      c.drawLine(const Offset(56, 32), const Offset(44, 44), _stroke(const Color(0xFFE8E2D6), 2.2));
+      c.drawLine(const Offset(42, 42), const Offset(46, 46), _stroke(const Color(0xFFD9B44A), 2.6));
+      c.drawLine(const Offset(58, 42), const Offset(54, 46), _stroke(const Color(0xFFD9B44A), 2.6));
+      // Yedek sıra ve altın
+      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(12, 74, 64, 16), const Radius.circular(4)), _p(const Color(0xFF1A1720)));
+      for (var k = 0; k < 4; k++) {
+        unit(Offset(21 + k * 15.0, 82), k == v % 4 ? const Color(0xFFD9B44A) : blue, true);
+      }
+      c.drawCircle(const Offset(86, 82), 6, _p(const Color(0xFFD9B44A)));
+      c.drawCircle(const Offset(86, 82), 3.4, _stroke(const Color(0xFF8C6A1E), 1));
+    case 'dungeonkeeperc': // Zindan Ustası: odalar ve koridorlar, diken tuzakları, sandık, yaklaşan kahramanlar
+      _bg(c, seed, tint: const Color(0xFF1D1B22));
+      const stone = Color(0xFF8C8178);
+      const floor = Color(0xFFCDBB9A);
+      final rooms = [
+        const Rect.fromLTWH(10, 12, 30, 26),
+        const Rect.fromLTWH(56, 10, 34, 30),
+        const Rect.fromLTWH(30, 58, 40, 32),
+      ];
+      c.drawRect(const Rect.fromLTWH(38, 22, 20, 8), _p(floor.withValues(alpha: 0.8)));
+      c.drawRect(const Rect.fromLTWH(20, 36, 8, 30), _p(floor.withValues(alpha: 0.8)));
+      c.drawRect(const Rect.fromLTWH(20, 64, 12, 8), _p(floor.withValues(alpha: 0.8)));
+      c.drawRect(const Rect.fromLTWH(70, 38, 8, 22), _p(floor.withValues(alpha: 0.8)));
+      for (final r in rooms) {
+        c.drawRect(r.inflate(2), _p(stone));
+        c.drawRect(r, _p(floor));
+      }
+      // Diken tuzakları
+      for (var k = 0; k < 3; k++) {
+        final x = 18.0 + k * 6;
+        c.drawPath(Path()..addPolygon([Offset(x, 30), Offset(x + 2.5, 24), Offset(x + 5, 30)], true), _p(const Color(0xFF5A5560)));
+      }
+      // Hazine sandığı
+      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(41, 66, 18, 13), const Radius.circular(2)), _p(const Color(0xFF8A5A36)));
+      c.drawRect(const Rect.fromLTWH(41, 70, 18, 2), _p(const Color(0xFFD9B44A)));
+      c.drawRect(const Rect.fromLTWH(48.5, 68, 3, 5), _p(const Color(0xFFD9B44A)));
+      // Ustanın gözü (köşede parlayan iki göz)
+      c.drawCircle(const Offset(66, 22), 2.2, _p(const Color(0xFFE85D5D)));
+      c.drawCircle(const Offset(74, 22), 2.2, _p(const Color(0xFFE85D5D)));
+      c.drawArc(Rect.fromCenter(center: const Offset(70, 28), width: 18, height: 12), math.pi, math.pi, false, _stroke(const Color(0xFF5A3E6B), 3));
+      // Yaklaşan kahramanlar
+      for (var k = 0; k < 2 + v % 2; k++) {
+        final o = Offset(74, 46.0 + k * 6);
+        c.drawCircle(o, 2.6, _p(const Color(0xFF4A86B8)));
+      }
+      c.drawCircle(const Offset(66, 22), 6, _p(const Color(0x33E85D5D)));
     default:
       return false;
   }

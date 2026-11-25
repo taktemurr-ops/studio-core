@@ -334,6 +334,120 @@ bool _paintEgiticiCover(Canvas c, GameCover cover, Color seed) {
       for (var k = 0; k < 3; k++) {
         c.drawCircle(Offset(74 + k * 5.0, 30 - k * 5.0), 3.2 - k * 0.6, _stroke(const Color(0xFF8EC5E8), 1.5));
       }
+    case 'jobsc': // Meslekler: üç güler yüz, üç meslek şapkası (itfaiye kaskı, aşçı şapkası, baret)
+      _bg(c, seed, tint: const Color(0xFFFFF1DC));
+      const skins = [Color(0xFFFFDDB8), Color(0xFFD9A066), Color(0xFFB5764A)];
+      for (var k = 0; k < 3; k++) {
+        final o = Offset(22 + k * 28.0, 60 + (k == 1 ? -4.0 : 2.0));
+        c.drawCircle(o, 11, _p(skins[(k + v) % 3]));
+        c.drawCircle(o + const Offset(-4, -1), 1.6, _p(ink));
+        c.drawCircle(o + const Offset(4, -1), 1.6, _p(ink));
+        c.drawArc(Rect.fromCenter(center: o + const Offset(0, 3), width: 9, height: 6), 0, math.pi, false, _stroke(ink, 1.6));
+        c.drawRRect(card(o + const Offset(0, 22), 20, 14, 6), _p(kid[(k * 2 + v) % kid.length]));
+        switch (k) {
+          case 0: // itfaiye kaskı
+            c.drawArc(Rect.fromCenter(center: o + const Offset(0, -8), width: 24, height: 18), math.pi, math.pi, true,
+                _p(const Color(0xFFD7263D)));
+            c.drawRRect(card(o + const Offset(0, -8), 28, 3.5, 1.5), _p(const Color(0xFFD7263D)));
+            c.drawCircle(o + const Offset(0, -13), 2.2, _p(const Color(0xFFF6C85F)));
+          case 1: // aşçı şapkası
+            c.drawRRect(card(o + const Offset(0, -12), 18, 7, 2), _p(cream));
+            for (var i = 0; i < 3; i++) {
+              c.drawCircle(o + Offset(-6 + i * 6.0, -19), 5.5, _p(cream));
+            }
+            c.drawRRect(card(o + const Offset(0, -12), 18, 7, 2), _stroke(ink.withValues(alpha: 0.3), 0.8));
+          default: // baret
+            c.drawArc(Rect.fromCenter(center: o + const Offset(0, -8), width: 22, height: 18), math.pi, math.pi, true,
+                _p(const Color(0xFFF6C85F)));
+            c.drawRRect(card(o + const Offset(0, -8), 28, 3.5, 1.5), _p(const Color(0xFFE9A23B)));
+            c.drawLine(o + const Offset(0, -17), o + const Offset(0, -9), _stroke(const Color(0xFFE9A23B), 2));
+        }
+      }
+    case 'bodyc': // Vücudumuz: neşeli çocuk figürü, göğsünde kalp, elinde diş fırçası
+      _bg(c, seed, tint: const Color(0xFFE3F1F7));
+      final body = kid[(1 + v) % kid.length];
+      c.drawCircle(const Offset(50, 26), 13, _p(const Color(0xFFFFDDB8)));
+      c.drawArc(Rect.fromCenter(center: const Offset(50, 20), width: 28, height: 18), math.pi, math.pi, true, _p(const Color(0xFF6D4C41)));
+      c.drawCircle(const Offset(45, 26), 1.8, _p(ink));
+      c.drawCircle(const Offset(55, 26), 1.8, _p(ink));
+      c.drawArc(Rect.fromCenter(center: const Offset(50, 30), width: 10, height: 6), 0, math.pi, false, _stroke(ink, 1.6));
+      c.drawRRect(card(const Offset(50, 56), 26, 30, 10), _p(body));
+      c.drawLine(const Offset(38, 48), const Offset(24, 60), _stroke(body, 6));
+      c.drawLine(const Offset(62, 48), const Offset(76, 38), _stroke(body, 6));
+      c.drawLine(const Offset(44, 70), const Offset(42, 88), _stroke(ink, 6));
+      c.drawLine(const Offset(56, 70), const Offset(58, 88), _stroke(ink, 6));
+      final heart = Path()
+        ..moveTo(50, 62)
+        ..cubicTo(40, 55, 44, 47, 50, 52)
+        ..cubicTo(56, 47, 60, 55, 50, 62)
+        ..close();
+      c.drawPath(heart, _p(const Color(0xFFE63946)));
+      c.drawRRect(card(const Offset(80, 32), 4, 14, 2), _p(cream));
+      c.drawRRect(card(const Offset(80, 25), 6, 5, 1.5), _p(kid[(3 + v) % kid.length]));
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(18 + k * 6.0, 22 - k * 5.0), 2.6 - k * 0.5, _stroke(const Color(0xFF8EC5E8), 1.4));
+      }
+    case 'dinoc': // Dinozorlar: güler yüzlü uzun boyunlu dinozor, yanardağ ve ayak izi
+      _bg(c, seed, tint: const Color(0xFFE6F2D9));
+      c.drawPath(Path()..addPolygon(const [Offset(62, 46), Offset(76, 20), Offset(84, 20), Offset(98, 46)], true),
+          _p(const Color(0xFFB08968)));
+      c.drawCircle(const Offset(80, 14), 4, _p(const Color(0xFFE9C46A).withValues(alpha: 0.8)));
+      c.drawCircle(const Offset(86, 8), 3, _p(const Color(0xFFE9C46A).withValues(alpha: 0.6)));
+      c.drawRect(const Rect.fromLTWH(0, 80, 100, 20), _p(const Color(0xFF8AB17D)));
+      final dino = const [Color(0xFF5FA36A), Color(0xFF2A9D8F), Color(0xFF6D9F5B)][v % 3];
+      final tail = Path()
+        ..moveTo(30, 62)
+        ..quadraticBezierTo(14, 66, 6, 58)
+        ..quadraticBezierTo(16, 74, 34, 72)
+        ..close();
+      c.drawPath(tail, _p(dino));
+      c.drawOval(Rect.fromCenter(center: const Offset(46, 64), width: 40, height: 26), _p(dino));
+      final neck = Path()
+        ..moveTo(56, 58)
+        ..quadraticBezierTo(64, 40, 62, 26)
+        ..lineTo(72, 26)
+        ..quadraticBezierTo(74, 46, 64, 66)
+        ..close();
+      c.drawPath(neck, _p(dino));
+      c.drawOval(Rect.fromCenter(center: const Offset(70, 24), width: 18, height: 11), _p(dino));
+      c.drawCircle(const Offset(73, 22), 1.8, _p(ink));
+      c.drawArc(Rect.fromCenter(center: const Offset(73, 26), width: 7, height: 4), 0, math.pi, false, _stroke(ink, 1.2));
+      for (final x in const [34.0, 42.0, 52.0, 60.0]) {
+        c.drawRRect(card(Offset(x, 80), 7, 14, 3), _p(dino));
+      }
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(38 + k * 9.0, 58 + (k % 2) * 4.0), 2.6, _p(cream.withValues(alpha: 0.7)));
+      }
+      for (var k = 0; k < 3; k++) {
+        c.drawCircle(Offset(84 + (k - 1) * 3.5, 84), 1.4, _p(ink.withValues(alpha: 0.5)));
+      }
+      c.drawOval(Rect.fromCenter(center: const Offset(84, 89), width: 7, height: 5), _p(ink.withValues(alpha: 0.5)));
+    case 'fruitvegc': // Meyve ve Sebze: sepet içinde elma, havuç ve üzüm
+      _bg(c, seed, tint: const Color(0xFFFFF4E0));
+      // Havuç
+      c.drawPath(Path()..addPolygon(const [Offset(58, 26), Offset(70, 30), Offset(56, 66)], true), _p(const Color(0xFFF08A4B)));
+      for (var k = 0; k < 3; k++) {
+        c.drawLine(const Offset(64, 28), Offset(62 + k * 5.0, 14 + (k % 2) * 3.0), _stroke(const Color(0xFF6A994E), 2.4));
+      }
+      // Üzüm
+      for (final (x, y) in const [(30.0, 34.0), (38.0, 34.0), (34.0, 41.0), (26.0, 41.0), (42.0, 41.0), (30.0, 48.0), (38.0, 48.0), (34.0, 55.0)]) {
+        c.drawCircle(Offset(x, y), 4.6, _p(const Color(0xFF8E5BB5)));
+        c.drawCircle(Offset(x - 1.4, y - 1.4), 1.3, _p(Colors.white54));
+      }
+      c.drawLine(const Offset(34, 30), const Offset(36, 22), _stroke(const Color(0xFF7A5230), 2));
+      // Elma
+      c.drawCircle(const Offset(46, 54), 11, _p(const Color(0xFFE63946)));
+      c.drawCircle(const Offset(42, 50), 3, _p(Colors.white38));
+      c.drawLine(const Offset(46, 43), const Offset(47, 37), _stroke(const Color(0xFF7A5230), 2));
+      c.drawOval(Rect.fromCenter(center: const Offset(52, 39), width: 9, height: 5), _p(const Color(0xFF6A994E)));
+      // Sepet
+      c.drawRRect(card(const Offset(50, 76), 70, 28, 8), _p(const Color(0xFFC08A5A)));
+      for (var k = 0; k < 6; k++) {
+        c.drawLine(Offset(20 + k * 12.0, 64), Offset(20 + k * 12.0, 88), _stroke(const Color(0xFF8A5A36), 1.4));
+      }
+      c.drawLine(const Offset(16, 72), const Offset(84, 72), _stroke(const Color(0xFF8A5A36), 1.4));
+      c.drawLine(const Offset(16, 80), const Offset(84, 80), _stroke(const Color(0xFF8A5A36), 1.4));
+      c.drawRRect(card(const Offset(50, 63), 74, 6, 3), _p(const Color(0xFF8A5A36)));
     default:
       return false;
   }

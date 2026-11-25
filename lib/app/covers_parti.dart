@@ -258,6 +258,79 @@ bool _paintPartiCover(Canvas c, GameCover cover, Color seed) {
       c.drawLine(const Offset(50, 66), Offset(50 + 26 * math.cos(ta + 0.3), 66 - 26 * math.sin(ta + 0.3)), _stroke(ink, 3.5));
       c.drawCircle(const Offset(50, 66), 4, _p(ink));
       c.drawLine(const Offset(20, 66), const Offset(80, 66), _stroke(ink, 2.5));
+    case 'wordbombc': // Kelime Bombası: fitili yanan bomba ve etrafında harf kartları
+      _bg(c, seed, tint: const Color(0xFF3A2E4F));
+      const letters = ['K', 'A', 'R', 'E'];
+      for (var k = 0; k < 4; k++) {
+        final a = -2.6 + k * 0.85;
+        card(Offset(50 + math.cos(a) * 36, 58 + math.sin(a) * 30), 15, 17, a * 0.2, fun[(k + v) % fun.length]);
+        _text(c, letters[(k + v) % 4], Offset(50 + math.cos(a) * 36, 58 + math.sin(a) * 30), 10, ink);
+      }
+      c.drawCircle(const Offset(50, 62), 20, _p(ink));
+      c.drawCircle(const Offset(43, 55), 5, _p(Colors.white24));
+      c.drawRRect(box(const Offset(56, 42), 10, 7, 2), _p(const Color(0xFF4A5563)));
+      final fuse = Path()
+        ..moveTo(58, 39)
+        ..quadraticBezierTo(64, 28, 72, 30);
+      c.drawPath(fuse, _stroke(const Color(0xFFB08968), 2));
+      for (var k = 0; k < 6; k++) {
+        final a = k * math.pi / 3;
+        c.drawLine(Offset(72 + math.cos(a) * 3, 30 + math.sin(a) * 3), Offset(72 + math.cos(a) * 7, 30 + math.sin(a) * 7),
+            _stroke(k.isEven ? sun : coral, 1.8));
+      }
+      c.drawCircle(const Offset(72, 30), 2.6, _p(paper));
+    case 'fivesecc': // Beş Saniyede Üç: büyük kronometrede 5 ve üç onay balonu
+      _bg(c, seed, tint: const Color(0xFF2F5D62));
+      const o = Offset(42, 54);
+      c.drawRRect(box(const Offset(42, 24), 10, 7, 2), _p(paper));
+      c.drawCircle(o, 26, _p(paper));
+      c.drawCircle(o, 26, _stroke(ink, 3));
+      final frac = 0.2 + (v % 3) * 0.2;
+      c.drawArc(Rect.fromCircle(center: o, radius: 21), -math.pi / 2, math.pi * 2 * frac, true, _p(coral.withValues(alpha: 0.85)));
+      c.drawCircle(o, 13, _p(paper));
+      _text(c, '5', o, 20, ink);
+      for (var k = 0; k < 3; k++) {
+        final b = Offset(82, 26 + k * 22.0);
+        final done = k < 1 + v % 3;
+        c.drawCircle(b, 9, _p(done ? leaf : paper.withValues(alpha: 0.3)));
+        if (done) {
+          c.drawPath(
+              Path()
+                ..moveTo(b.dx - 4, b.dy)
+                ..lineTo(b.dx - 1, b.dy + 3)
+                ..lineTo(b.dx + 4, b.dy - 3),
+              _stroke(paper, 2));
+        } else {
+          _text(c, '${k + 1}', b, 9, paper);
+        }
+      }
+    case 'mostlikelyc': // Kim En Çok?: üç kişi, oy okları ortadakini gösteriyor, başında yıldız
+      _bg(c, seed, tint: const Color(0xFF5B3A6B));
+      final chosen = v % 3;
+      for (var k = 0; k < 3; k++) {
+        final o = Offset(22 + k * 28.0, 70);
+        person(o, fun[(k * 2 + v) % fun.length], k == chosen ? 1.25 : 1.0);
+      }
+      final top = Offset(22 + chosen * 28.0, 44);
+      final star = Path();
+      for (var i = 0; i < 10; i++) {
+        final a = -math.pi / 2 + i * math.pi / 5;
+        final r = i.isEven ? 8.0 : 3.6;
+        final p = top + Offset(r * math.cos(a), r * math.sin(a));
+        i == 0 ? star.moveTo(p.dx, p.dy) : star.lineTo(p.dx, p.dy);
+      }
+      c.drawPath(star..close(), _p(sun));
+      // Oy okları
+      for (var k = 0; k < 3; k++) {
+        if (k == chosen) continue;
+        final from = Offset(22 + k * 28.0, 26);
+        final to = top + Offset((k < chosen ? -10.0 : 10.0), -8);
+        c.drawLine(from, to, _stroke(paper, 2));
+        c.drawCircle(from, 3, _p(paper));
+      }
+      for (var k = 0; k < 4; k++) {
+        c.drawCircle(Offset(30 + k * 13.0, 12), 3.4, _p(k < 3 ? fun[(k + 1) % fun.length] : paper.withValues(alpha: 0.3)));
+      }
     default:
       return false;
   }

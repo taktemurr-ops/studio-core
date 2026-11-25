@@ -241,6 +241,86 @@ bool _paintBilgiCover(Canvas c, GameCover cover, Color seed) {
               ..quadraticBezierTo(x + 4, 12, x, 8),
             _stroke(paper.withValues(alpha: 0.6), 1.6));
       }
+    case 'astroc': // Uzay ve Astronomi: halkalı gezegen, hilal, yıldızlar ve teleskop
+      _bg(c, seed, tint: const Color(0xFF141B3A));
+      for (var k = 0; k < 14; k++) {
+        final o = Offset(((k * 37 + v * 13) % 92) + 4.0, ((k * 53 + 11) % 60) + 4.0);
+        c.drawCircle(o, k % 4 == 0 ? 1.4 : 0.8, _p(paper.withValues(alpha: 0.85)));
+      }
+      // Hilal
+      c.drawCircle(const Offset(80, 20), 9, _p(const Color(0xFFF2E6B8)));
+      c.drawCircle(const Offset(84, 17), 8, _p(const Color(0xFF1B2450)));
+      // Halkalı gezegen
+      const pc = Offset(44, 44);
+      c.save();
+      c.translate(pc.dx, pc.dy);
+      c.rotate(-0.35);
+      c.drawArc(Rect.fromCenter(center: Offset.zero, width: 58, height: 16), math.pi, math.pi, false, _stroke(const Color(0xFFE9B949), 3));
+      c.restore();
+      c.drawCircle(
+          pc,
+          17,
+          Paint()
+            ..shader = const RadialGradient(center: Alignment(-0.4, -0.4), colors: [Color(0xFFF4A261), Color(0xFFB5523B)])
+                .createShader(Rect.fromCircle(center: pc, radius: 17)));
+      c.drawLine(pc + const Offset(-15, 4), pc + const Offset(14, -6), _stroke(Colors.white24, 2));
+      c.save();
+      c.translate(pc.dx, pc.dy);
+      c.rotate(-0.35);
+      c.drawArc(Rect.fromCenter(center: Offset.zero, width: 58, height: 16), 0, math.pi, false, _stroke(const Color(0xFFE9B949), 3));
+      c.restore();
+      // Teleskop
+      c.save();
+      c.translate(70, 76);
+      c.rotate(-0.6);
+      c.drawRRect(box(Offset.zero, 30, 8, 3), _p(paper));
+      c.drawRRect(box(const Offset(16, 0), 6, 11, 2), _p(const Color(0xFF8FB8DE)));
+      c.restore();
+      c.drawLine(const Offset(70, 78), const Offset(62, 94), _stroke(paper, 2));
+      c.drawLine(const Offset(70, 78), const Offset(78, 94), _stroke(paper, 2));
+      c.drawLine(const Offset(70, 78), const Offset(70, 94), _stroke(paper, 2));
+    case 'artlitc': // Sanat ve Edebiyat: açık kitap, boya paleti ve fırça
+      _bg(c, seed, tint: const Color(0xFF6B3F5E));
+      // Açık kitap
+      final left = Path()
+        ..moveTo(50, 70)
+        ..quadraticBezierTo(34, 62, 14, 66)
+        ..lineTo(14, 32)
+        ..quadraticBezierTo(34, 28, 50, 36)
+        ..close();
+      final right = Path()
+        ..moveTo(50, 70)
+        ..quadraticBezierTo(66, 62, 86, 66)
+        ..lineTo(86, 32)
+        ..quadraticBezierTo(66, 28, 50, 36)
+        ..close();
+      c.drawPath(left.shift(const Offset(0, 2)), _p(Colors.black26));
+      c.drawPath(right.shift(const Offset(0, 2)), _p(Colors.black26));
+      c.drawPath(left, _p(paper));
+      c.drawPath(right, _p(const Color(0xFFEFE6D6)));
+      c.drawLine(const Offset(50, 36), const Offset(50, 70), _stroke(ink.withValues(alpha: 0.4), 1));
+      for (var k = 0; k < 4; k++) {
+        c.drawLine(Offset(20, 40 + k * 6.0), Offset(44, 42 + k * 6.0), _stroke(ink.withValues(alpha: 0.35), 1.2));
+      }
+      // Paletin üstündeki boya lekeleri sağ sayfada
+      final pal = Path()
+        ..addOval(Rect.fromCenter(center: const Offset(68, 50), width: 28, height: 22));
+      c.drawPath(pal, _p(const Color(0xFFD9B98A)));
+      c.drawCircle(const Offset(74, 54), 3, _p(const Color(0xFFEFE6D6)));
+      const dabs = [Color(0xFFE07A5F), Color(0xFF3D9A8B), Color(0xFFE9B949), Color(0xFF5B7DD5)];
+      for (var k = 0; k < 4; k++) {
+        c.drawCircle(Offset(60 + (k % 2) * 8.0 + (k ~/ 2) * 3, 45 + (k ~/ 2) * 7.0), 2.8, _p(dabs[(k + v) % 4]));
+      }
+      // Fırça
+      c.drawLine(const Offset(58, 88), const Offset(84, 74), _stroke(const Color(0xFF8A5A36), 3));
+      c.drawLine(const Offset(54, 90), const Offset(60, 87), _stroke(dabs[v % 4], 4));
+      // Tüy kalem
+      final quill = Path()
+        ..moveTo(18, 88)
+        ..quadraticBezierTo(24, 72, 40, 76)
+        ..quadraticBezierTo(30, 82, 18, 88)
+        ..close();
+      c.drawPath(quill, _p(paper.withValues(alpha: 0.9)));
     default:
       return false;
   }
