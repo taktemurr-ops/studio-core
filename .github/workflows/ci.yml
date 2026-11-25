@@ -21,14 +21,25 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
-      # Bütün test/*_test.dart dosyaları açıkça verilir; her dosyanın gerçekten
-      # koştuğu çıktıdan denetlenir (bir dosya sessizce atlanırsa CI kırılır).
+      # Bütün test/*_test.dart dosyaları açıkça verilir; JSON raporundan her
+      # dosyada en az bir testin koştuğu denetlenir (sessiz atlama CI'ı kırar).
       - name: Tests (all files)
         run: |
-          set -o pipefail
           files=$(ls test/*_test.dart)
           echo "$files"
-          flutter test --reporter expanded $files 2>&1 | tee test_out.txt
-          for f in $files; do
-            grep -q "$f" test_out.txt || { echo "::error::$f koşmadı"; exit 1; }
-          done
+          flutter test --reporter expanded --file-reporter json:test_report.json $files
+          python3 - $files <<'PY'
+          import json, sys
+          suites, counts = {}, {}
+          for line in open('test_report.json'):
+              e = json.loads(line)
+              if e.get('type') == 'suite':
+                  suites[e['suite']['id']] = e['suite']['path']
+              elif e.get('type') == 'testStart' and not e['test']['name'].startswith('loading '):
+                  p = suites.get(e['test']['suiteID'], '')
+                  counts[p] = counts.get(p, 0) + 1
+          bad = [f for f in sys.argv[1:] if not any(k.endswith(f) and v for k, v in counts.items())]
+          for k, v in sorted(counts.items()): print(v, k)
+          if bad:
+              print('::error::koşmayan test dosyaları: ' + ' '.join(bad)); sys.exit(1)
+          PY
