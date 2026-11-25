@@ -200,7 +200,10 @@ class _AppHubShellState extends State<AppHubShell> {
         selectedIndex: _tab,
         backgroundColor: Color.lerp(s.background.last, Colors.black, 0.2),
         indicatorColor: s.accent.withValues(alpha: 0.25),
-        onDestinationSelected: (i) => setState(() => _tab = i),
+        onDestinationSelected: (i) => setState(() {
+          _tab = i;
+          _query = '';
+        }),
         destinations: [
           NavigationDestination(icon: const Icon(Icons.home_rounded), label: tx('nav_home')),
           NavigationDestination(icon: const Icon(Icons.apps_rounded), label: tx('nav_apps')),
