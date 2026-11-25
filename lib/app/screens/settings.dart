@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/strings.dart';
 import '../adaptive.dart';
@@ -91,7 +92,10 @@ class SettingsScreen extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.policy),
           title: Text(app.t('privacy_policy')),
-          subtitle: Text(app.config.privacyUrl.isEmpty ? 'PRIVACY.md' : app.config.privacyUrl),
+          trailing: app.config.effectivePrivacyUrl.isEmpty ? null : const Icon(Icons.open_in_new),
+          onTap: app.config.effectivePrivacyUrl.isEmpty
+              ? null
+              : () => launchUrl(Uri.parse(app.config.effectivePrivacyUrl), mode: LaunchMode.externalApplication),
         ),
         ListTile(
           leading: const Icon(Icons.delete_forever, color: Colors.red),

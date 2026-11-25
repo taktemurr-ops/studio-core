@@ -214,7 +214,10 @@ String _day(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 /// Onaylı tasarımlı merkezin `main()` girişi.
-void bootstrapApprovedHub(HubConfig hub, ApprovedHubStyle style) {
+void bootstrapApprovedHub(HubConfig hub, ApprovedHubStyle style, {String privacyUrl = ''}) {
+  hubPrivacyUrl = privacyUrl.isNotEmpty
+      ? privacyUrl
+      : 'https://github.com/taktemurr-ops/${hub.hubId}/blob/main/PRIVACY.md';
   final startWatch = Stopwatch()..start();
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();

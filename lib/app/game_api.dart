@@ -142,6 +142,10 @@ class TutorialStep {
   const TutorialStep(this.icon, this.text);
 }
 
+/// Privacy policy address shared by every game of a hub; set once at start-up
+/// (see `bootstrapApprovedHub`). Used when a game has no own [GameConfig.privacyUrl].
+String hubPrivacyUrl = '';
+
 /// Per-game configuration consumed by the shared shell.
 class GameConfig {
   final String gameId;
@@ -172,6 +176,9 @@ class GameConfig {
     this.privacyUrl = '',
     this.kidsMode = false,
   });
+
+  /// The privacy page to open: the game's own address, else the hub's.
+  String get effectivePrivacyUrl => privacyUrl.isNotEmpty ? privacyUrl : hubPrivacyUrl;
 
   String localized(List<String> l, String lang) {
     return Strings.pick(l, lang);
