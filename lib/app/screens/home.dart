@@ -8,8 +8,10 @@ import '../../online/online_ui.dart';
 
 import '../../core/level_plan.dart';
 import '../../core/save_store.dart';
+import '../../core/strings.dart';
 import '../adaptive.dart';
 import '../covers.dart';
+import '../game_api.dart';
 import '../app_state.dart';
 import '../studio_ui.dart';
 import '../widgets.dart';
@@ -341,7 +343,7 @@ class _HomeTab extends StatelessWidget {
               const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 28),
             ]),
           ),
-        if (modes.isNotEmpty)
+        if (modes.isNotEmpty || app.config.extraModes.isNotEmpty)
           StudioSectionHeader(
             icon: Icons.star_rounded,
             iconColor: StudioLook.gold,
@@ -354,6 +356,12 @@ class _HomeTab extends StatelessWidget {
           return Wrap(spacing: 10, runSpacing: 10, children: [
             for (final m in modes)
               SizedBox(width: w, height: w * 1.55, child: _ModeCard(app: app, mode: m, art: _art)),
+            for (final x in app.config.extraModes)
+              SizedBox(
+                  key: ValueKey('extra-mode-${x.id}'),
+                  width: w,
+                  height: w * 1.55,
+                  child: _ModeCard(app: app, extra: x, art: _art)),
           ]);
         }),
       ],
@@ -365,10 +373,13 @@ class _HomeTab extends StatelessWidget {
 class _ModeCard extends StatelessWidget {
   final AppState app;
   final GameModeId mode;
-  final Widget Function(double size) art;
-  const _ModeCard({required this.app, required this.mode, required this.art});
 
-  IconData get icon => switch (mode) {
+  /// Oyunun kendi ek modu (ör. öğretici); verildiyse [mode] kullanılmaz.
+  final ExtraMode? extra;
+  final Widget Function(double size) art;
+  const _ModeCard({required this.app, this.mode = GameModeId.practice, this.extra, required this.art});
+
+  IconData get icon => extra?.icon ?? switch (mode) {
         GameModeId.endless => Icons.all_inclusive_rounded,
         GameModeId.timeAttack => Icons.timer_rounded,
         GameModeId.zen => Icons.spa_rounded,
@@ -380,7 +391,7 @@ class _ModeCard extends StatelessWidget {
         _ => Icons.play_arrow_rounded,
       };
 
-  Color get tint => switch (mode) {
+  Color get tint => extra?.color ?? switch (mode) {
         GameModeId.endless => const Color(0xFF7B4FD6),
         GameModeId.timeAttack => const Color(0xFFE0533D),
         GameModeId.zen => const Color(0xFF2E9E78),
@@ -393,9 +404,13 @@ class _ModeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final look = StudioLook.of(context);
-    final best = app.save.records[mode.name];
-    final title = app.t('mode_${mode.name}');
-    final sub = best != null && best > 0 ? '${app.t('best')}: $best' : app.t('mode_${mode.name}_d');
+    final x = extra;
+    final lang = app.strings.lang;
+    final best = x == null ? app.save.records[mode.name] : null;
+    final title = x == null ? app.t('mode_${mode.name}') : Strings.pick(x.title, lang);
+    final sub = x != null
+        ? Strings.pick(x.subtitle, lang)
+        : (best != null && best > 0 ? '${app.t('best')}: $best' : app.t('mode_${mode.name}_d'));
     final r = BorderRadius.circular(18);
     return Semantics(
       button: true,
@@ -406,7 +421,7 @@ class _ModeCard extends StatelessWidget {
         borderRadius: r,
         child: InkWell(
           borderRadius: r,
-          onTap: () => openMode(context, app, mode),
+          onTap: () => x == null ? openMode(context, app, mode) : openExtraMode(context, app, x),
           child: Ink(
             decoration: BoxDecoration(
               borderRadius: r,
@@ -507,6 +522,22 @@ void openMode(BuildContext context, AppState app, GameModeId mode) {
       app.save.stats['run_${mode.name}'] = run;
       openPlay(context, app, p.run(mode, run, difficulty: (3 + app.session.playerLevel ~/ 40).clamp(3, 8)));
   }
+}
+
+/// Oyunun ek modunu (ör. öğretici) onaylı stüdyo iskeletinde açar.
+void openExtraMode(BuildContext context, AppState app, ExtraMode x) {
+  final lang = app.strings.lang;
+  app.openedScreen('extra_${x.id}_opened');
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (c) => StudioScaffold(
+        title: Strings.pick(x.title, lang),
+        icon: x.icon,
+        body: Builder(builder: (c2) => x.builder(c2, lang)),
+      ),
+    ),
+  );
 }
 
 void openPlay(BuildContext context, AppState app, LevelSpec spec) {
