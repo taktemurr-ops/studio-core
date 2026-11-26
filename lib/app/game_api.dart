@@ -153,6 +153,31 @@ class TutorialStep {
   const TutorialStep(this.icon, this.text);
 }
 
+/// Oyunun kendi ek modu (ana ekranda mod kartı): ör. "Öğretici". Kart
+/// dokunulunca [builder]'ın ekranı onaylı stüdyo iskeletinde açılır.
+class ExtraMode {
+  /// Kalıcı kimlik (ör. 'ogretici'); ölçüm ve testler için.
+  final String id;
+
+  /// Kart başlığı ve kısa açıklaması (33 dil, [Strings.pick] sırası).
+  final List<String> title;
+  final List<String> subtitle;
+  final IconData icon;
+  final Color color;
+
+  /// Modun gövdesi. [lang] arayüz dili (ör. 'tr').
+  final Widget Function(BuildContext context, String lang) builder;
+
+  const ExtraMode({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.builder,
+    this.color = const Color(0xFF2E9E78),
+  });
+}
+
 /// Privacy policy address shared by every game of a hub; set once at start-up
 /// (see `bootstrapApprovedHub`). Used when a game has no own [GameConfig.privacyUrl].
 String hubPrivacyUrl = '';
@@ -174,6 +199,10 @@ class GameConfig {
   /// (child-directed ads, no analytics), purchases sit behind a parental gate.
   final bool kidsMode;
 
+  /// Oyunun ana ekranında "Diğer modlar" arasında duran kendi ek modları
+  /// (ör. adım adım öğretici). Her biri bir mod kartı olarak çizilir.
+  final List<ExtraMode> extraModes;
+
   const GameConfig({
     required this.gameId,
     required this.title,
@@ -186,6 +215,7 @@ class GameConfig {
     this.strings = const {},
     this.privacyUrl = '',
     this.kidsMode = false,
+    this.extraModes = const [],
   });
 
   /// The privacy page to open: the game's own address, else the hub's.
