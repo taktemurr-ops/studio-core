@@ -1,0 +1,25 @@
+// Amazon Appstore SDK köprüsü (yalnızca STORE=amazon derlemesine eklenir).
+group = "com.gamestudio100.studio_amazon"
+version = "1.0"
+
+apply plugin: "com.android.library"
+
+android {
+    namespace = "com.gamestudio100.studio_amazon"
+    compileSdk = 35
+
+    defaultConfig {
+        minSdk = 23
+        consumerProguardFiles "proguard-rules.pro"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Maven Central: https://central.sonatype.com/artifact/com.amazon.device/amazon-appstore-sdk
+    implementation "com.amazon.device:amazon-appstore-sdk:3.0.7"
+}

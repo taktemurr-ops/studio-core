@@ -48,6 +48,7 @@ import 'services/purchases.dart';
 import 'studio_apps.dart';
 import 'studio_look.dart';
 import 'tournament_ui.dart';
+import 'tv.dart';
 
 const Map<String, List<String>> _kTx = {
   'nav_home': ['Ana Sayfa', 'Home', 'Start', 'Inicio', 'Accueil', 'الرئيسية', 'خانه', 'בית', 'ہوم', 'Главная', 'Головна', 'Start', 'Domů', 'Acasă', 'Kezdőlap', 'Αρχική', 'Home', 'Início', 'Home', 'Hem', 'Hjem', 'Hjem', 'Koti', 'ホーム', '홈', '首页', 'होम', 'হোম', 'Beranda', 'Utama', 'หน้าแรก', 'Trang chủ', 'Home'],
@@ -283,7 +284,9 @@ void bootstrapApprovedHub(HubConfig hub, ApprovedHubStyle style, {String privacy
       if (services.consent == null) await services.setConsent(false);
     }
     services.registerTransfer(hub.allGames);
-    runApp(ApprovedHubApp(hub: hub, style: style, services: services));
+    // Televizyonda (Android TV / Fire TV) kumandayla oynanamayan oyunlar gizlenir.
+    await TvMode.init();
+    runApp(ApprovedHubApp(hub: TvMode.filterHub(hub), style: style, services: services));
     // Çocuk merkezinde (bütün oyunlar kidsMode) çökme raporu da kapalıdır.
     unawaited(CloudTelemetry.init(crashReports: !_kidsHub(hub), measurement: false));
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -338,7 +341,8 @@ class _ApprovedHubAppState extends State<ApprovedHubApp> with WidgetsBindingObse
         debugShowCheckedModeBanner: false,
         navigatorKey: _navKey,
         scrollBehavior: const StudioScrollBehavior(),
-        builder: (context, child) => DesktopInput(navigatorKey: _navKey, child: child ?? const SizedBox.shrink()),
+        builder: (context, child) =>
+            TvScope(child: DesktopInput(navigatorKey: _navKey, child: child ?? const SizedBox.shrink())),
         theme: theme,
         darkTheme: theme,
         themeMode: ThemeMode.dark,
@@ -537,9 +541,10 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
       if (!mounted) return;
       state.onResumed();
       widget.services.active = state;
-      await Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => HubGamePage(state: state, backLabel: tx('nav_games'), cover: hub.coverFor(g.gameId)),
-      ));
+      // Televizyonda oyun ekranı kumanda imleciyle oynanır (bkz. tv.dart).
+      await tvGame(() => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => HubGamePage(state: state, backLabel: tx('nav_games'), cover: hub.coverFor(g.gameId)),
+          )));
       widget.services.active = null;
       state.onPaused();
       await _record(g, state);
@@ -1245,12 +1250,12 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
   Future<RoundResult?> _playExternal(AppState st, LevelSpec spec, int players) async {
     st.onResumed();
     widget.services.active = st;
-    final r = await Navigator.of(context).push<RoundResult>(MaterialPageRoute<RoundResult>(
-      builder: (_) => ProviderScope(
-        overrides: [appStateProvider.overrideWith((ref) => st)],
-        child: PlayScreen(spec: spec, players: players, external: true),
-      ),
-    ));
+    final r = await tvGame(() => Navigator.of(context).push<RoundResult>(MaterialPageRoute<RoundResult>(
+          builder: (_) => ProviderScope(
+            overrides: [appStateProvider.overrideWith((ref) => st)],
+            child: PlayScreen(spec: spec, players: players, external: true),
+          ),
+        )));
     widget.services.active = null;
     st.onPaused();
     final g = _game(st.config.gameId);

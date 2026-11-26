@@ -1,0 +1,32 @@
+name: studio_samsung
+description: "Samsung Galaxy Store için studio_core mağaza arka ucu: Samsung In-App Purchase (IapHelper, SDK 6.x) + AdMob. Yalnızca --dart-define=STORE=samsung derlemelerine eklenir (merkezlerde tool/store_flavor.py)."
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Merkezler studio_core'u dependency_overrides ile aynı SHA'ya sabitler.
+  studio_core:
+    git:
+      url: https://github.com/taktemurr-ops/studio-core
+
+dependency_overrides:
+  studio_core:
+    path: ../..
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.gamestudio100.studio_samsung
+        pluginClass: StudioSamsungPlugin

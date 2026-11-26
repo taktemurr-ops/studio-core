@@ -4,7 +4,7 @@ analyzer:
   exclude:
     - build/**
     - "**/*.g.dart"
-    # AppGallery paketi kendi CI işinde (huawei-package) denetlenir.
+    # Mağaza paketleri kendi CI işlerinde (huawei-package, store-packages) denetlenir.
     - packages/**
 
 linter:

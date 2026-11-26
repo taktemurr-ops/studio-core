@@ -1,0 +1,26 @@
+name: studio_onestore
+description: "ONE store (Kore) için studio_core mağaza arka ucu: ONE store IAP SDK v21 (resmi flutter_onestore_inapp eklentisi) + AdMob. Yalnızca --dart-define=STORE=onestore derlemelerine eklenir (merkezlerde tool/store_flavor.py)."
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  studio_core:
+    git:
+      url: https://github.com/taktemurr-ops/studio-core
+  # ONE store'un resmi eklentisi (SDK Maven Central'dan: com.onestorecorp.sdk:sdk-iap).
+  flutter_onestore_inapp: 0.4.3
+
+dependency_overrides:
+  studio_core:
+    path: ../..
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0

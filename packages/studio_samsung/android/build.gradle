@@ -1,0 +1,41 @@
+// Samsung IAP köprüsü (yalnızca STORE=samsung derlemesine eklenir).
+//
+// Samsung IAP SDK (AAR) Samsung hesabıyla indirilir, herkese açık bir Maven
+// deposunda yoktur. CI, SAMSUNG_IAP_AAR_URL gizli değişkeni tanımlıysa AAR'ı
+// indirir ve yolunu SAMSUNG_IAP_AAR ortam değişkenine yazar
+// (merkezlerde tool/store_flavor.py). AAR yoksa "stub" kaynakları derlenir:
+// satın alma kullanılamaz döner, uygulama reklamla (AdMob) çalışır.
+group = "com.gamestudio100.studio_samsung"
+version = "1.0"
+
+apply plugin: "com.android.library"
+
+def samsungAar = System.getenv("SAMSUNG_IAP_AAR")
+def hasSamsungSdk = samsungAar != null && new File(samsungAar).isFile()
+logger.lifecycle("studio_samsung: Samsung IAP SDK " + (hasSamsungSdk ? "var (" + samsungAar + ")" : "yok, satın alma kapalı"))
+
+android {
+    namespace = "com.gamestudio100.studio_samsung"
+    compileSdk = 35
+
+    defaultConfig {
+        minSdk = 23
+        consumerProguardFiles "proguard-rules.pro"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main.java.srcDirs += hasSamsungSdk ? "src/sdk/java" : "src/stub/java"
+    }
+}
+
+dependencies {
+    // Uygulama modülü AAR'ı ayrıca "implementation" olarak ekler (store_flavor.py).
+    if (hasSamsungSdk) {
+        compileOnly files(samsungAar)
+    }
+}
