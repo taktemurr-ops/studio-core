@@ -8,6 +8,7 @@ import '../core/achievements.dart';
 import '../core/clock.dart';
 import '../core/daily.dart';
 import '../core/game_rules.dart';
+import '../core/global_daily.dart';
 import '../core/game_session.dart';
 import '../core/level_plan.dart';
 import '../core/monetization.dart';
@@ -193,8 +194,60 @@ class AppState extends ChangeNotifier {
     changed();
   }
 
+  // ---- Günün Bulmacası ---------------------------------------------------------
+  /// Günün Bulmacası açıldığında oynanan UTC günü (sonuç bu güne yazılır).
+  String? globalDailyDay;
+
+  /// Son günlük sonucun kaydı (true: günün ilk çözümü, sıralamaya girer).
+  Future<bool>? pendingDaily;
+
+  /// Son kaydedilen günlük sonuç.
+  DailyEntry? lastDaily;
+
+  /// Merkezdeki bütün oyunlarla ortak yerel günlük kayıt.
+  GlobalDailyStore get dailyStore => GlobalDailyStore.of(session.store.backend);
+
+  /// Bugünün (UTC) ortak bölümünü oynat: [globalDailyDay] ayarlanır.
+  LevelSpec startGlobalDaily([DateTime? now]) {
+    final day = GlobalDaily.utcDay(now ?? DateTime.now());
+    globalDailyDay = day;
+    return config.rules.globalDailySpec(day);
+  }
+
+  void _maybeDaily(LevelSpec spec, RoundResult r, int elapsedMs) {
+    final day = globalDailyDay;
+    final rules = config.rules;
+    if (day == null || !rules.globalDaily || spec.mode != GameModeId.daily) return;
+    if (spec.seed != rules.globalDailySpec(day).seed) return;
+    globalDailyDay = null;
+    final rank = rules.dailyRank;
+    if (!r.won && !(rank == DailyRank.score && r.score > 0)) return;
+    final ms = elapsedMs > 0 ? elapsedMs : r.seconds * 1000;
+    final e = DailyEntry(
+      gameId: config.gameId,
+      day: day,
+      // Sunucu kuralları: 1 sn – 24 sa, hamle ≤ 100.000, puan < 10^9.
+      ms: ms.clamp(1000, 86400000),
+      moves: r.moves.clamp(0, 100000),
+      score: r.score.clamp(0, 999999999),
+      rank: rank,
+      lang: rules.dailyPerLanguage ? strings.lang : '',
+    );
+    lastDaily = e;
+    pendingDaily = _recordDaily(e);
+  }
+
+  Future<bool> _recordDaily(DailyEntry e) async {
+    final store = dailyStore;
+    final first = await store.record(e);
+    // Çocuk oyunlarında çevrimiçi sıralama yok; sonuç yalnızca cihazda kalır.
+    if (first && !config.kidsMode && await Online.instance.submitDailyResult(e)) await store.markSynced(e);
+    return first;
+  }
+
   // ---- Rounds -------------------------------------------------------------------
-  LevelOutcome finishRound(LevelSpec spec, RoundResult r) {
+  LevelOutcome finishRound(LevelSpec spec, RoundResult r, {int elapsedMs = 0}) {
+    _maybeDaily(spec, r, elapsedMs);
     final out = session.completeRound(spec, r);
     if (r.won && (spec.mode == GameModeId.daily || spec.mode == GameModeId.weekly)) {
       unawaited(Online.instance.submitDaily(config.gameId, dayKey(), save.weeklyKey, r.score));

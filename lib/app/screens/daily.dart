@@ -5,6 +5,7 @@ import '../../core/daily.dart';
 import '../../core/level_plan.dart';
 import '../../core/missions.dart';
 import '../app_state.dart';
+import '../global_daily_ui.dart';
 import '../studio_ui.dart';
 import '../widgets.dart';
 import 'home.dart';
@@ -123,6 +124,7 @@ class DailyScreen extends ConsumerWidget {
 
         // ---- Special levels ----
         SectionTitle(app.t('mode_daily'), icon: Icons.event_available_rounded),
+        if (app.config.rules.globalDaily && !app.config.kidsMode) GlobalDailyCard(app: app),
         StudioMenuRow(
           icon: Icons.today_rounded,
           color: const Color(0xFF2F7BD9),

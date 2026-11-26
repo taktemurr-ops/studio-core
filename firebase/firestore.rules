@@ -35,6 +35,37 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if me(uid) && request.resource.data.score is int && request.resource.data.score >= 0 && request.resource.data.score < 100000000;
     }
+    // Günün Bulmacası (lib/core/global_daily.dart): tablo = {oyun}[-{dil}]_{YYYY-AA-GG} (UTC günü).
+    // Herkes okur; her oyuncu tabloya yalnızca bir kez, kendi adına yazar (günün
+    // ilk sonucu; güncelleme ve silme yok). Çevrimdışı oynanan sonuç en geç
+    // 3 gün içinde gönderilebilir; geleceğin tablosuna yazılamaz.
+    match /daily/{board}/results/{uid} {
+      function dayStart() {
+        let d = board.split('_')[1].split('-');
+        return timestamp.date(int(d[0]), int(d[1]), int(d[2]));
+      }
+      function validDaily() {
+        let r = request.resource.data;
+        return r.keys().hasOnly(['ms', 'moves', 'score', 'm', 'k', 'name', 'avatar', 'at'])
+            && r.keys().hasAll(['ms', 'moves', 'score', 'm', 'k', 'name', 'avatar', 'at'])
+            && r.ms is int && r.ms >= 1000 && r.ms <= 86400000
+            && r.moves is int && r.moves >= 0 && r.moves <= 100000
+            && r.score is int && r.score >= 0 && r.score < 1000000000
+            && r.m in ['t', 's']
+            && r.k is int
+            && (r.m == 't' ? r.k == r.ms * 1000 + math.min(r.moves, 999) : r.k == 1000000000 - r.score)
+            && r.name is string && r.name.size() <= 16
+            && r.avatar is int && r.avatar >= 0 && r.avatar < 100
+            && r.at == request.time;
+      }
+      allow read: if signedIn();
+      allow create: if me(uid)
+                    && board.matches('^[a-z0-9-]{1,80}_[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+                    && request.time >= dayStart() - duration.value(1, 'h')
+                    && request.time < dayStart() + duration.value(4, 'd')
+                    && validDaily();
+      allow update, delete: if false;
+    }
     match /matches/{id} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.host == request.auth.uid;

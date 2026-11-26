@@ -27,7 +27,12 @@ class PlayScreen extends ConsumerStatefulWidget {
 
   /// Çevrimiçi maç bağlantısı.
   final MatchLink? match;
-  const PlayScreen({super.key, required this.spec, this.resume = false, this.players = 0, this.match});
+
+  /// Dışarıdan açılan tek el (Günün Bulmacası, Aile Turnuvası): sonuç
+  /// ekranı yerine el bitince [RoundResult] ile kapanır; vazgeçilirse null.
+  final bool external;
+  const PlayScreen(
+      {super.key, required this.spec, this.resume = false, this.players = 0, this.match, this.external = false});
 
   @override
   ConsumerState<PlayScreen> createState() => _PlayScreenState();
@@ -39,6 +44,9 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
   int _roundKey = 0;
   bool _finished = false;
   late LevelSpec _spec = widget.spec;
+
+  /// Bölüm hazır olduğundan beri geçen süre (günlük sıralama için).
+  final Stopwatch _clock = Stopwatch();
 
   @override
   void initState() {
@@ -53,6 +61,9 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       final g = await runBuild(app.config.rules, _spec);
       if (!mounted) return;
       setState(() => _level = g);
+      _clock
+        ..reset()
+        ..start();
       if (_spec.levelId == 1 && _spec.mode == GameModeId.campaign && app.save.stat('tutorial_seen') == 0) {
         app.save.stats['tutorial_seen'] = 1;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -339,8 +350,29 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
   Future<void> _finish(AppState app, RoundResult r) async {
     if (_finished) return;
     _finished = true;
-    final out = app.finishRound(_spec, r);
+    _clock.stop();
+    final out = app.finishRound(_spec, r, elapsedMs: _clock.elapsedMilliseconds);
     if (!mounted) return;
+    if (widget.external) {
+      // Süreyi bildirmeyen oyunlarda kabuğun ölçtüğü süre kullanılır.
+      Navigator.pop(
+          context,
+          r.seconds > 0
+              ? r
+              : RoundResult(
+                  won: r.won,
+                  score: r.score,
+                  stars: r.stars,
+                  seconds: (_clock.elapsedMilliseconds / 1000).ceil(),
+                  moves: r.moves,
+                  hintsUsed: r.hintsUsed,
+                  undosUsed: r.undosUsed,
+                  gameStats: r.gameStats,
+                  headline: r.headline,
+                  winnerSeat: r.winnerSeat,
+                ));
+      return;
+    }
     final action = await showModalBottomSheet<String>(
       context: context,
       isDismissible: false,

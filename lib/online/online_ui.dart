@@ -191,7 +191,10 @@ class _OnlineLobbyState extends State<OnlineLobby> {
 
   AppState get app => widget.app;
   OnlineBackend get b => Online.instance.backend!;
-  int get seats => app.config.rules.localPlayers;
+  /// Masa büyüklüğü: oyun birden çok seçenek sunuyorsa oyuncu seçer.
+  late int seats = app.config.rules.onlineSeatChoices.isNotEmpty
+      ? app.config.rules.onlineSeatChoices.first
+      : app.config.rules.localPlayers;
   String get gameId => app.config.gameId;
 
   @override
@@ -291,6 +294,28 @@ class _OnlineLobbyState extends State<OnlineLobby> {
                 ),
               ),
             ]),
+            if (app.config.rules.onlineSeatChoices.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  const Icon(Icons.groups_rounded),
+                  for (final n in app.config.rules.onlineSeatChoices)
+                    ChoiceChip(
+                      key: ValueKey('seats-$n'),
+                      label: Text('$n'),
+                      selected: seats == n,
+                      onSelected: _busy
+                          ? null
+                          : (_) {
+                              setState(() {
+                                seats = n;
+                                _tables = null;
+                              });
+                              unawaited(_refresh());
+                            },
+                    ),
+                ]),
+              ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(app.t('private_table')),
@@ -467,7 +492,7 @@ class _WaitingRoomState extends State<WaitingRoom> {
   @override
   Widget build(BuildContext context) {
     final seats = m.seats;
-    final size = app.config.rules.localPlayers;
+    final size = m.size;
     return Scaffold(
       appBar: AppBar(title: Text(app.t('waiting_players'))),
       body: ContentWidth(
