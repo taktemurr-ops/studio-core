@@ -2,6 +2,7 @@
 // geçer, ekranlar taşmadan açılır (sağdan sola ve tablet dahil), renkler
 // okunur kalır.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -86,7 +87,20 @@ Future<void> _settle(WidgetTester tester) async {
   }
 }
 
+Future<void> _back(WidgetTester tester) async {
+  await tester.tap(find.byType(BackButton).last);
+}
+
 void main() {
+  // Ses eklentisi testte yok: kanallar sessizce yanıtlanır.
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    for (final ch in ['xyz.luan/audioplayers', 'xyz.luan/audioplayers.global']) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(MethodChannel(ch), (call) async => null);
+    }
+  });
+
   group('palet', () {
     test('oyun renginden türeyen palet koyu ve okunur', () {
       for (final seed in [
@@ -159,14 +173,14 @@ void main() {
         await _settle(tester);
         expect(find.byType(ShopScreen), findsOneWidget);
         expect(tester.takeException(), isNull);
-        await tester.pageBack();
+        await _back(tester);
         await _settle(tester);
         await tester.tap(find.byTooltip(s.t('settings')));
         await _settle(tester);
         expect(find.byType(SettingsScreen), findsOneWidget);
         expect(find.byType(StudioPanel), findsWidgets);
         expect(tester.takeException(), isNull);
-        await tester.pageBack();
+        await _back(tester);
         await _settle(tester);
 
         // Dünyalar ve ilk dünyanın bölüm kutuları.
@@ -212,6 +226,19 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.tap(find.byIcon(Icons.calendar_today_rounded).first);
     await _settle(tester);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byIcon(Icons.person_outline_rounded).first);
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byTooltip(Strings('de').t('settings')));
+    await _settle(tester);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await _back(tester);
+    await _settle(tester);
+    await tester.tap(find.byTooltip(Strings('de').t('shop')));
+    await _settle(tester);
+    expect(find.byType(ShopScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 1));

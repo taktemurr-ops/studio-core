@@ -92,25 +92,31 @@ class DailyScreen extends ConsumerWidget {
         SectionTitle(app.t('surprise'), icon: Icons.card_giftcard_rounded, iconColor: const Color(0xFFB98CFF)),
         StudioPanel(
           margin: EdgeInsets.zero,
-          child: Row(children: [
-            const StudioIconBadge(Icons.card_giftcard_rounded, color: Color(0xFF9763BC), size: 46),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(app.t('surprise'), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
-                Text(s.lastSurpriseDay == today ? app.t('claimed') : app.t('surprise_hint'),
-                    style: const TextStyle(color: Color(0xFFC9CCE4), fontSize: 13)),
-              ]),
-            ),
-            const SizedBox(width: 8),
-            FilledButton(
-              onPressed: d.surpriseAvailable(s, now)
-                  ? () {
-                      final r = app.claimSurprise();
-                      if (r != null) _rewardDialog(context, app, r);
-                    }
-                  : null,
-              child: Text(app.t('claim')),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(children: [
+              const StudioIconBadge(Icons.card_giftcard_rounded, color: Color(0xFF9763BC), size: 46),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(app.t('surprise'),
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+                  Text(s.lastSurpriseDay == today ? app.t('claimed') : app.t('surprise_hint'),
+                      style: const TextStyle(color: Color(0xFFC9CCE4), fontSize: 13)),
+                ]),
+              ),
+            ]),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: FilledButton(
+                onPressed: d.surpriseAvailable(s, now)
+                    ? () {
+                        final r = app.claimSurprise();
+                        if (r != null) _rewardDialog(context, app, r);
+                      }
+                    : null,
+                child: Text(app.t('claim')),
+              ),
             ),
           ]),
         ),
@@ -212,6 +218,7 @@ class _MissionTile extends StatelessWidget {
         claimed
             ? const Icon(Icons.check_circle_rounded, color: StudioLook.good, size: 32)
             : FilledButton(
+                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 14), minimumSize: const Size(48, 48)),
                 onPressed: m.done(app.save)
                     ? () {
                         final r = app.session.claimMission(m);
@@ -238,24 +245,29 @@ class _Wheel extends StatelessWidget {
     final available = app.session.daily.wheelAvailable(app.save, now);
     return StudioPanel(
       margin: EdgeInsets.zero,
-      child: Row(children: [
-        const Icon(Icons.redeem_rounded, color: Color(0xFFFF5FB4), size: 42),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: RewardChips(reward: app.session.daily.todaysGift(now)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          const Icon(Icons.redeem_rounded, color: Color(0xFFFF5FB4), size: 42),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: RewardChips(reward: app.session.daily.todaysGift(now)),
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        FilledButton(
-          onPressed: available
-              ? () {
-                  final r = app.spinWheel();
-                  if (r != null) _rewardDialog(context, app, r);
-                }
-              : null,
-          child: Text(available ? app.t('spin') : app.t('claimed')),
+        ]),
+        const SizedBox(height: 10),
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: FilledButton(
+            onPressed: available
+                ? () {
+                    final r = app.spinWheel();
+                    if (r != null) _rewardDialog(context, app, r);
+                  }
+                : null,
+            child: Text(available ? app.t('spin') : app.t('claimed')),
+          ),
         ),
       ]),
     );

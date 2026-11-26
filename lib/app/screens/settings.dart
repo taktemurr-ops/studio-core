@@ -32,13 +32,17 @@ class SettingsScreen extends ConsumerWidget {
             ListTile(
               leading: badge(Icons.language_rounded, const Color(0xFF2F7BD9)),
               title: Text(app.t('language')),
-              trailing: DropdownButton<String>(
+              // Dil adı alt satırda tam genişlikte (uzun adlar ve büyük yazıda taşmaz).
+              subtitle: DropdownButton<String>(
                 value: app.strings.lang,
+                isExpanded: true,
                 underline: const SizedBox(),
                 borderRadius: BorderRadius.circular(16),
                 onChanged: (v) => app.updateSettings((x) => x.language = v ?? 'en'),
                 items: [
-                  for (final l in Strings.languages) DropdownMenuItem(value: l, child: Text(Strings.languageNames[l]!)),
+                  for (final l in Strings.languages)
+                    DropdownMenuItem(
+                        value: l, child: Text(Strings.languageNames[l]!, maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ],
               ),
             ),

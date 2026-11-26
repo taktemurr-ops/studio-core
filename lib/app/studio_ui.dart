@@ -482,9 +482,13 @@ class StudioStatChip extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: compact ? 18 : 22),
           const SizedBox(width: 5),
-          Text(
-            text,
-            style: TextStyle(color: Colors.white, fontSize: compact ? 13.5 : 15, fontWeight: FontWeight.w800),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.white, fontSize: compact ? 13.5 : 15, fontWeight: FontWeight.w800),
+            ),
           ),
           if (plus) ...[
             const SizedBox(width: 4),
