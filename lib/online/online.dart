@@ -98,6 +98,19 @@ class ScoreEntry {
   const ScoreEntry(this.uid, this.name, this.score, [this.avatar = 0]);
 }
 
+/// Günün Bulmacası sıralamasında bir satır.
+class DailyScore {
+  final String uid, name;
+  final int avatar, ms, moves, score;
+
+  /// 't' süre, 's' puan sıralaması.
+  final String mode;
+  const DailyScore(this.uid, this.name, this.avatar, this.ms, this.moves, this.score, this.mode);
+
+  /// Sıralama anahtarı (küçük olan önde); kurallar da aynı formülü denetler.
+  int get key => mode == 's' ? 1000000000 - score.clamp(0, 999999999) : ms * 1000 + moves.clamp(0, 999);
+}
+
 class Seat {
   final String uid; // boş: bot
   final String name;
@@ -165,6 +178,9 @@ abstract class OnlineMatch {
   String get gameId;
   String get code;
 
+  /// Masadaki koltuk sayısı.
+  int get size;
+
   /// Kodla kurulan (davetli) masa mı; hızlı eşleşme masaları herkese açık.
   bool get private;
   int get seed;
@@ -226,6 +242,10 @@ abstract class OnlineBackend {
   // Skor tabloları
   Future<void> submitScore(String board, int score);
   Future<List<ScoreEntry>> top(String board, {int limit = 50});
+
+  // Günün Bulmacası: günün ilk sonucu yazılır, sonrakiler yok sayılır.
+  Future<void> submitDailyResult(String board, DailyScore s);
+  Future<List<DailyScore>> dailyTop(String board, {int limit = 50});
 
   // Bulut kayıt
   Future<void> saveBlob(String key, String json);
@@ -365,6 +385,7 @@ class MemoryServer {
   final codes = <String, String>{};
   final friends = <String, Set<String>>{};
   final boards = <String, Map<String, ScoreEntry>>{};
+  final daily = <String, Map<String, DailyScore>>{};
   final blobs = <String, String>{};
   final matches = <String, _MemMatchData>{};
   final reports = <Map<String, String>>[];
@@ -440,6 +461,18 @@ class MemoryBackend implements OnlineBackend {
   @override
   Future<List<ScoreEntry>> top(String board, {int limit = 50}) async {
     final l = [...(server.boards[board] ?? {}).values]..sort((a, b) => b.score.compareTo(a.score));
+    return l.take(limit).toList();
+  }
+
+  @override
+  Future<void> submitDailyResult(String board, DailyScore s) async {
+    final b = server.daily.putIfAbsent(board, () => {});
+    b.putIfAbsent(uid, () => DailyScore(uid, _me!.name, _me!.avatar, s.ms, s.moves, s.score, s.mode));
+  }
+
+  @override
+  Future<List<DailyScore>> dailyTop(String board, {int limit = 50}) async {
+    final l = [...(server.daily[board] ?? {}).values]..sort((a, b) => a.key.compareTo(b.key));
     return l.take(limit).toList();
   }
 
@@ -682,6 +715,8 @@ class _MemMatch implements OnlineMatch, RealtimeMatch {
   String get code => d.code;
   @override
   bool get private => d.private;
+  @override
+  int get size => d.size;
   @override
   int get seed => d.seed;
   @override

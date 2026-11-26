@@ -12,6 +12,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 
 import '../app/game_api.dart';
+import '../core/global_daily.dart';
 import 'firebase_backend.dart';
 import 'online.dart';
 
@@ -197,6 +198,28 @@ class Online extends ChangeNotifier {
     final b = _backend!;
     unawaited(b.submitScore('d_${gameId}_$dayKey', score).catchError((_) {}));
     unawaited(b.submitScore('w_${gameId}_$weekKey', score).catchError((_) {}));
+  }
+
+  /// Günün Bulmacası sonucunu gönderir; çevrimdışıysa ya da hata olursa
+  /// false (sonuç yerelde bekler, [syncDaily] sonra gönderir).
+  Future<bool> submitDailyResult(DailyEntry e) async {
+    if (!ready || e.ms <= 0) return false;
+    try {
+      final p = profile!;
+      await _backend!
+          .submitDailyResult(GlobalDaily.board(e.gameId, e.day, lang: e.lang),
+              DailyScore(p.uid, p.name, p.avatar, e.ms, e.moves, e.score, e.rank == DailyRank.score ? 's' : 't'))
+          .timeout(const Duration(seconds: 15));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Bekleyen günlük sonuçları gönder (bağlantı geri gelince).
+  Future<int> syncDaily(GlobalDailyStore store) async {
+    if (!ready) return 0;
+    return store.sync(submitDailyResult);
   }
 
   /// Lig puanını maç sonucuna göre güncelle.
