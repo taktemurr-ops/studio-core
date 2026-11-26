@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 part 'covers_arcade.dart';
 part 'covers_balance.dart';
 part 'covers_bilgi.dart';
+part 'covers_bilgi_2.dart';
 part 'covers_brain.dart';
 part 'covers_egitici.dart';
+part 'covers_egitici_2.dart';
 part 'covers_kart2.dart';
 part 'covers_muzik.dart';
 part 'covers_ozgun.dart';
@@ -938,7 +940,9 @@ bool _paintFamilyCover(Canvas c, GameCover cover, Color seed) =>
     _paintStratejiCover(c, cover, seed) ||
     _paintEgiticiCover(c, cover, seed) ||
     _paintSimulasyonCover(c, cover, seed) ||
-    _paintKart2Cover(c, cover, seed);
+    _paintKart2Cover(c, cover, seed) ||
+    _paintEgitici2Cover(c, cover, seed) ||
+    _paintBilgi2Cover(c, cover, seed);
 
 /// Türün özgün bir aile çizimi var mı (yedek etikete düşmüyor mu). Testler için.
 bool coverHasFamilyArt(GameCover cover) {

@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio_core/app/covers.dart';
@@ -118,5 +121,37 @@ void main() {
     ));
     expect(tester.takeException(), isNull);
     expect(find.byType(CoverArt), findsNWidgets(kinds.length * 3));
+  });
+
+  testWidgets('kaynakta kayıtlı her kapak türü hatasız çizilir', (tester) async {
+    // covers*.dart dosyalarındaki bütün türler kaynaktan toplanır; yeni bir
+    // kapak eklendiğinde bu listeye ayrıca yazmak gerekmez.
+    final kinds = <String>{};
+    final files = Directory('lib/app')
+        .listSync()
+        .whereType<File>()
+        .where((f) => RegExp(r'covers[a-z0-9_]*\.dart$').hasMatch(f.path));
+    for (final f in files) {
+      final src = f.readAsStringSync();
+      for (final m in RegExp(r"(?:case|kind != |kind == ) ?'([a-z0-9_]+)'").allMatches(src)) {
+        kinds.add(m.group(1)!);
+      }
+    }
+    expect(kinds.length, greaterThan(200));
+    for (final k in kinds) {
+      for (final v in [0, 1, 2, 3]) {
+        for (final l in const ['', '7', 'A,B']) {
+          final rec = ui.PictureRecorder();
+          paintCover(Canvas(rec), GameCover(k, v: v, label: l), const Color(0xFF4A7BD0));
+          rec.endRecording().dispose();
+        }
+      }
+    }
+    expect(tester.takeException(), isNull);
+    // Bu turda eklenen oyuna özel kapaklar yedek çizime düşmemeli.
+    for (final k in const ['geosolidc', 'sportquizc']) {
+      expect(kinds, contains(k));
+      expect(coverHasFamilyArt(GameCover(k)), isTrue, reason: k);
+    }
   });
 }
