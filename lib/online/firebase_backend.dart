@@ -7,6 +7,7 @@
 ///   codes/{code}                arkadaş kodu → uid
 ///   saves/{uid}/blobs/{key}     bulut kayıt
 ///   boards/{board}/scores/{uid} skor tabloları
+///   daily/{board}/results/{uid} Günün Bulmacası sonuçları (günün ilk sonucu; değiştirilemez)
 ///   matches/{id}                maç (oyun, koltuklar, tohum, durum, kalp atışları)
 ///   matches/{id}/moves/{n}      hamleler (n: sıra numarası)
 ///   matches/{id}/events/{auto}  sohbet ve hediyeler
@@ -114,6 +115,40 @@ class FirebaseBackend implements OnlineBackend {
     return [
       for (final d in q.docs)
         ScoreEntry(d.id, d.data()['name'] as String? ?? '', (d.data()['score'] as num).toInt(), (d.data()['avatar'] as num?)?.toInt() ?? 0)
+    ];
+  }
+
+  @override
+  Future<void> submitDailyResult(String board, DailyScore s) async {
+    final ref = db.collection('daily').doc(board).collection('results').doc(uid);
+    // Kurallar güncellemeye izin vermez: yalnızca günün ilk sonucu yazılır.
+    if ((await ref.get()).exists) return;
+    await ref.set({
+      'ms': s.ms,
+      'moves': s.moves,
+      'score': s.score,
+      'm': s.mode,
+      'k': s.key,
+      'name': _me?.name ?? '',
+      'avatar': _me?.avatar ?? 0,
+      'at': FieldValue.serverTimestamp(),
+    });
+  }
+
+  @override
+  Future<List<DailyScore>> dailyTop(String board, {int limit = 50}) async {
+    final q = await db.collection('daily').doc(board).collection('results').orderBy('k').limit(limit).get();
+    return [
+      for (final d in q.docs)
+        DailyScore(
+          d.id,
+          d.data()['name'] as String? ?? '',
+          (d.data()['avatar'] as num?)?.toInt() ?? 0,
+          (d.data()['ms'] as num?)?.toInt() ?? 0,
+          (d.data()['moves'] as num?)?.toInt() ?? 0,
+          (d.data()['score'] as num?)?.toInt() ?? 0,
+          d.data()['m'] as String? ?? 't',
+        )
     ];
   }
 
@@ -410,6 +445,8 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
   String get code => _d['code'] as String? ?? '';
   @override
   bool get private => _d['private'] == true;
+  @override
+  int get size => (_d['size'] as num?)?.toInt() ?? seats.length;
   @override
   int get seed => (_d['seed'] as num?)?.toInt() ?? 0;
   @override

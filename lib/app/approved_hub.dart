@@ -19,6 +19,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/game_rules.dart';
+import '../core/global_daily.dart';
+import '../core/level_plan.dart';
+import '../core/play_texts.dart';
 import '../core/strings.dart';
 import '../core/telemetry.dart';
 import '../online/online_service.dart';
@@ -26,8 +30,10 @@ import '../online/online_ui.dart';
 import 'adaptive.dart';
 import 'app_state.dart';
 import 'game_api.dart';
+import 'global_daily_ui.dart';
 import 'hub.dart';
 import 'screens/daily.dart';
+import 'screens/play.dart';
 import 'screens/profile.dart';
 import 'screens/settings.dart';
 import 'parental_gate.dart';
@@ -39,6 +45,7 @@ import 'services/prefs_backend.dart';
 import 'services/purchases.dart';
 import 'studio_apps.dart';
 import 'studio_look.dart';
+import 'tournament_ui.dart';
 
 const Map<String, List<String>> _kTx = {
   'nav_home': ['Ana Sayfa', 'Home', 'Start', 'Inicio', 'Accueil', 'الرئيسية', 'خانه', 'בית', 'ہوم', 'Главная', 'Головна', 'Start', 'Domů', 'Acasă', 'Kezdőlap', 'Αρχική', 'Home', 'Início', 'Home', 'Hem', 'Hjem', 'Hjem', 'Koti', 'ホーム', '홈', '首页', 'होम', 'হোম', 'Beranda', 'Utama', 'หน้าแรก', 'Trang chủ', 'Home'],
@@ -124,6 +131,13 @@ enum ApprovedBlock {
 
   /// Seviye ve gelişim çubuğu.
   growth,
+
+  /// Günün Bulmacası: herkese aynı günlük bulmaca, seri ve sıralama
+  /// (katılan oyun yoksa gösterilmez).
+  globalDaily,
+
+  /// Aile Turnuvası: aynı cihazda 2–8 kişi.
+  tournament,
 }
 
 /// Renkli kategori kutusu (ör. Bilgi: Genel Kültür, Bilim, Tarih…).
@@ -487,6 +501,7 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
       final s = _Sum.parse(await b.read('hub.sum.${g.gameId}'));
       if (s != null) _sums[g.gameId] = s;
     }
+    await GlobalDailyStore.of(b).load();
     _giftDay = await b.read('hub.gift') ?? '';
     _questWeek = await b.read('hub.quest') ?? '';
     final last = await b.read('hub.last');
@@ -758,6 +773,10 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
         return _currency();
       case ApprovedBlock.growth:
         return _growth();
+      case ApprovedBlock.globalDaily:
+        return _dailyGames.isEmpty ? null : _globalDailyCard();
+      case ApprovedBlock.tournament:
+        return hub.allGames.isEmpty ? null : _tournamentCard();
     }
   }
 
@@ -1194,6 +1213,93 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
             color: const Color(0xFFFF5FB4), size: 44),
         const SizedBox(width: 12),
         Expanded(child: _titleBody(tx('gift_title'), claimed ? tx('gift_done') : tx('gift_body'))),
+        const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 30),
+      ]),
+    );
+  }
+
+  // ---- Günün Bulmacası ve Aile Turnuvası -------------------------------------------
+
+  List<GameConfig> get _dailyGames => GlobalDailyHubPage.eligible(hub.allGames);
+
+  /// Oyunu sonuç ekranı olmadan tek el oynatır (günlük bulmaca, turnuva).
+  Future<RoundResult?> _playExternal(AppState st, LevelSpec spec, int players) async {
+    st.onResumed();
+    widget.services.active = st;
+    final r = await Navigator.of(context).push<RoundResult>(MaterialPageRoute<RoundResult>(
+      builder: (_) => ProviderScope(
+        overrides: [appStateProvider.overrideWith((ref) => st)],
+        child: PlayScreen(spec: spec, players: players, external: true),
+      ),
+    ));
+    widget.services.active = null;
+    st.onPaused();
+    final g = _game(st.config.gameId);
+    if (g != null) await _record(g, st);
+    if (mounted) setState(() {});
+    return r;
+  }
+
+  Future<void> _openGlobalDaily() async {
+    final games = _dailyGames;
+    if (games.isEmpty) return;
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => GlobalDailyHubPage(
+        games: games,
+        stateFor: widget.services.stateFor,
+        play: _playExternal,
+        backend: widget.services.backend,
+        lang: lang,
+        titleOf: (g) => hub.localized(g.title, lang),
+        art: _coverOrIcon,
+      ),
+    ));
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _openTournament() async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => TournamentPage(
+        games: hub.allGames,
+        stateFor: widget.services.stateFor,
+        play: _playExternal,
+        backend: widget.services.backend,
+        lang: lang,
+        titleOf: (g) => hub.localized(g.title, lang),
+        art: _coverOrIcon,
+      ),
+    ));
+  }
+
+  Widget _globalDailyCard() {
+    final store = GlobalDailyStore.of(widget.services.backend);
+    final today = GlobalDaily.utcDay(DateTime.now());
+    final solved = store.solvedOn(today);
+    return _card(
+      onTap: _openGlobalDaily,
+      child: Row(children: [
+        Icon(Icons.public_rounded, color: style.accent, size: 40),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _titleBody(
+            '${playTx('gd_title', lang)} #${GlobalDaily.number(today)}',
+            solved > 0
+                ? '${playTx('gd_count', lang, {'n': solved})} · 🔥 ${playTx('gd_streak', lang, {'n': store.streak(today)})}'
+                : playTx('gd_body', lang),
+          ),
+        ),
+        const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 30),
+      ]),
+    );
+  }
+
+  Widget _tournamentCard() {
+    return _card(
+      onTap: _openTournament,
+      child: Row(children: [
+        const Text('🏆', style: TextStyle(fontSize: 36)),
+        const SizedBox(width: 12),
+        Expanded(child: _titleBody(playTx('tn_title', lang), playTx('tn_body', lang))),
         const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 30),
       ]),
     );
@@ -1649,6 +1755,26 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
               unawaited(_openShop());
             },
           ),
+          if (_dailyGames.isNotEmpty)
+            ListTile(
+              key: const ValueKey('drawer-global-daily'),
+              leading: const Icon(Icons.public_rounded),
+              title: Text(playTx('gd_title', lang)),
+              onTap: () {
+                Navigator.pop(context);
+                unawaited(_openGlobalDaily());
+              },
+            ),
+          if (hub.allGames.isNotEmpty)
+            ListTile(
+              key: const ValueKey('drawer-tournament'),
+              leading: const Icon(Icons.emoji_events_rounded),
+              title: Text(playTx('tn_title', lang)),
+              onTap: () {
+                Navigator.pop(context);
+                unawaited(_openTournament());
+              },
+            ),
           ListTile(
             leading: const Icon(Icons.settings_rounded),
             title: Text(s.t('settings')),

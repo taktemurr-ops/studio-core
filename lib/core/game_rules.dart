@@ -1,3 +1,4 @@
+import 'global_daily.dart';
 import 'level_plan.dart';
 import 'missions.dart';
 import 'rng.dart';
@@ -34,6 +35,24 @@ abstract class GameRules<P> {
 
   /// Aynı cihazda en çok kaç kişi oynayabilir (0: tek kişilik oyun).
   int get localPlayers => 0;
+
+  /// Çevrimiçi masada seçilebilen oyuncu sayıları (ör. [2, 3, 4]); boşsa
+  /// masa [localPlayers] kişiliktir.
+  List<int> get onlineSeatChoices => const [];
+
+  /// Günün Bulmacası'na (herkese aynı günlük bulmaca, UTC günü) katılır mı.
+  bool get globalDaily => false;
+
+  /// Günlük bulmaca dile göre değişiyor mu (kelime oyunları): sıralama
+  /// tablosu her dil için ayrı tutulur.
+  bool get dailyPerLanguage => false;
+
+  /// Günlük sıralama ölçütü: süre/hamle (bulmaca) ya da puan.
+  DailyRank get dailyRank => DailyRank.time;
+
+  /// Herkes için aynı günlük bölüm. MUST be deterministic for [utcDay]
+  /// ('YYYY-AA-GG', UTC). Motorlar zorluğu ya da mekanikleri seçebilir.
+  LevelSpec globalDailySpec(String utcDay) => GlobalDaily.defaultSpec(gameId, utcDay);
 
   /// Kurallara bağlı ek metinler (anahtar -> dillere göre liste), ör. bir
   /// modun oyuna özel adı ('mode_endless' → "Maç"). GameConfig.strings önce gelir.
@@ -97,6 +116,10 @@ class RoundResult {
   /// Sonuç ekranı başlığı (ör. "Oyuncu 2 kazandı!"); null: kazandın/kaybettin.
   final String? headline;
 
+  /// Aynı cihazda birlikte oynanan oyunda kazanan koltuk (0'dan); -1
+  /// berabere, -2 bilinmiyor (turnuva oyunculara sorar).
+  final int winnerSeat;
+
   const RoundResult({
     required this.won,
     this.score = 0,
@@ -107,5 +130,6 @@ class RoundResult {
     this.undosUsed = 0,
     this.gameStats = const {},
     this.headline,
+    this.winnerSeat = -2,
   });
 }
