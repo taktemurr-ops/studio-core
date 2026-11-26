@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 part 'covers_arcade.dart';
 part 'covers_arcade2.dart';
+part 'covers_arcade4.dart';
 part 'covers_balance.dart';
 part 'covers_bilgi.dart';
 part 'covers_blok.dart';
@@ -941,6 +942,7 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
 bool _paintFamilyCover(Canvas c, GameCover cover, Color seed) =>
     _paintArcadeCover(c, cover, seed) ||
     _paintArcade2Cover(c, cover, seed) ||
+    _paintArcade4Cover(c, cover, seed) ||
     _paintBlokCover(c, cover, seed) ||
     _paintBalanceCover(c, cover, seed) ||
     _paintWordCover(c, cover, seed) ||

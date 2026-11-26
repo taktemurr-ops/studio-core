@@ -103,6 +103,7 @@ void main() {
       'autobattlerc', 'dungeonkeeperc', // strateji
       'wordbombc', 'fivesecc', 'mostlikelyc', // parti
       'simspace', 'simzoo', 'balance', // boşta ve arcade
+      'hillclimb', 'kitefight', 'cricketbat', 'crowdgates', 'shuttlecourt', 'kabaddiraid', // 4. tur arcade
     ];
     // Bilinmeyen tür yedek çizime (etiket metni) düşer; yeni türlerin hiçbiri düşmemeli.
     for (final k in kinds) {
