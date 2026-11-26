@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/strings.dart';
 import '../adaptive.dart';
 import '../app_state.dart';
+import '../parental_gate.dart';
 import '../services/reminders.dart';
 import '../studio_ui.dart';
 import 'onboarding.dart';
@@ -114,7 +115,11 @@ class SettingsScreen extends ConsumerWidget {
                   : const Icon(Icons.open_in_new_rounded, color: Colors.white70),
               onTap: app.config.effectivePrivacyUrl.isEmpty
                   ? null
-                  : () => launchUrl(Uri.parse(app.config.effectivePrivacyUrl), mode: LaunchMode.externalApplication),
+                  : () async {
+                      // Çocuk oyunlarında dış bağlantı ebeveyn kapısının arkasındadır.
+                      if (!await parentalGate(context, app)) return;
+                      await launchUrl(Uri.parse(app.config.effectivePrivacyUrl), mode: LaunchMode.externalApplication);
+                    },
             ),
             ListTile(
               leading: badge(Icons.delete_forever_rounded, StudioLook.bad),

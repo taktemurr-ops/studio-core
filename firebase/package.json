@@ -1,0 +1,14 @@
+{
+  "name": "studio-core-firestore-rules-tests",
+  "private": true,
+  "type": "module",
+  "description": "Firestore güvenlik kuralları testleri (emülatör).",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-studio-core \"node --test test/\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "firebase": "13.4.0",
+    "firebase-tools": "15.37.0"
+  }
+}

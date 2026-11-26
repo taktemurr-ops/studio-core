@@ -262,7 +262,8 @@ void bootstrapApprovedHub(HubConfig hub, ApprovedHubStyle style, {String privacy
     await services.loadShared();
     services.registerTransfer(hub.allGames);
     runApp(ApprovedHubApp(hub: hub, style: style, services: services));
-    unawaited(CloudTelemetry.init(crashReports: true, measurement: false));
+    // Çocuk merkezinde (bütün oyunlar kidsMode) çökme raporu da kapalıdır.
+    unawaited(CloudTelemetry.init(crashReports: !_kidsHub(hub), measurement: false));
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Adaptive.applyOrientationPolicy();
       perf.recordStartup(startWatch.elapsedMilliseconds);
@@ -458,6 +459,8 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(_firstRunGuide());
+      // Çocuk merkezinde çevrimiçi katman (davet, sohbet, skor tablosu) yoktur.
+      if (_kidsHub(hub)) return;
       unawaited(OnlineHost.attach(context, Strings(lang), (id) {
         final g = _game(id);
         return g == null ? id : hub.localized(g.title, lang);
@@ -1373,7 +1376,7 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
 
   Future<void> _openLeaderboard() async {
     final a = _anchor;
-    if (a == null || !Online.instance.available) return;
+    if (a == null || _kidsHub(hub) || !Online.instance.available) return;
     if (!await Online.instance.start()) return;
     if (!mounted) return;
     await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => LeaderboardScreen(app: a)));
@@ -1622,7 +1625,8 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
 
   Widget _drawer() {
     final s = Strings(lang);
-    final sisters = (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
+    // Çocuk merkezinde mağazaya giden "diğer uygulamalar" bağlantıları yoktur.
+    final sisters = !_kidsHub(hub) && (kIsWeb || defaultTargetPlatform == TargetPlatform.android)
         ? [for (final a in studioApps) if (a.hubId != hub.hubId) a]
         : const <StudioApp>[];
     return Drawer(
@@ -1651,7 +1655,7 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
               unawaited(_openSettings());
             },
           ),
-          if (Online.instance.available)
+          if (Online.instance.available && !_kidsHub(hub))
             ListTile(
               leading: const Icon(Icons.leaderboard_rounded),
               title: Text(s.t('leaderboards')),
@@ -1831,4 +1835,12 @@ class _CrownPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Bütün oyunları çocuk modunda olan merkez (ör. Eğitici ve Çocuk): reklam
+/// kişiselleştirilmez, ölçüm/çökme raporu, çevrimiçi katman ve dış mağaza
+/// bağlantıları kapalıdır.
+bool _kidsHub(HubConfig hub) {
+  final all = hub.allGames;
+  return all.isNotEmpty && all.every((g) => g.kidsMode);
 }
