@@ -898,8 +898,9 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
 
   Widget _chips() {
     final labels = [tx('all'), for (final s in hub.sections) hub.localized(s.title, lang)];
+    // Hap yüksekliği yazı boyutuyla büyür (büyük yazıda metin kesilmez).
     return SizedBox(
-      height: 44,
+      height: 24 + MediaQuery.textScalerOf(context).scale(20),
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         scrollDirection: Axis.horizontal,
@@ -956,8 +957,10 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
           onAll: () => setState(() => _tab = 1)),
       LayoutBuilder(builder: (context, c) {
         final w = (c.maxWidth - 32 - (per - 1) * 10) / per;
+        // Kutu: kapak + iki satır ad (yazı boyutuyla büyür) + oyna hapı.
+        final title = MediaQuery.textScalerOf(context).scale(13) * 1.1 * 2 + 8;
         return SizedBox(
-          height: w * 1.45,
+          height: math.max(w * 1.45, (w - 12) + 12 + 26 + title),
           child: PageView.builder(
             controller: _pager,
             itemCount: pages,

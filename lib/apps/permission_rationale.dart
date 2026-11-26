@@ -17,6 +17,8 @@ Future<bool> explainPermission(
   final ok = await showDialog<bool>(
     context: context,
     builder: (c) => AlertDialog(
+      // Küçük/yatay ekranda ve büyük yazıda metin kesilmesin: kaydırılabilir.
+      scrollable: true,
       icon: Icon(icon, size: 36),
       title: Text(appTx('perm_title', lang)),
       content: Text(reason),
