@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -353,14 +354,17 @@ class _HomeTab extends StatelessWidget {
         LayoutBuilder(builder: (context, c) {
           final cols = (c.maxWidth / 140).floor().clamp(3, 6);
           final w = (c.maxWidth - (cols - 1) * 10) / cols;
+          // Kapak + iki satır ad (yazı boyutuyla büyür) + oyna hapı sığmalı.
+          final title = MediaQuery.textScalerOf(context).scale(13) * 1.1 * 2 + 8;
+          final h = math.max(w * 1.55, (w - 12) + 12 + 26 + title);
           return Wrap(spacing: 10, runSpacing: 10, children: [
             for (final m in modes)
-              SizedBox(width: w, height: w * 1.55, child: _ModeCard(app: app, mode: m, art: _art)),
+              SizedBox(width: w, height: h, child: _ModeCard(app: app, mode: m, art: _art)),
             for (final x in app.config.extraModes)
               SizedBox(
                   key: ValueKey('extra-mode-${x.id}'),
                   width: w,
-                  height: w * 1.55,
+                  height: h,
                   child: _ModeCard(app: app, extra: x, art: _art)),
           ]);
         }),
