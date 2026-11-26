@@ -119,8 +119,8 @@ void checkLayout(WidgetTester tester, LayoutIssues issues, ErrorTrap trap, Strin
     if (e.contains('MissingPluginException') || e.contains('No implementation found')) continue;
     issues.add(screen, combo, e.contains('overflowed') ? 'tasma' : 'hata', e);
   }
-  final view = tester.view;
-  final screenRect = Offset.zero & (view.physicalSize / view.devicePixelRatio);
+  // Kök görünümün mantıksal boyutu (cihazda da gerçek ekran boyutu).
+  final screenRect = Offset.zero & tester.binding.renderViews.first.size;
 
   // Kesilen metin: satır sınırını aşıp kırpılan ya da kutusuna sığmayan yazı.
   for (final el in find.byType(RichText).evaluate()) {
@@ -136,7 +136,7 @@ void checkLayout(WidgetTester tester, LayoutIssues issues, ErrorTrap trap, Strin
       if (r.overflow == TextOverflow.ellipsis || r.overflow == TextOverflow.fade) {
         issues.ellipsized++;
       } else {
-        issues.add(screen, combo, 'kesik_metin', '"${_short(text)}" satır sınırını aşıyor (${r.overflow.name})');
+        issues.add(screen, combo, 'kesik_metin', '"${_short(text)}" satır sınırını aşıyor (${r.overflow.name})${_chain(r)}');
       }
       continue;
     }
@@ -144,7 +144,7 @@ void checkLayout(WidgetTester tester, LayoutIssues issues, ErrorTrap trap, Strin
     final need = r.getMaxIntrinsicHeight(r.size.width);
     if (need > r.size.height + 3) {
       issues.add(screen, combo, 'kesik_metin',
-          '"${_short(text)}" kutusuna sığmıyor (${need.toStringAsFixed(0)} > ${r.size.height.toStringAsFixed(0)})');
+          '"${_short(text)}" kutusuna sığmıyor (${need.toStringAsFixed(0)} > ${r.size.height.toStringAsFixed(0)})${_chain(r)}');
     }
   }
 
@@ -162,10 +162,29 @@ void checkLayout(WidgetTester tester, LayoutIssues issues, ErrorTrap trap, Strin
     final c = rect.center;
     if (!screenRect.inflate(0.5).contains(c)) {
       issues.add(screen, combo, 'erisilemez_dugme',
-          '${_label(el.widget)} ekran dışında (${rect.left.toStringAsFixed(0)},${rect.top.toStringAsFixed(0)} ${rect.width.toStringAsFixed(0)}x${rect.height.toStringAsFixed(0)})');
+          '${_label(el.widget)} ekran dışında (${rect.left.toStringAsFixed(0)},${rect.top.toStringAsFixed(0)} ${rect.width.toStringAsFixed(0)}x${rect.height.toStringAsFixed(0)})${_chain(r)}');
     }
   }
 }
+
+/// Metnin üst widget zinciri (hangi ekranda/parçada olduğunu bulmak için).
+String _chain(RenderObject r) {
+  final c = r.debugCreator;
+  if (c is! DebugCreator) return '';
+  final parts = c.element.debugGetCreatorChain(12).split(' ← ');
+  // RichText ← Text gibi tekrarları atla; özel (uygulama) widget'larını öne al.
+  final own = parts.where((p) => p.startsWith('_') || !_sdk.contains(p.split('-').first)).take(4).toList();
+  return ' [${own.join('<')}]';
+}
+
+const _sdk = {
+  'RichText', 'Text', 'Center', 'Align', 'Padding', 'Expanded', 'Flexible', 'Column', 'Row', 'SizedBox', 'Container',
+  'DecoratedBox', 'ConstrainedBox', 'DefaultTextStyle', 'Semantics', 'MergeSemantics', 'Stack', 'Positioned',
+  'ClipRRect', 'Material', 'InkWell', 'Ink', 'Builder', 'LayoutBuilder', 'FittedBox', 'Opacity', 'Transform',
+  'IconTheme', 'Listener', 'GestureDetector', 'RepaintBoundary', 'KeyedSubtree', 'AnimatedContainer', 'Wrap',
+  'ExcludeSemantics', 'DefaultTextStyleTransition', 'Directionality', 'AnimatedDefaultTextStyle', 'PositionedDirectional',
+  'ColoredBox', 'Flex', 'IntrinsicHeight', 'IntrinsicWidth', 'LimitedBox', 'Offstage', 'Visibility', 'TickerMode',
+};
 
 String _short(String s) => s.length > 40 ? '${s.substring(0, math.min(40, s.length))}…' : s;
 
