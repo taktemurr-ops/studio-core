@@ -122,8 +122,12 @@ class AppNumberField extends StatelessWidget {
           labelText: label,
           suffixText: suffix,
           filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.06),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          fillColor: Colors.white.withValues(alpha: 0.07),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.25))),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18), borderSide: BorderSide(color: AppLook.of(context).accent, width: 1.6)),
         ),
       ),
     );
@@ -239,9 +243,12 @@ class AppButton extends StatelessWidget {
         child: FilledButton.icon(
           style: FilledButton.styleFrom(
             backgroundColor: s.play,
-            foregroundColor: Colors.white,
+            foregroundColor: 1.05 / (s.play.computeLuminance() + 0.05) >= 3 ? Colors.white : Colors.black,
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            minimumSize: const Size.fromHeight(52),
+            elevation: 4,
+            shadowColor: s.play.withValues(alpha: 0.6),
+            shape: const StadiumBorder(),
           ),
           onPressed: onPressed,
           icon: Icon(icon ?? Icons.play_arrow_rounded),

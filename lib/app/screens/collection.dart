@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/collection.dart';
 import '../app_state.dart';
 import '../services/audio.dart';
+import '../studio_ui.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
@@ -17,10 +18,27 @@ class CollectionScreen extends ConsumerWidget {
     return DefaultTabController(
       length: ItemType.values.length,
       child: Column(children: [
-        Text('${app.save.collection.length} / ${cat.items.length}'),
+        StudioPanel(
+          margin: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Row(children: [
+            const Icon(Icons.collections_rounded, color: StudioLook.gem, size: 34),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${app.save.collection.length} / ${cat.items.length}',
+                    style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                StudioBar(value: cat.items.isEmpty ? 0 : app.save.collection.length / cat.items.length, color: StudioLook.gem),
+              ]),
+            ),
+          ]),
+        ),
         TabBar(
           isScrollable: true,
-          tabs: [for (final t in ItemType.values) Tab(text: app.t('type_${t.name}'))],
+          tabAlignment: TabAlignment.start,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+          tabs: [for (final t in ItemType.values) Tab(height: 40, text: app.t('type_${t.name}'))],
         ),
         Expanded(
           child: TabBarView(children: [
@@ -107,9 +125,14 @@ class _ItemCard extends StatelessWidget {
     final equipped = app.save.activeTheme == item.id || app.save.activeSkin == item.id;
     final buyable = !owned && (item.unlock == UnlockKind.coins || item.unlock == UnlockKind.gems);
     final equippable = owned && (item.type == ItemType.theme || item.type == ItemType.skin);
-    return Card(
+    final look = StudioLook.of(context);
+    final r = BorderRadius.circular(16);
+    return Material(
+      color: Colors.transparent,
+      borderRadius: r,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
+        borderRadius: r,
         onTap: () {
           if (equippable) {
             app.updateSettings((s) {
@@ -125,6 +148,18 @@ class _ItemCard extends StatelessWidget {
             }
           }
         },
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: r,
+            gradient: owned ? look.tile : null,
+            color: owned ? null : Colors.white.withValues(alpha: 0.05),
+            border: Border.all(
+              color: equipped
+                  ? StudioLook.gold
+                  : (owned ? look.accent.withValues(alpha: 0.55) : Colors.white.withValues(alpha: 0.16)),
+              width: equipped ? 2 : 1.2,
+            ),
+          ),
         child: Column(children: [
           Expanded(child: Center(child: Opacity(opacity: owned ? 1 : 0.35, child: _preview()))),
           Padding(
@@ -133,10 +168,15 @@ class _ItemCard extends StatelessWidget {
               equipped ? app.t('equipped') : owned ? (equippable ? app.t('equip') : '✓') : _requirement(),
               textAlign: TextAlign.center,
               maxLines: 2,
-              style: const TextStyle(fontSize: 11),
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: equipped ? StudioLook.gold : Colors.white),
             ),
           ),
         ]),
+        ),
       ),
     );
   }

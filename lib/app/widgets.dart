@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import '../core/daily.dart';
 import '../core/progression.dart';
 import 'app_state.dart';
+import 'studio_ui.dart';
 
 /// Coins / gems / hints and player level, shown on most screens.
+/// Onaylı tasarım: seviye halkası + koyu, kenarlı para hapları.
 class CurrencyBar extends StatelessWidget {
   final AppState app;
   const CurrencyBar({super.key, required this.app});
@@ -14,6 +16,7 @@ class CurrencyBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = app.save;
+    final look = StudioLook.of(context);
     final lvl = PlayerProgression.levelForXp(s.totalXp);
     final prog = PlayerProgression.progressInLevel(s.totalXp);
     return Padding(
@@ -22,19 +25,30 @@ class CurrencyBar extends StatelessWidget {
         children: [
           Semantics(
             label: '${app.t('player_level')} $lvl',
-            child: SizedBox(
-              width: 44,
-              height: 44,
+            excludeSemantics: true,
+            child: Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.30),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+              ),
               child: Stack(alignment: Alignment.center, children: [
-                CircularProgressIndicator(value: prog, strokeWidth: 4),
-                Text('$lvl', style: const TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                      value: prog, strokeWidth: 4, color: look.accent, backgroundColor: Colors.white.withValues(alpha: 0.15)),
+                ),
+                Text('$lvl', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
               ]),
             ),
           ),
           const Spacer(),
-          _Pill(icon: Icons.monetization_on, color: Colors.amber, value: s.coins, label: app.t('coins')),
-          _Pill(icon: Icons.diamond, color: Colors.cyan, value: s.gems, label: app.t('gems')),
-          _Pill(icon: Icons.lightbulb, color: Colors.orange, value: s.hints, label: app.t('hints')),
+          _Pill(icon: Icons.monetization_on_rounded, color: StudioLook.gold, value: s.coins, label: app.t('coins')),
+          _Pill(icon: Icons.diamond_rounded, color: StudioLook.gem, value: s.gems, label: app.t('gems')),
+          _Pill(icon: Icons.lightbulb_rounded, color: const Color(0xFFFFA53A), value: s.hints, label: app.t('hints')),
         ],
       ),
     );
@@ -50,21 +64,9 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: '$label $value',
-      child: Container(
-        margin: const EdgeInsets.only(left: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 4),
-          Text(compactNumber(value), style: const TextStyle(fontWeight: FontWeight.w600)),
-        ]),
-      ),
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 6),
+      child: StudioStatChip(icon: icon, color: color, text: compactNumber(value), semanticLabel: '$label $value', compact: true),
     );
   }
 }
@@ -88,12 +90,17 @@ class StarRow extends StatelessWidget {
           children: List.generate(
             3,
             (i) => Icon(i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
-                size: size, color: i < stars ? Colors.amber : Colors.grey),
+                size: size,
+                color: i < stars ? StudioLook.gold : Colors.white.withValues(alpha: 0.35),
+                shadows: i < stars && size >= 28
+                    ? [Shadow(color: StudioLook.gold.withValues(alpha: 0.6), blurRadius: 12)]
+                    : null),
           ),
         ),
       );
 }
 
+/// Ödül hapları (para, elmas, ipucu, güçlendirici, deneyim).
 class RewardChips extends StatelessWidget {
   final Reward reward;
   const RewardChips({super.key, required this.reward});
@@ -102,21 +109,15 @@ class RewardChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final chips = <Widget>[];
     void add(IconData i, Color c, int v) {
-      if (v > 0) {
-        chips.add(Chip(
-          avatar: Icon(i, color: c, size: 18),
-          label: Text('+$v'),
-          visualDensity: VisualDensity.compact,
-        ));
-      }
+      if (v > 0) chips.add(StudioStatChip(icon: i, color: c, text: '+$v', compact: true));
     }
 
-    add(Icons.monetization_on, Colors.amber, reward.coins);
-    add(Icons.diamond, Colors.cyan, reward.gems);
-    add(Icons.lightbulb, Colors.orange, reward.hints);
-    add(Icons.bolt, const Color(0xFF9763BC), reward.boosters);
-    add(Icons.trending_up, Colors.green, reward.xp);
-    return Wrap(spacing: 6, runSpacing: 4, alignment: WrapAlignment.center, children: chips);
+    add(Icons.monetization_on_rounded, StudioLook.gold, reward.coins);
+    add(Icons.diamond_rounded, StudioLook.gem, reward.gems);
+    add(Icons.lightbulb_rounded, const Color(0xFFFFA53A), reward.hints);
+    add(Icons.bolt_rounded, const Color(0xFFB98CFF), reward.boosters);
+    add(Icons.trending_up_rounded, StudioLook.good, reward.xp);
+    return Wrap(spacing: 6, runSpacing: 6, alignment: WrapAlignment.center, children: chips);
   }
 }
 
@@ -184,13 +185,27 @@ class _ConfettiPainter extends CustomPainter {
 
 class SectionTitle extends StatelessWidget {
   final String text;
-  const SectionTitle(this.text, {super.key});
+  final IconData? icon;
+  final Color? iconColor;
+  const SectionTitle(this.text, {super.key, this.icon, this.iconColor});
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
-        child: Text(text, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-      );
+  Widget build(BuildContext context) {
+    final look = StudioLook.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+      child: Row(children: [
+        Icon(icon ?? Icons.auto_awesome_rounded, color: iconColor ?? look.accent, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Semantics(
+            header: true,
+            child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+          ),
+        ),
+      ]),
+    );
+  }
 }
 
 void showToast(BuildContext context, String text) {

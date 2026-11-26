@@ -12,6 +12,7 @@ import '../core/net_texts.dart';
 import 'arcade_stage.dart';
 import 'game_api.dart';
 import 'services/audio.dart';
+import 'studio_look.dart';
 
 /// İki kişilik çevrimiçi masa oyunu ekranı (yetkili ev sahibi eşitlemesi).
 ///
@@ -282,7 +283,7 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
     );
     final note = netNoteText(ctx.lang, _notes.note, _notes.seat >= 0 ? ctx.seatName(_notes.seat) : '');
     return ColoredBox(
-      color: const Color(0xFF1A1B2E),
+      color: StudioLook.of(context).base,
       child: Column(children: [
         head,
         if (note.isNotEmpty)
@@ -330,8 +331,9 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
   Widget _chip(String text, bool mine) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: mine ? const Color(0xFF52B788) : Colors.white.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(16),
+          color: mine ? const Color(0xFF2E9E62) : Colors.black.withValues(alpha: 0.30),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: mine ? Colors.white.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.25)),
         ),
         child: Text(text,
             maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),

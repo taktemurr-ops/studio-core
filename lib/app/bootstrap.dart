@@ -20,7 +20,7 @@ import 'services/ads.dart';
 import 'services/audio.dart';
 import 'services/prefs_backend.dart';
 import 'services/purchases.dart';
-import 'theme.dart';
+import 'studio_look.dart';
 import 'services/cloud_telemetry.dart';
 
 /// Shared entry point used by every game's `main()`.
@@ -140,11 +140,16 @@ class _GameAppState extends ConsumerState<GameApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final app = ref.watch(appStateProvider);
     final lang = app.strings.lang;
+    // Merkezden açıldıysa merkezin onaylı paleti, yoksa oyunun renginden
+    // türetilen koyu palet: oyun içi her ekran merkezle aynı tasarımda.
+    final look = StudioLookScope.maybeOf(context) ?? StudioLook.fromSeed(app.config.seedColor);
+    final theme = buildStudioTheme(look);
     return MaterialApp(
       title: app.title,
       debugShowCheckedModeBanner: false,
-      theme: buildTheme(app.config.seedColor, Brightness.light),
-      darkTheme: buildTheme(app.config.seedColor, Brightness.dark),
+      theme: theme,
+      darkTheme: theme,
+      themeMode: ThemeMode.dark,
       locale: Locale(lang),
       supportedLocales: Strings.languages.map(Locale.new).toList(),
       localizationsDelegates: const [
@@ -160,7 +165,7 @@ class _GameAppState extends ConsumerState<GameApp> with WidgetsBindingObserver {
             textScaler: mq.textScaler.clamp(maxScaleFactor: 1.6),
             disableAnimations: app.save.reducedMotion || mq.disableAnimations,
           ),
-          child: child ?? const SizedBox.shrink(),
+          child: StudioLookScope(look: look, child: child ?? const SizedBox.shrink()),
         );
       },
       home: app.needsOnboarding ? const OnboardingScreen() : const HomeScreen(),

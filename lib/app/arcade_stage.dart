@@ -10,6 +10,7 @@ import '../core/game_rules.dart';
 import 'game_api.dart';
 import 'play_kit.dart';
 import 'services/audio.dart';
+import 'studio_ui.dart';
 
 /// Colors handed to an arcade painter.
 class ArcadePalette {
@@ -310,14 +311,20 @@ class _ArcadeStageState extends State<ArcadeStage>
               IconButton(
                 tooltip: _paused ? 'Play' : 'Pause',
                 onPressed: _started && !_ended ? () => setState(() => _paused = !_paused) : null,
-                icon: Icon(_paused ? Icons.play_arrow : Icons.pause),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.30),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                icon: Icon(_paused ? Icons.play_arrow_rounded : Icons.pause_rounded),
               ),
+              const SizedBox(width: 6),
             ],
           ),
           if (sim.meta.goal)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: LinearProgressIndicator(value: sim.progress.clamp(0.0, 1.0)),
+              child: StudioBar(value: sim.progress.clamp(0.0, 1.0).toDouble(), height: 8),
             ),
           Expanded(
             child: LayoutBuilder(builder: (context, box) {
@@ -360,26 +367,44 @@ class _ArcadeStageState extends State<ArcadeStage>
                             _paused = false;
                           }),
                           child: Container(
-                            color: Colors.black45,
+                            color: Colors.black.withValues(alpha: 0.45),
                             alignment: Alignment.center,
                             padding: const EdgeInsets.all(16),
                             // Scrolls instead of overflowing on short phones (long how-to texts).
                             child: SingleChildScrollView(
-                              child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(_paused ? Icons.pause_circle : Icons.touch_app,
-                                    size: 64, color: Colors.white),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _paused
-                                      ? (Strings.tx(ctx.lang, 'Duraklatıldı – devam için dokun', 'Paused – tap to resume'))
-                                      : _t(widget.howTo),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 460),
+                                child: StudioPanel(
+                                  margin: EdgeInsets.zero,
+                                  padding: const EdgeInsets.all(20),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      StudioLook.of(context).sheet.withValues(alpha: 0.94),
+                                      StudioLook.of(context).base.withValues(alpha: 0.94),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      StudioIconBadge(_paused ? Icons.pause_rounded : Icons.touch_app_rounded,
+                                          color: StudioLook.of(context).play, size: 64),
+                                      const SizedBox(height: 14),
+                                      Text(
+                                        _paused
+                                            ? (Strings.tx(ctx.lang, 'Duraklatıldı – devam için dokun', 'Paused – tap to resume'))
+                                            : _t(widget.howTo),
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 18, height: 1.3, fontWeight: FontWeight.w600),
+                                      ),
+                                      const SizedBox(height: 14),
+                                      const Icon(Icons.play_circle_fill_rounded, color: StudioLook.gold, size: 44),
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            ),
+                              ),
                             ),
                           ),
                         ),

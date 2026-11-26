@@ -6,10 +6,12 @@ import '../../core/game_rules.dart';
 import '../../core/game_session.dart';
 import '../../core/level_plan.dart';
 import '../../core/telemetry.dart';
+import '../adaptive.dart';
 import '../app_state.dart';
 import '../services/gen_runner_stub.dart' if (dart.library.io) '../services/gen_runner_io.dart';
 import '../game_api.dart';
 import '../services/audio.dart';
+import '../studio_ui.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'tutorial.dart';
@@ -87,27 +89,47 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
         if (!didPop) _pause(app);
       },
       child: Scaffold(
-        extendBodyBehindAppBar: false,
+        backgroundColor: StudioLook.of(context).base,
+        // Üst çubuk saydam; oyun alanının zemini (dünya teması) arkasına uzanır.
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: Text(_title),
-          leading: IconButton(
-            tooltip: app.t('pause'),
-            icon: const Icon(Icons.pause_circle),
-            onPressed: () => _pause(app),
+          backgroundColor: Colors.transparent,
+          title: StudioTitle(_title),
+          leading: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 6),
+            child: IconButton(
+              tooltip: app.t('pause'),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black.withValues(alpha: 0.30),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              icon: const Icon(Icons.pause_rounded),
+              onPressed: () => _pause(app),
+            ),
           ),
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Center(
-                child: Row(children: [
-                  const Icon(Icons.lightbulb, color: Colors.orange, size: 18),
-                  Text(app.session.premiumHintsLeft > 0
-                      ? ' ${app.save.hints}+${app.session.premiumHintsLeft}  '
-                      : ' ${app.save.hints}  '),
-                  const Icon(Icons.monetization_on, color: Colors.amber, size: 18),
-                  Text(' ${compactNumber(app.save.coins)}'),
-                ]),
-              ),
+              padding: const EdgeInsetsDirectional.only(end: 10),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                StudioStatChip(
+                  icon: Icons.lightbulb_rounded,
+                  color: const Color(0xFFFFA53A),
+                  compact: true,
+                  semanticLabel: '${app.t('hints')} ${app.save.hints}',
+                  text: app.session.premiumHintsLeft > 0
+                      ? '${app.save.hints}+${app.session.premiumHintsLeft}'
+                      : '${app.save.hints}',
+                ),
+                const SizedBox(width: 6),
+                StudioStatChip(
+                  icon: Icons.monetization_on_rounded,
+                  color: StudioLook.gold,
+                  compact: true,
+                  semanticLabel: '${app.t('coins')} ${app.save.coins}',
+                  text: compactNumber(app.save.coins),
+                ),
+              ]),
             ),
           ],
         ),
@@ -123,9 +145,10 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
     if (_error != null) {
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 48),
-          const SizedBox(height: 8),
-          FilledButton(onPressed: () => Navigator.pop(context), child: Text(app.t('quit'))),
+          const Icon(Icons.error_outline_rounded, color: Colors.white, size: 48),
+          const SizedBox(height: 12),
+          StudioButton(
+              expand: false, icon: Icons.exit_to_app_rounded, label: app.t('quit'), onPressed: () => Navigator.pop(context)),
         ]),
       );
     }
@@ -162,10 +185,18 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       sfx: (s) => app.audio.play(s),
       sound: (n) => app.audio.playNamed(n),
     );
+    // Oyun alanı (tahta) kendi alıştığı temayla çizilir: motorların tahta
+    // görünümü değişmez. Ortak parçalar (üst bilgi hapları, güçlendirici
+    // çubuğu) onaylı paleti tema uzantısından okur.
+    final board = buildTheme(app.config.seedColor, MediaQuery.platformBrightnessOf(context))
+        .copyWith(extensions: [StudioLook.of(context)]);
     // Oyun alanı renkleri hafifçe yumuşatılır: göz yormayan, sakin bir görünüm.
     return KeyedSubtree(
       key: ValueKey(_roundKey),
-      child: ColorFiltered(colorFilter: kCalmColors, child: app.config.buildPlay(ctx)),
+      child: Theme(
+        data: board,
+        child: ColorFiltered(colorFilter: kCalmColors, child: app.config.buildPlay(ctx)),
+      ),
     );
   }
 
@@ -176,22 +207,46 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
     final choice = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (c) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(leading: const Icon(Icons.play_arrow), title: Text(app.t('resume')), onTap: () => Navigator.pop(c, 'resume')),
-          ListTile(leading: const Icon(Icons.refresh), title: Text(app.t('restart')), onTap: () => Navigator.pop(c, 'restart')),
-          ListTile(leading: const Icon(Icons.help_outline), title: Text(app.t('how_to_play')), onTap: () => Navigator.pop(c, 'help')),
-          SwitchListTile(
-            secondary: const Icon(Icons.volume_up),
-            title: Text(app.t('sound')),
-            value: app.save.sound,
-            onChanged: (v) {
-              app.updateSettings((s) => s.sound = v);
-              Navigator.pop(c, 'resume');
-            },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: ContentWidth(
+            maxWidth: 520,
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              StudioSheetTitle(app.t('pause'), icon: Icons.pause_circle_rounded),
+              StudioButton.hot(label: app.t('resume'), onPressed: () => Navigator.pop(c, 'resume')),
+              const SizedBox(height: 10),
+              StudioMenuRow(
+                  icon: Icons.refresh_rounded,
+                  color: const Color(0xFF2F7BD9),
+                  label: app.t('restart'),
+                  onTap: () => Navigator.pop(c, 'restart')),
+              StudioMenuRow(
+                  icon: Icons.help_outline_rounded,
+                  color: const Color(0xFF7B4FD6),
+                  label: app.t('how_to_play'),
+                  onTap: () => Navigator.pop(c, 'help')),
+              StudioMenuRow(
+                icon: app.save.sound ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                color: const Color(0xFF2E9E78),
+                label: app.t('sound'),
+                trailing: Switch(
+                  value: app.save.sound,
+                  onChanged: (v) {
+                    app.updateSettings((s) => s.sound = v);
+                    Navigator.pop(c, 'resume');
+                  },
+                ),
+              ),
+              StudioMenuRow(
+                  icon: Icons.exit_to_app_rounded,
+                  color: const Color(0xFFE0533D),
+                  label: app.t('quit'),
+                  onTap: () => Navigator.pop(c, 'quit')),
+            ]),
           ),
-          ListTile(leading: const Icon(Icons.exit_to_app), title: Text(app.t('quit')), onTap: () => Navigator.pop(c, 'quit')),
-        ]),
+        ),
       ),
     );
     if (!mounted) return;
@@ -218,6 +273,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
     final choice = await showDialog<String>(
       context: context,
       builder: (c) => AlertDialog(
+        icon: const Icon(Icons.lightbulb_rounded, color: Color(0xFFFFA53A), size: 40),
         title: Text(app.t('no_hints')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c), child: Text(app.t('cancel'))),
@@ -259,6 +315,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       context: context,
       barrierDismissible: false,
       builder: (c) => AlertDialog(
+        icon: const Icon(Icons.favorite_rounded, color: StudioLook.bad, size: 40),
         title: Text(app.t('lose_title')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c), child: Text(app.t('quit'))),
@@ -289,6 +346,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       isDismissible: false,
       enableDrag: false,
       isScrollControlled: true,
+      showDragHandle: false,
       builder: (c) => _ResultSheet(app: app, result: r, outcome: out, spec: _spec),
     );
     if (!mounted) return;
@@ -336,92 +394,135 @@ class _ResultSheetState extends State<_ResultSheet> {
     final r = widget.result;
     final o = widget.outcome;
     final campaign = widget.spec.mode == GameModeId.campaign;
+    final look = StudioLook.of(context);
+    final title = r.headline ?? (r.won ? app.t('win_title') : app.t('lose_title'));
     return Stack(children: [
+      // Üstte kazanınca altın, kaybedince kırmızı hafif bir hale.
+      Positioned.fill(
+        child: IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0, -1.1),
+                radius: 1.0,
+                colors: [(r.won ? StudioLook.gold : StudioLook.bad).withValues(alpha: 0.22), Colors.transparent],
+              ),
+            ),
+          ),
+        ),
+      ),
       SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(r.headline ?? (r.won ? app.t('win_title') : app.t('lose_title')),
-                style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            if (r.won && r.headline == null) StarRow(stars: r.stars, size: 44),
-            if (r.score > 0) Text('${app.t('score')}: ${r.score}', style: Theme.of(context).textTheme.titleLarge),
-            if (o.newRecord) Text(app.t('new_record'), style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            RewardChips(
-                reward: o.reward + Reward(xp: r.won ? 0 : o.xpGained) + (_doubled ? Reward(coins: o.reward.coins) : const Reward())),
-            if (_doubled)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('x2', style: TextStyle(color: Colors.green.shade600, fontWeight: FontWeight.bold, fontSize: 18)),
-              ),
-            if (o.leveledUp)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(app.t('level_up', {'n': o.playerLevelAfter}),
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-              ),
-            for (final a in o.achievements.take(3))
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.emoji_events, color: Colors.amber),
-                title: Text(app.t('achievement_unlocked')),
-                subtitle: Text(achievementTitle(app, a.titleKey, a.params, a.id)),
-              ),
-            if (o.items.isNotEmpty)
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.card_giftcard, color: Color(0xFF9763BC)),
-                title: Text(app.t('item_unlocked')),
-                subtitle: Text('${o.items.length}'),
-              ),
-            const SizedBox(height: 12),
-            if (r.won && !_doubled && o.reward.coins > 0 && app.ads.available)
-              OutlinedButton.icon(
-                icon: const Icon(Icons.ondemand_video),
-                label: Text(app.t('double_reward')),
-                onPressed: () async {
-                  final ok = await app.watchRewarded();
-                  if (!context.mounted) return;
-                  if (ok) {
-                    Reward(coins: o.reward.coins).applyTo(app.save);
-                    app.audio.play(Sfx.coin);
-                    app.changed(saveNow: true);
-                    setState(() => _doubled = true);
-                  } else {
-                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-                        content: Text(app.strings.lang == 'tr'
-                            ? 'Ödül alınamadı: reklam sonuna kadar izlenmedi ya da şu an hazır değil.'
-                            : 'No reward: the ad was not finished or is not ready yet.')));
-                  }
-                },
-              ),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context, 'home'),
-                  child: Text(app.t('home')),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+          child: ContentWidth(
+            maxWidth: 560,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              StudioSheetTitle(title,
+                  icon: r.won ? Icons.emoji_events_rounded : Icons.sentiment_dissatisfied_rounded,
+                  iconColor: r.won ? StudioLook.gold : StudioLook.bad),
+              if (r.won && r.headline == null) StarRow(stars: r.stars, size: 52),
+              if (r.score > 0)
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.30),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: look.accent.withValues(alpha: 0.55)),
+                  ),
+                  child: Text('${app.t('score')}: ${r.score}',
+                      style: TextStyle(color: look.number, fontSize: 22, fontWeight: FontWeight.w900)),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context, 'retry'),
-                  child: Text(app.t('retry')),
+              if (o.newRecord)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(app.t('new_record'),
+                      style: const TextStyle(color: Color(0xFFFFA53A), fontWeight: FontWeight.w900, fontSize: 16)),
                 ),
-              ),
-              if (campaign && r.won) ...[
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(context, 'next'),
-                    child: Text(app.t('next')),
+              const SizedBox(height: 14),
+              RewardChips(
+                  reward:
+                      o.reward + Reward(xp: r.won ? 0 : o.xpGained) + (_doubled ? Reward(coins: o.reward.coins) : const Reward())),
+              if (_doubled)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Text('x2', style: TextStyle(color: StudioLook.good, fontWeight: FontWeight.w900, fontSize: 18)),
+                ),
+              if (o.leveledUp)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(app.t('level_up', {'n': o.playerLevelAfter}),
+                      style: const TextStyle(fontWeight: FontWeight.w900, color: StudioLook.good)),
+                ),
+              const SizedBox(height: 6),
+              for (final a in o.achievements.take(3))
+                StudioMenuRow(
+                  icon: Icons.emoji_events_rounded,
+                  color: const Color(0xFFD9A21C),
+                  label: app.t('achievement_unlocked'),
+                  subtitle: achievementTitle(app, a.titleKey, a.params, a.id),
+                ),
+              if (o.items.isNotEmpty)
+                StudioMenuRow(
+                  icon: Icons.card_giftcard_rounded,
+                  color: const Color(0xFF9763BC),
+                  label: app.t('item_unlocked'),
+                  subtitle: '${o.items.length}',
+                ),
+              const SizedBox(height: 10),
+              if (r.won && !_doubled && o.reward.coins > 0 && app.ads.available)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: StudioButton(
+                    tone: StudioButtonTone.gold,
+                    icon: Icons.ondemand_video_rounded,
+                    label: app.t('double_reward'),
+                    onPressed: () async {
+                      final ok = await app.watchRewarded();
+                      if (!context.mounted) return;
+                      if (ok) {
+                        Reward(coins: o.reward.coins).applyTo(app.save);
+                        app.audio.play(Sfx.coin);
+                        app.changed(saveNow: true);
+                        setState(() => _doubled = true);
+                      } else {
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+                            content: Text(app.strings.lang == 'tr'
+                                ? 'Ödül alınamadı: reklam sonuna kadar izlenmedi ya da şu an hazır değil.'
+                                : 'No reward: the ad was not finished or is not ready yet.')));
+                      }
+                    },
                   ),
                 ),
+              if (campaign && r.won) ...[
+                StudioButton.hot(
+                  icon: Icons.skip_next_rounded,
+                  label: app.t('next'),
+                  onPressed: () => Navigator.pop(context, 'next'),
+                ),
+                const SizedBox(height: 10),
               ],
+              Row(children: [
+                Expanded(
+                  child: StudioButton(
+                    tone: StudioButtonTone.ghost,
+                    icon: Icons.home_rounded,
+                    label: app.t('home'),
+                    onPressed: () => Navigator.pop(context, 'home'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: StudioButton(
+                    tone: campaign && r.won ? StudioButtonTone.ghost : StudioButtonTone.play,
+                    icon: Icons.replay_rounded,
+                    label: app.t('retry'),
+                    onPressed: () => Navigator.pop(context, 'retry'),
+                  ),
+                ),
+              ]),
             ]),
-          ]),
+          ),
         ),
       ),
       if (r.won) Positioned.fill(child: Confetti(enabled: !app.save.reducedMotion)),

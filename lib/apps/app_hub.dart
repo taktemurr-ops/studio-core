@@ -15,11 +15,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../app/approved_hub.dart' show ApprovedHubStyle;
+import '../app/approved_hub.dart' show ApprovedHubStyle, ApprovedLook;
+import '../app/studio_ui.dart';
 import '../app/services/ads.dart';
 import '../app/services/prefs_backend.dart';
 import '../app/services/purchases.dart';
-import '../app/theme.dart';
 import '../core/monetization.dart';
 import '../core/strings.dart';
 import 'app_config.dart';
@@ -64,31 +64,35 @@ class _AppHubAppState extends State<AppHubApp> {
       builder: (context, _, __) {
         final lang = s.language ?? Strings.pickLanguage(PlatformDispatcher.instance.locale.languageCode);
         final style = widget.config.style;
-        final theme = buildTheme(style.accent, Brightness.dark);
-        return MaterialApp(
-          title: widget.config.localized(widget.config.title, lang),
-          debugShowCheckedModeBanner: false,
-          theme: theme,
-          darkTheme: theme,
-          themeMode: ThemeMode.dark,
-          locale: Locale(lang),
-          supportedLocales: Strings.languages.map(Locale.new).toList(),
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          builder: (context, child) => AppLook(style: style, child: child ?? const SizedBox()),
-          home: s.consent == null
-              ? AppConsentPage(
-                  config: widget.config,
-                  lang: lang,
-                  onChoice: (all) async {
-                    await s.setConsent(all);
-                    if (mounted) setState(() {});
-                  },
-                )
-              : AppHubShell(config: widget.config, services: s, lang: lang),
+        final look = style.look;
+        final theme = buildStudioTheme(look);
+        return StudioLookScope(
+          look: look,
+          child: MaterialApp(
+            title: widget.config.localized(widget.config.title, lang),
+            debugShowCheckedModeBanner: false,
+            theme: theme,
+            darkTheme: theme,
+            themeMode: ThemeMode.dark,
+            locale: Locale(lang),
+            supportedLocales: Strings.languages.map(Locale.new).toList(),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => AppLook(style: style, child: child ?? const SizedBox()),
+            home: s.consent == null
+                ? AppConsentPage(
+                    config: widget.config,
+                    lang: lang,
+                    onChoice: (all) async {
+                      await s.setConsent(all);
+                      if (mounted) setState(() {});
+                    },
+                  )
+                : AppHubShell(config: widget.config, services: s, lang: lang),
+          ),
         );
       },
     );
@@ -192,23 +196,21 @@ class _AppHubShellState extends State<AppHubShell> {
 
   @override
   Widget build(BuildContext context) {
-    final s = AppLook.of(context);
     final pages = [_home(), _all(), _favorites(), _profile()];
     return Scaffold(
+      backgroundColor: AppLook.of(context).background.last,
       body: AppBackdrop(child: SafeArea(bottom: false, child: pages[_tab])),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        backgroundColor: Color.lerp(s.background.last, Colors.black, 0.2),
-        indicatorColor: s.accent.withValues(alpha: 0.25),
-        onDestinationSelected: (i) => setState(() {
+      bottomNavigationBar: StudioNavBar(
+        selected: _tab,
+        onTap: (i) => setState(() {
           _tab = i;
           _query = '';
         }),
-        destinations: [
-          NavigationDestination(icon: const Icon(Icons.home_rounded), label: tx('nav_home')),
-          NavigationDestination(icon: const Icon(Icons.apps_rounded), label: tx('nav_apps')),
-          NavigationDestination(icon: const Icon(Icons.star_rounded), label: tx('nav_favorites')),
-          NavigationDestination(icon: const Icon(Icons.person_rounded), label: tx('nav_profile')),
+        items: [
+          StudioNavItem(Icons.home_rounded, tx('nav_home')),
+          StudioNavItem(Icons.apps_rounded, tx('nav_apps')),
+          StudioNavItem(Icons.star_rounded, tx('nav_favorites')),
+          StudioNavItem(Icons.person_rounded, tx('nav_profile')),
         ],
       ),
     );
@@ -385,6 +387,7 @@ class _AppHubShellState extends State<AppHubShell> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
+        icon: const Icon(Icons.delete_forever_rounded, color: StudioLook.bad, size: 40),
         title: Text(core('delete_data')),
         content: Text(core('delete_confirm')),
         actions: [
@@ -630,9 +633,22 @@ class _AppToolPageState extends State<AppToolPage> {
     final fav = widget.services.isFavorite(tool.id);
     final s = AppLook.of(context);
     return Scaffold(
+      backgroundColor: s.background.last,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: s.background.first,
-        title: Text(widget.config.localized(tool.title, widget.lang)),
+        backgroundColor: Colors.transparent,
+        title: StudioTitle(
+          widget.config.localized(tool.title, widget.lang),
+          art: Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(colors: [tool.color, Color.lerp(tool.color, Colors.black, 0.35)!]),
+            ),
+            child: Icon(tool.icon, color: Colors.white, size: 18),
+          ),
+        ),
         actions: [
           IconButton(
             key: const ValueKey('fav-toggle'),
@@ -647,7 +663,6 @@ class _AppToolPageState extends State<AppToolPage> {
       ),
       body: AppBackdrop(
         child: SafeArea(
-          top: false,
           child: Column(children: [
             if (tool.disclaimer != AppDisclaimer.none) AppDisclaimerBanner(kind: tool.disclaimer, lang: widget.lang),
             Expanded(

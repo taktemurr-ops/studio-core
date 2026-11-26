@@ -38,7 +38,7 @@ import 'services/cloud_telemetry.dart';
 import 'services/prefs_backend.dart';
 import 'services/purchases.dart';
 import 'studio_apps.dart';
-import 'theme.dart';
+import 'studio_look.dart';
 
 const Map<String, List<String>> _kTx = {
   'nav_home': ['Ana Sayfa', 'Home', 'Start', 'Inicio', 'Accueil', 'الرئيسية', 'خانه', 'בית', 'ہوم', 'Главная', 'Головна', 'Start', 'Domů', 'Acasă', 'Kezdőlap', 'Αρχική', 'Home', 'Início', 'Home', 'Hem', 'Hjem', 'Hjem', 'Koti', 'ホーム', '홈', '首页', 'होम', 'হোম', 'Beranda', 'Utama', 'หน้าแรก', 'Trang chủ', 'Home'],
@@ -198,6 +198,12 @@ class ApprovedHubStyle {
   });
 }
 
+/// Merkez paletinin ortak görünüme ([StudioLook]) çevrilmesi: merkezden
+/// açılan oyunlar ve araçlar aynı renklerle çizilir.
+extension ApprovedLook on ApprovedHubStyle {
+  StudioLook get look => StudioLook(background: background, accent: accent, card: card, play: play, number: number);
+}
+
 String _tx(String key, String lang, [Map<String, Object> p = const {}]) {
   var s = Strings.pick(_kTx[key] ?? [key], lang);
   p.forEach((k, v) => s = s.replaceAll('{$k}', '$v'));
@@ -296,31 +302,37 @@ class _ApprovedHubAppState extends State<ApprovedHubApp> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     final lang = Strings.pickLanguage(PlatformDispatcher.instance.locale.languageCode);
-    final theme = buildTheme(widget.style.accent, Brightness.dark);
-    return MaterialApp(
-      title: widget.hub.localized(widget.hub.title, lang),
-      debugShowCheckedModeBanner: false,
-      theme: theme,
-      darkTheme: theme,
-      themeMode: ThemeMode.dark,
-      locale: Locale(lang),
-      supportedLocales: Strings.languages.map(Locale.new).toList(),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      home: widget.services.consent == null
-          ? _ConsentPage(
-              hub: widget.hub,
-              style: widget.style,
-              lang: lang,
-              onChoice: (all) async {
-                await widget.services.setConsent(all);
-                if (mounted) setState(() {});
-              },
-            )
-          : ApprovedHubShell(hub: widget.hub, style: widget.style, services: widget.services, lang: lang),
+    final look = widget.style.look;
+    final theme = buildStudioTheme(look);
+    // Palet kapsamı MaterialApp'in üstünde: merkezden açılan oyun
+    // uygulamaları (GameApp) da aynı paleti okur.
+    return StudioLookScope(
+      look: look,
+      child: MaterialApp(
+        title: widget.hub.localized(widget.hub.title, lang),
+        debugShowCheckedModeBanner: false,
+        theme: theme,
+        darkTheme: theme,
+        themeMode: ThemeMode.dark,
+        locale: Locale(lang),
+        supportedLocales: Strings.languages.map(Locale.new).toList(),
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: widget.services.consent == null
+            ? _ConsentPage(
+                hub: widget.hub,
+                style: widget.style,
+                lang: lang,
+                onChoice: (all) async {
+                  await widget.services.setConsent(all);
+                  if (mounted) setState(() {});
+                },
+              )
+            : ApprovedHubShell(hub: widget.hub, style: widget.style, services: widget.services, lang: lang),
+      ),
     );
   }
 }

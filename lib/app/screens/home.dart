@@ -11,7 +11,7 @@ import '../../core/save_store.dart';
 import '../adaptive.dart';
 import '../covers.dart';
 import '../app_state.dart';
-import '../theme.dart';
+import '../studio_ui.dart';
 import '../widgets.dart';
 import 'daily.dart';
 import 'levels.dart';
@@ -80,6 +80,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final app = ref.watch(appStateProvider);
+    final look = StudioLook.of(context);
     final toast = app.takeToast();
     if (toast != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -92,78 +93,89 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       const ProfileScreen(),
     ];
     final wide = Adaptive.of(context) == FormFactor.expanded;
-    final dests = <(Widget, String)>[
-      (const Icon(Icons.home), app.t('home')),
-      (
-        Badge(
-          isLabelVisible: app.session.daily.loginRewardAvailable(app.save, app.session.now()) ||
-              app.session.daily.wheelAvailable(app.save, app.session.now()),
-          child: const Icon(Icons.calendar_today),
-        ),
-        app.t('daily')
-      ),
-      (const Icon(Icons.person), app.t('profile')),
+    final dailyBadge = app.session.daily.loginRewardAvailable(app.save, app.session.now()) ||
+        app.session.daily.wheelAvailable(app.save, app.session.now());
+    final items = [
+      StudioNavItem(Icons.home_rounded, app.t('home')),
+      StudioNavItem(Icons.calendar_today_rounded, app.t('daily'), badge: dailyBadge),
+      StudioNavItem(Icons.person_outline_rounded, app.t('profile')),
     ];
     return Scaffold(
-      appBar: AppBar(
-        leading: app.exitToHub == null
-            ? null
-            : IconButton(
-                tooltip: app.exitToHubLabel,
-                icon: const Icon(Icons.apps_rounded),
-                onPressed: app.exitToHub,
+      backgroundColor: look.base,
+      body: StudioBackdrop(
+        child: SafeArea(
+          bottom: false,
+          child: Row(children: [
+            // Tablets, foldables, desktop and web: side navigation rail.
+            if (wide)
+              NavigationRail(
+                selectedIndex: _tab,
+                onDestinationSelected: (i) => setState(() => _tab = i),
+                labelType: NavigationRailLabelType.all,
+                destinations: [
+                  for (final d in items)
+                    NavigationRailDestination(
+                      icon: Badge(isLabelVisible: d.badge, smallSize: 9, child: Icon(d.icon)),
+                      label: Text(d.label),
+                    ),
+                ],
               ),
-        title: Text(app.title),
-        actions: [
-          IconButton(
-            tooltip: app.t('shop'),
-            icon: const Icon(Icons.storefront),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen())),
-          ),
-          IconButton(
-            tooltip: app.t('settings'),
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              app.openedScreen('settings_opened');
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Row(children: [
-          // Tablets, foldables, desktop and web: side navigation rail.
-          if (wide)
-            NavigationRail(
-              selectedIndex: _tab,
-              onDestinationSelected: (i) => setState(() => _tab = i),
-              labelType: NavigationRailLabelType.all,
-              destinations: [
-                for (final d in dests)
-                  NavigationRailDestination(icon: d.$1, label: Text(d.$2)),
-              ],
+            Expanded(
+              child: Column(children: [
+                _topBar(app),
+                ContentWidth.wide(child: CurrencyBar(app: app)),
+                Expanded(
+                  child: ContentWidth(maxWidth: Adaptive.readableWidth + 120, child: pages[_tab]),
+                ),
+              ]),
             ),
-          if (wide) const VerticalDivider(width: 1),
-          Expanded(
-            child: Column(children: [
-              ContentWidth.wide(child: CurrencyBar(app: app)),
-              Expanded(
-                child: ContentWidth(maxWidth: Adaptive.readableWidth + 120, child: pages[_tab]),
-              ),
-            ]),
-          ),
-        ]),
+          ]),
+        ),
       ),
       // Phones: bottom navigation bar.
       bottomNavigationBar: wide
           ? null
-          : NavigationBar(
-              selectedIndex: _tab,
-              onDestinationSelected: (i) => setState(() => _tab = i),
-              destinations: [
-                for (final d in dests) NavigationDestination(icon: d.$1, label: d.$2),
-              ],
+          : StudioNavBar(items: items, selected: _tab, onTap: (i) => setState(() => _tab = i)),
+    );
+  }
+
+  /// Merkezin üst çubuğu: merkeze dönüş · oyunun kapağı ve adı · taç (mağaza) · ayarlar.
+  Widget _topBar(AppState app) {
+    final cover = app.cover;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+      child: Row(children: [
+        if (app.exitToHub != null)
+          IconButton(
+            tooltip: app.exitToHubLabel,
+            icon: const Icon(Icons.apps_rounded, size: 28),
+            onPressed: app.exitToHub,
+          )
+        else
+          const SizedBox(width: 48),
+        Expanded(
+          child: Center(
+            child: StudioTitle(
+              app.title,
+              icon: app.config.icon,
+              art: cover == null ? null : CoverArt(cover: cover, color: app.config.seedColor, size: 30, radius: 8),
             ),
+          ),
+        ),
+        IconButton(
+          tooltip: app.t('shop'),
+          icon: const StudioCrown(),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen())),
+        ),
+        IconButton(
+          tooltip: app.t('settings'),
+          icon: const Icon(Icons.settings_rounded),
+          onPressed: () {
+            app.openedScreen('settings_opened');
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+          },
+        ),
+      ]),
     );
   }
 }
@@ -192,149 +204,180 @@ class _HomeTab extends StatelessWidget {
     await openOnline(context, app);
   }
 
+  Widget _art(double size) {
+    final seed = app.config.seedColor;
+    final cover = app.cover;
+    if (cover != null) return CoverArt(cover: cover, color: seed, size: size, radius: size * 0.18);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(size * 0.18),
+        gradient: LinearGradient(colors: [seed, Color.lerp(seed, Colors.black, 0.35)!]),
+      ),
+      child: Icon(app.config.icon, size: size * 0.55, color: Colors.white),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final look = StudioLook.of(context);
     final s = app.save;
     final spec = app.session.nextCampaignSpec;
-    final theme = Palettes.theme(spec.theme);
-    final seed = app.config.seedColor;
     final modes = app.config.rules.modes
         .where((m) => m != GameModeId.campaign && m != GameModeId.practice && m != GameModeId.versus && m != GameModeId.online)
         .toList();
     final resume = s.resume['spec'] is Map;
-    final text = Theme.of(context).textTheme;
+    const heroShadow = [Shadow(blurRadius: 8, color: Colors.black54, offset: Offset(0, 2))];
     final hero = Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color.lerp(seed, theme.last, 0.35)!, Color.lerp(seed, theme.first, 0.55)!],
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [
+            Color.lerp(look.card, app.config.seedColor, 0.25)!,
+            Color.lerp(look.card, Colors.black, 0.45)!,
+          ],
         ),
-        boxShadow: [BoxShadow(color: seed.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 8))],
+        border: Border.all(color: look.accent.withValues(alpha: 0.55), width: 1.4),
+        boxShadow: [BoxShadow(color: look.accent.withValues(alpha: 0.25), blurRadius: 16)],
       ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
       child: Column(children: [
         Row(children: [
-          app.cover != null
-              ? CoverArt(cover: app.cover!, color: seed, size: 96, radius: 22)
-              : Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(22)),
-                  child: Icon(app.config.icon, size: 56, color: Colors.white),
-                ),
-          const SizedBox(width: 16),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(app.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: text.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 6),
+                  style: TextStyle(
+                      color: look.number,
+                      fontSize: 28,
+                      height: 1.05,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      shadows: heroShadow)),
+              const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.30),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                ),
                 child: Text(
                     _multi
                         ? app.t('stage_n', {'n': spec.levelId})
                         : '${app.t('world', {'n': spec.world})} · ${app.t('level', {'n': spec.levelId})}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
               ),
             ]),
           ),
+          const SizedBox(width: 12),
+          ExcludeSemantics(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [BoxShadow(color: look.accent.withValues(alpha: 0.35), blurRadius: 18)],
+              ),
+              child: _art(104),
+            ),
+          ),
         ]),
         const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(56), backgroundColor: Colors.white, foregroundColor: Color.lerp(seed, Colors.black, 0.3)),
-            icon: Icon(resume ? Icons.play_circle : (_multi ? Icons.smart_toy_rounded : Icons.play_arrow_rounded)),
-            label: Text(resume ? app.t('resume') : (_multi ? app.t('play_ai') : app.t('play')),
-                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-            onPressed: () => resume ? openResume(context, app) : openPlay(context, app, spec),
-          ),
+        StudioButton.hot(
+          icon: resume ? Icons.play_circle_rounded : (_multi ? Icons.smart_toy_rounded : Icons.play_arrow_rounded),
+          label: resume ? app.t('resume') : (_multi ? app.t('play_ai') : app.t('play')),
+          onPressed: () => resume ? openResume(context, app) : openPlay(context, app, spec),
         ),
         if (_multi) ...[
           const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              key: const ValueKey('online-table'),
-              style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(56),
-                  backgroundColor: const Color(0xFFFFC857),
-                  foregroundColor: const Color(0xFF2A1E05)),
-              icon: const Icon(Icons.groups_rounded),
-              label: Text(app.t('online_table'), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-              onPressed: () => _online(context),
-            ),
+          StudioButton(
+            key: const ValueKey('online-table'),
+            tone: StudioButtonTone.gold,
+            icon: Icons.groups_rounded,
+            label: app.t('online_table'),
+            onPressed: () => _online(context),
           ),
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(app.t('online_table_d'),
-                textAlign: TextAlign.center, style: text.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.85))),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13)),
           ),
         ],
         TextButton.icon(
-          icon: const Icon(Icons.map_rounded, color: Colors.white),
+          icon: const Icon(Icons.map_rounded),
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LevelsScreen())),
-          label: Text(app.t('worlds'), style: const TextStyle(color: Colors.white)),
+          label: Text('${app.t('worlds')} ›'),
         ),
       ]),
     );
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         hero,
         if (Online.instance.available)
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.leaderboard),
-              label: Text(app.t('leaderboards')),
-              onPressed: () async {
-                if (!await Online.instance.start()) {
-                  if (context.mounted) showToast(context, app.t('online_unavailable'));
-                  return;
-                }
-                if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => LeaderboardScreen(app: app)));
-              },
-            ),
+          StudioPanel(
+            margin: const EdgeInsets.only(top: 12),
+            semanticLabel: app.t('leaderboards'),
+            onTap: () async {
+              if (!await Online.instance.start()) {
+                if (context.mounted) showToast(context, app.t('online_unavailable'));
+                return;
+              }
+              if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => LeaderboardScreen(app: app)));
+            },
+            child: Row(children: [
+              const Icon(Icons.leaderboard_rounded, color: StudioLook.gold, size: 32),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(app.t('leaderboards'),
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 28),
+            ]),
           ),
-        if (modes.isNotEmpty) SectionTitle(app.t('other_modes')),
-        GridView(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: Adaptive.columns(MediaQuery.sizeOf(context).width, minTile: 200, max: 4).clamp(2, 4),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            mainAxisExtent: 104,
+        if (modes.isNotEmpty)
+          StudioSectionHeader(
+            icon: Icons.star_rounded,
+            iconColor: StudioLook.gold,
+            title: app.t('other_modes'),
+            padding: const EdgeInsets.fromLTRB(2, 18, 2, 8),
           ),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: modes.map((m) => _ModeCard(app: app, mode: m)).toList(),
-        ),
+        LayoutBuilder(builder: (context, c) {
+          final cols = (c.maxWidth / 140).floor().clamp(3, 6);
+          final w = (c.maxWidth - (cols - 1) * 10) / cols;
+          return Wrap(spacing: 10, runSpacing: 10, children: [
+            for (final m in modes)
+              SizedBox(width: w, height: w * 1.55, child: _ModeCard(app: app, mode: m, art: _art)),
+          ]);
+        }),
       ],
     );
   }
 }
 
+/// Oyunun kendi kapağıyla mod kartı (merkezdeki oyun kutusu biçiminde).
 class _ModeCard extends StatelessWidget {
   final AppState app;
   final GameModeId mode;
-  const _ModeCard({required this.app, required this.mode});
+  final Widget Function(double size) art;
+  const _ModeCard({required this.app, required this.mode, required this.art});
 
   IconData get icon => switch (mode) {
-        GameModeId.endless => Icons.all_inclusive,
-        GameModeId.timeAttack => Icons.timer,
-        GameModeId.zen => Icons.spa,
-        GameModeId.daily => Icons.today,
-        GameModeId.weekly => Icons.date_range,
-        GameModeId.challenge => Icons.military_tech,
-        GameModeId.versus => Icons.people_alt,
-        GameModeId.online => Icons.public,
-        _ => Icons.play_arrow,
+        GameModeId.endless => Icons.all_inclusive_rounded,
+        GameModeId.timeAttack => Icons.timer_rounded,
+        GameModeId.zen => Icons.spa_rounded,
+        GameModeId.daily => Icons.today_rounded,
+        GameModeId.weekly => Icons.date_range_rounded,
+        GameModeId.challenge => Icons.military_tech_rounded,
+        GameModeId.versus => Icons.people_alt_rounded,
+        GameModeId.online => Icons.public_rounded,
+        _ => Icons.play_arrow_rounded,
       };
 
   Color get tint => switch (mode) {
@@ -349,48 +392,91 @@ class _ModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final look = StudioLook.of(context);
     final best = app.save.records[mode.name];
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => openMode(context, app, mode),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(color: tint.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(11)),
-                child: Icon(icon, color: tint, size: 22),
-              ),
-              // Flexible texts shrink (ellipsis) instead of overflowing with
-              // large system font sizes or very narrow cards.
-              Flexible(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      app.t('mode_${mode.name}'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Flexible(
-                      child: Text(
-                        best != null && best > 0 ? '${app.t('best')}: $best' : app.t('mode_${mode.name}_d'),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
+    final title = app.t('mode_${mode.name}');
+    final sub = best != null && best > 0 ? '${app.t('best')}: $best' : app.t('mode_${mode.name}_d');
+    final r = BorderRadius.circular(18);
+    return Semantics(
+      button: true,
+      label: '$title. $sub',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: r,
+        child: InkWell(
+          borderRadius: r,
+          onTap: () => openMode(context, app, mode),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: r,
+              gradient: look.tile,
+              border: Border.all(color: look.accent.withValues(alpha: 0.55), width: 1.4),
+              boxShadow: [BoxShadow(color: look.accent.withValues(alpha: 0.22), blurRadius: 10)],
+            ),
+            child: LayoutBuilder(builder: (context, c) {
+              final a = c.maxWidth - 12;
+              return Padding(
+                padding: const EdgeInsets.all(6),
+                child: Column(children: [
+                  SizedBox(
+                    width: a,
+                    height: a,
+                    child: Stack(children: [
+                      art(a),
+                      // Modun rengi kapağın altına süzülür; köşede mod simgesi.
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(a * 0.18),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [tint.withValues(alpha: 0), tint.withValues(alpha: 0.75)],
+                              stops: const [0.45, 1],
+                            ),
+                          ),
+                        ),
                       ),
+                      PositionedDirectional(
+                        start: 4,
+                        bottom: 4,
+                        child: StudioIconBadge(icon, color: tint, size: (a * 0.34).clamp(26.0, 44.0)),
+                      ),
+                      if (best != null && best > 0)
+                        PositionedDirectional(
+                          end: 4,
+                          top: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(10)),
+                            child: Text('★ $best',
+                                style: const TextStyle(
+                                    color: StudioLook.gold, fontSize: 11, fontWeight: FontWeight.w800)),
+                          ),
+                        ),
+                    ]),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(title,
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13, height: 1.1, fontWeight: FontWeight.w800)),
                     ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                  Container(
+                    width: a * 0.6,
+                    height: 26,
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), gradient: look.playGradient),
+                    child: Icon(Icons.play_arrow_rounded, color: look.onPlay, size: 22),
+                  ),
+                ]),
+              );
+            }),
           ),
         ),
       ),
@@ -472,7 +558,12 @@ Future<void> openVersus(BuildContext context, AppState app) async {
               onPressed: () => Navigator.pop(c, i),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(app.t('players_n', {'n': i}), style: const TextStyle(fontSize: 18)),
+                child: Row(children: [
+                  StudioIconBadge(Icons.people_alt_rounded, color: StudioLook.of(c).play, size: 34),
+                  const SizedBox(width: 12),
+                  Text(app.t('players_n', {'n': i}),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+                ]),
               ),
             ),
         ],
