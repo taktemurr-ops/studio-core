@@ -286,7 +286,7 @@ class TvCursorLayerState extends State<TvCursorLayer> {
     }
   }
 
-  static const _dirs = <LogicalKeyboardKey, Offset>{
+  static final _dirs = <LogicalKeyboardKey, Offset>{
     LogicalKeyboardKey.arrowLeft: Offset(-1, 0),
     LogicalKeyboardKey.arrowRight: Offset(1, 0),
     LogicalKeyboardKey.arrowUp: Offset(0, -1),

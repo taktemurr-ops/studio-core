@@ -11,7 +11,7 @@ import 'package:flutter_onestore_inapp/flutter_onestore_inapp.dart';
 import 'package:studio_core/app/services/ads.dart';
 import 'package:studio_core/app/services/purchases.dart';
 import 'package:studio_core/app/services/store_backend.dart';
-import 'package:studio_core/core/monetization.dart';
+import 'package:studio_core/core/monetization.dart' show Products;
 
 /// ONE store IAP. Bütün ürünler "managed" (inapp) türündedir:
 /// tüketilebilirler teslimden sonra `consume`, tüketilemezler (reklamsız,
