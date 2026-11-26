@@ -170,6 +170,8 @@ Future<void> openTable(BuildContext context, AppState app, OnlineMatch m) async 
 
 /// Oyunun çevrimiçi lobisi: hızlı eşleşme, arkadaş daveti, kodla katılma.
 Future<void> openOnline(BuildContext context, AppState app) async {
+  // Çocuk oyunlarında çevrimiçi masa (yabancılarla oyun ve sohbet) yoktur.
+  if (app.config.kidsMode) return;
   if (!await _ensureOnline(context, app) || !context.mounted) return;
   await Navigator.push(context, MaterialPageRoute(builder: (_) => OnlineLobby(app: app)));
 }
@@ -632,7 +634,7 @@ class _OnlineTableState extends State<OnlineTable> {
                 },
               ),
           ]),
-          if (me.age16) ...[
+          if (me.age16 && !app.config.kidsMode) ...[
             const SizedBox(height: 12),
             Row(children: [
               Expanded(

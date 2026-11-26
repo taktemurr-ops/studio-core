@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'dart:convert';
+import 'dart:io' show ContentType, HttpClient, Platform;
 
 import 'package:in_app_purchase/in_app_purchase.dart';
 
@@ -36,8 +37,13 @@ class StorePurchaseService implements PurchaseService {
             PurchaseStatus.error => 'error',
             PurchaseStatus.canceled => 'canceled',
           };
-          onEvent(PurchaseEvent(p.productID, p.purchaseID ?? '', status, _verify(p)));
-          if (p.pendingCompletePurchase) {
+          final granted = status == 'purchased' || status == 'restored';
+          final ok = granted && await _verify(p);
+          onEvent(PurchaseEvent(p.productID, p.purchaseID ?? '', status, ok));
+          // Doğrulanmamış satın alma onaylanmaz (acknowledge/finish): mağaza
+          // onu bir sonraki açılışta yeniden verir; Google Play 3 gün içinde
+          // onaylanmayanı iade eder. Hata/iptal her zaman kapatılır.
+          if (p.pendingCompletePurchase && (ok || !granted)) {
             try {
               await _iap.completePurchase(p);
             } catch (_) {}
@@ -53,12 +59,36 @@ class StorePurchaseService implements PurchaseService {
     }
   }
 
-  /// Local verification: the store must return signed verification data.
-  /// For production, send `serverVerificationData` to a validation server
-  /// (Google Play Developer API / App Store Server API) before granting.
-  bool _verify(PurchaseDetails p) =>
-      p.verificationData.serverVerificationData.isNotEmpty &&
-      Products.all.contains(p.productID);
+  /// Sunucu doğrulama adresi (merkez deposundaki server/purchase_verifier;
+  /// CI gizli değişkeni PURCHASE_VERIFY_URL). Tanımlı değilse yalnızca yerel
+  /// denetim yapılır (bilinen ürün + mağazanın imzalı verisi var mı).
+  static const String _verifyUrl = String.fromEnvironment('PURCHASE_VERIFY_URL');
+
+  Future<bool> _verify(PurchaseDetails p) async {
+    final data = p.verificationData.serverVerificationData;
+    if (data.isEmpty || !Products.all.contains(p.productID)) return false;
+    if (_verifyUrl.isEmpty || !_verifyUrl.startsWith('https://')) return true;
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
+    try {
+      final req = await client.postUrl(Uri.parse(_verifyUrl));
+      req.headers.contentType = ContentType.json;
+      req.write(jsonEncode({
+        'platform': Platform.isIOS ? 'ios' : 'android',
+        'productId': p.productID,
+        'purchaseToken': data,
+        'transactionId': p.purchaseID ?? '',
+      }));
+      final res = await req.close().timeout(const Duration(seconds: 15));
+      final body = await res.transform(utf8.decoder).join().timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200) return false;
+      final j = jsonDecode(body);
+      return j is Map && j['valid'] == true;
+    } catch (_) {
+      return false;
+    } finally {
+      client.close(force: true);
+    }
+  }
 
   @override
   Future<bool> buy(String productId) async {

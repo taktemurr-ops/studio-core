@@ -4,24 +4,66 @@
       "collectionGroup": "matches",
       "queryScope": "COLLECTION",
       "fields": [
-        {"fieldPath": "gameId", "order": "ASCENDING"},
-        {"fieldPath": "size", "order": "ASCENDING"},
-        {"fieldPath": "private", "order": "ASCENDING"},
-        {"fieldPath": "status", "order": "ASCENDING"},
-        {"fieldPath": "created", "order": "ASCENDING"}
+        {
+          "fieldPath": "gameId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "size",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "private",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "matches",
       "queryScope": "COLLECTION",
       "fields": [
-        {"fieldPath": "code", "order": "ASCENDING"},
-        {"fieldPath": "status", "order": "ASCENDING"}
+        {
+          "fieldPath": "code",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],
   "fieldOverrides": [
-    {"collectionGroup": "live", "fieldPath": "expireAt", "ttl": true, "indexes": []},
-    {"collectionGroup": "live", "fieldPath": "d", "indexes": []}
+    {
+      "collectionGroup": "live",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "live",
+      "fieldPath": "d",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "matchCodes",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "transfers",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
+    }
   ]
 }

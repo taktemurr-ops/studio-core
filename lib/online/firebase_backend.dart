@@ -11,6 +11,8 @@
 ///   matches/{id}/moves/{n}      hamleler (n: sıra numarası)
 ///   matches/{id}/events/{auto}  sohbet ve hediyeler
 ///   matches/{id}/live/{s}_{k}   gerçek zamanlı kanal: koltuk s'nin k. halka yuvası (üzerine yazılır, TTL: expireAt)
+///   matchCodes/{code}           masa kodu → maç kimliği (kodla katılım; özel maçlar listelenemez, TTL: expireAt)
+///   transfers/{code}            telefon değişimi (12 karakter kod, TTL: expireAt)
 ///   reports/{auto}              şikâyetler (yalnızca yazılır; panelden okunur)
 library;
 
@@ -26,7 +28,9 @@ import 'online.dart';
 class FirebaseBackend implements OnlineBackend {
   final FirebaseFirestore db;
   final FirebaseAuth auth;
-  final math.Random _r = math.Random();
+  /// Arkadaş, masa ve telefon değişimi kodları tahmin edilemesin diye
+  /// kriptografik rastgele kaynak (kod = erişim anahtarı).
+  final math.Random _r = math.Random.secure();
   Profile? _me;
 
   FirebaseBackend({FirebaseFirestore? db, FirebaseAuth? auth})
@@ -126,7 +130,11 @@ class FirebaseBackend implements OnlineBackend {
   @override
   Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true}) async {
     final ref = db.collection('matches').doc();
-    final code = makeCode(_r);
+    // Masa kodu benzersiz olsun: kodla katılım matchCodes/{kod} üzerinden.
+    String code;
+    do {
+      code = makeCode(_r);
+    } while ((await db.collection('matchCodes').doc(code).get()).exists);
     await ref.set({
       'gameId': gameId,
       'size': seats,
@@ -140,6 +148,11 @@ class FirebaseBackend implements OnlineBackend {
       'rating': _me?.ratingFor(gameId) ?? 1000,
       'created': FieldValue.serverTimestamp(),
       'beats': {uid: FieldValue.serverTimestamp()},
+    });
+    await db.collection('matchCodes').doc(code).set({
+      'match': ref.id,
+      'by': uid,
+      'expireAt': Timestamp.fromDate(DateTime.now().add(const Duration(days: 1))),
     });
     return _FsMatch.open(this, ref);
   }
@@ -165,9 +178,12 @@ class FirebaseBackend implements OnlineBackend {
 
   @override
   Future<OnlineMatch?> joinByCode(String code) async {
-    final q = await db.collection('matches').where('code', isEqualTo: code.toUpperCase()).where('status', isEqualTo: 'waiting').limit(1).get();
-    if (q.docs.isEmpty) return null;
-    return _join(q.docs.first.reference);
+    final c = code.trim().toUpperCase();
+    if (!RegExp(r'^[A-Z0-9]{4,12}$').hasMatch(c)) return null;
+    final s = await db.collection('matchCodes').doc(c).get();
+    final id = s.data()?['match'];
+    if (id is! String || id.isEmpty) return null;
+    return _join(db.collection('matches').doc(id));
   }
 
   @override
@@ -259,7 +275,12 @@ class FirebaseBackend implements OnlineBackend {
   Future<String> createTransfer(Map<String, String> blobs) async {
     final code = makeCode(_r, 12);
     final ref = db.collection('transfers').doc(code);
-    await ref.set({'by': uid, 'profile': _me?.toJson() ?? {}, 'created': FieldValue.serverTimestamp()});
+    await ref.set({
+      'by': uid,
+      'profile': _me?.toJson() ?? {},
+      'created': FieldValue.serverTimestamp(),
+      'expireAt': Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
+    });
     for (final e in blobs.entries) {
       await ref.collection('blobs').doc(e.key).set({'v': e.value});
     }
@@ -268,7 +289,9 @@ class FirebaseBackend implements OnlineBackend {
 
   @override
   Future<Map<String, String>?> claimTransfer(String code) async {
-    final ref = db.collection('transfers').doc(code.toUpperCase());
+    final c = code.trim().toUpperCase();
+    if (!RegExp(r'^[A-Z0-9]{12}$').hasMatch(c)) return null;
+    final ref = db.collection('transfers').doc(c);
     final s = await ref.get();
     if (!s.exists) return null;
     final old = Profile.fromJson({...Map<String, dynamic>.from(s.data()!['profile'] as Map), 'uid': uid});

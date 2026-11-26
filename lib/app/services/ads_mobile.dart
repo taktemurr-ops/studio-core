@@ -30,12 +30,13 @@ class AdMobService implements AdsService {
 
   @override
   Future<bool> init({required bool underAge, required bool personalized, bool child = false}) async {
-    _personalized = personalized && !underAge;
+    // Çocuğa yönelik ya da yaşı küçük kullanıcıda kişiselleştirilmiş reklam yok.
+    _personalized = personalized && !underAge && !child;
     try {
       // 1) Google UMP consent (shows the GDPR form only where required).
       final done = Completer<void>();
       ConsentInformation.instance.requestConsentInfoUpdate(
-        ConsentRequestParameters(tagForUnderAgeOfConsent: underAge),
+        ConsentRequestParameters(tagForUnderAgeOfConsent: underAge || child),
         () {
           ConsentForm.loadAndShowConsentFormIfRequired((FormError? e) {
             if (!done.isCompleted) done.complete();
