@@ -1613,6 +1613,8 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
   Future<void> _openSettings() async {
     final a = _anchor;
     if (a == null) return;
+    // Çocuk merkezinde ayarlar ebeveyn kapısının arkasındadır.
+    if (!await parentalGate(context, a) || !mounted) return;
     await Navigator.push(
       context,
       MaterialPageRoute<void>(

@@ -12,6 +12,7 @@ import '../../core/strings.dart';
 import '../adaptive.dart';
 import '../covers.dart';
 import '../game_api.dart';
+import '../parental_gate.dart';
 import '../app_state.dart';
 import '../studio_ui.dart';
 import '../widgets.dart';
@@ -172,9 +173,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         IconButton(
           tooltip: app.t('settings'),
           icon: const Icon(Icons.settings_rounded),
-          onPressed: () {
+          onPressed: () async {
+            // Çocuk oyunlarında ayarlar (veri silme, reklam/gizlilik) ebeveyn kapısının arkasındadır.
+            if (!await parentalGate(context, app) || !context.mounted) return;
             app.openedScreen('settings_opened');
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            await Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
           },
         ),
       ]),
