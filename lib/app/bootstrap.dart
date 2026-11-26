@@ -12,11 +12,13 @@ import '../core/save_store.dart';
 import '../core/strings.dart';
 import '../core/telemetry.dart';
 import 'adaptive.dart';
+import 'desktop_input.dart';
 import 'app_state.dart';
 import 'game_api.dart';
 import 'screens/home.dart';
 import 'screens/onboarding.dart';
 import 'services/ads.dart';
+import 'services/portal.dart';
 import 'services/audio.dart';
 import 'services/prefs_backend.dart';
 import 'services/purchases.dart';
@@ -78,12 +80,16 @@ void bootstrap(GameConfig config) {
       perf: perf,
     )..startup = report;
 
+    // Portal paketi: reklam sırasında ses durur (Poki / CrazyGames kuralı).
+    Portal.onAdPause = (paused) => paused ? state.audio.pauseAll() : state.audio.resumeAll();
+
     runApp(ProviderScope(
       overrides: [appStateProvider.overrideWith((ref) => state)],
       child: GameApp(state: state),
     ));
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      Portal.loadingFinished();
       await Adaptive.applyOrientationPolicy();
       perf.recordStartup(startWatch.elapsedMilliseconds);
       await errors.launchSucceeded();
@@ -108,6 +114,8 @@ class GameApp extends ConsumerStatefulWidget {
 }
 
 class _GameAppState extends ConsumerState<GameApp> with WidgetsBindingObserver {
+  final _navKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
@@ -147,6 +155,8 @@ class _GameAppState extends ConsumerState<GameApp> with WidgetsBindingObserver {
     return MaterialApp(
       title: app.title,
       debugShowCheckedModeBanner: false,
+      navigatorKey: _navKey,
+      scrollBehavior: const StudioScrollBehavior(),
       theme: theme,
       darkTheme: theme,
       themeMode: ThemeMode.dark,
@@ -165,7 +175,10 @@ class _GameAppState extends ConsumerState<GameApp> with WidgetsBindingObserver {
             textScaler: mq.textScaler.clamp(maxScaleFactor: 1.6),
             disableAnimations: app.save.reducedMotion || mq.disableAnimations,
           ),
-          child: StudioLookScope(look: look, child: child ?? const SizedBox.shrink()),
+          child: StudioLookScope(
+            look: look,
+            child: DesktopInput(navigatorKey: _navKey, child: child ?? const SizedBox.shrink()),
+          ),
         );
       },
       home: app.needsOnboarding ? const OnboardingScreen() : const HomeScreen(),

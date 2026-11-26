@@ -127,7 +127,33 @@ class AppHubConfig {
     required this.tools,
     this.featured = const [],
     this.privacyUrl,
+    this.mobileOnly = const [],
   });
+
+  /// Masaüstü sürümünde gizlenen araçlar (kamera, ML Kit, sensör, GPS …
+  /// gerektirenler; bkz. `ship/MASAUSTU_WEB.md`).
+  final List<String> mobileOnly;
+
+  /// Bu platformda gösterilecek merkez: masaüstünde [mobileOnly] araçları
+  /// listelerden çıkarılır.
+  AppHubConfig forPlatform({required bool desktop}) {
+    if (!desktop || mobileOnly.isEmpty) return this;
+    bool keep(AppTool t) => !mobileOnly.contains(t.id);
+    return AppHubConfig(
+      hubId: hubId,
+      title: title,
+      tagline: tagline,
+      icon: icon,
+      style: style,
+      categories: [
+        for (final c in categories)
+          if (tools.any((t) => t.category == c.id && keep(t))) c,
+      ],
+      tools: [for (final t in tools) if (keep(t)) t],
+      featured: [for (final f in featured) if (!mobileOnly.contains(f)) f],
+      privacyUrl: privacyUrl,
+    );
+  }
 
   String localized(List<String> l, String lang) => Strings.pick(l, lang);
 

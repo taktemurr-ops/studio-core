@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../core/game_rules.dart';
 import '../core/level_plan.dart';
+import 'edition.dart';
 import 'services/audio.dart';
 
 /// Everything a game screen needs from the shell.
@@ -189,7 +190,9 @@ class GameConfig {
   });
 
   /// The privacy page to open: the game's own address, else the hub's.
-  String get effectivePrivacyUrl => privacyUrl.isNotEmpty ? privacyUrl : hubPrivacyUrl;
+  /// Portal paketinde boş: portallar oyundan dış bağlantıya izin vermez.
+  String get effectivePrivacyUrl =>
+      !Edition.externalLinks ? '' : (privacyUrl.isNotEmpty ? privacyUrl : hubPrivacyUrl);
 
   String localized(List<String> l, String lang) {
     return Strings.pick(l, lang);

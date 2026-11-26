@@ -11,6 +11,7 @@ import '../app_state.dart';
 import '../services/gen_runner_stub.dart' if (dart.library.io) '../services/gen_runner_io.dart';
 import '../game_api.dart';
 import '../services/audio.dart';
+import '../services/portal.dart';
 import '../studio_ui.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -43,7 +44,14 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
   @override
   void initState() {
     super.initState();
+    Portal.gameplayStart();
     _generate();
+  }
+
+  @override
+  void dispose() {
+    Portal.gameplayStop();
+    super.dispose();
   }
 
   Future<void> _generate() async {
@@ -339,6 +347,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
   Future<void> _finish(AppState app, RoundResult r) async {
     if (_finished) return;
     _finished = true;
+    Portal.gameplayStop();
     final out = app.finishRound(_spec, r);
     if (!mounted) return;
     final action = await showModalBottomSheet<String>(
