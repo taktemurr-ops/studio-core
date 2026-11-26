@@ -321,32 +321,37 @@ bool _paintBlokCover(Canvas c, GameCover cover, Color seed) {
       c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(72, 14, 16, 16), const Radius.circular(3)), _p(blockCols[5]));
       _text(c, '8', const Offset(80, 22), 9, deep);
       sparkle(const Offset(66, 32), 4, Colors.white);
-    case 'b-retro': // Retro konsol: el konsolu, zeytin yeşili nokta ekranda yarış, yön tuşu
+    case 'b-retro': // Retro tuğla konsolu: yatay, turuncu gövdeli el konsolu; nokta ekranda dört mini oyun
       plain(const Color(0xFF173A99), deep);
-      final body = RRect.fromRectAndCorners(const Rect.fromLTWH(20, 4, 60, 92),
-          topLeft: const Radius.circular(6), topRight: const Radius.circular(6), bottomLeft: const Radius.circular(6), bottomRight: const Radius.circular(22));
-      c.drawRRect(body.shift(const Offset(0, 2)), _p(Colors.black38));
-      c.drawRRect(body, _p(const Color(0xFFD9D4C7)));
-      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(26, 10, 48, 44), const Radius.circular(4)), _p(const Color(0xFF4B4F5C)));
-      const scr = Rect.fromLTWH(32, 14, 36, 36);
+      final body = RRect.fromRectAndRadius(const Rect.fromLTWH(4, 22, 92, 58), const Radius.circular(16));
+      c.drawRRect(body.shift(const Offset(0, 2.5)), _p(Colors.black38));
+      c.drawRRect(body, _p(const Color(0xFFFF8A3D)));
+      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(8, 26, 84, 6), const Radius.circular(3)), _p(Colors.white24));
+      c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(28, 28, 44, 46), const Radius.circular(5)), _p(const Color(0xFF3B2A4A)));
+      const scr = Rect.fromLTWH(32, 32, 36, 38);
       c.drawRect(scr, _p(const Color(0xFF9AA86B)));
+      final dot = scr.width / 10;
+      // Dört bölmeli ekran: yarış, yılan, atış, tuğla kır
       const art = [
-        '....#.....', '...###....', '....#.....', '...#.#....', '..........',
-        '#........#', '#...#....#', '#..###...#', '#...#....#', '#..#.#...#',
+        '.#..#.####', '###.#.....', '.#..#.##..', '#.#.#.....', '..........',
+        '#.#.#....#', '.#..#..#..', '#.#.#.###.', '.......#..', '####...#..',
       ];
       for (var y = 0; y < 10; y++) {
         for (var x = 0; x < 10; x++) {
-          c.drawRect(Rect.fromLTWH(scr.left + x * 3.6 + 0.4, scr.top + y * 3.6 + 0.4, 2.8, 2.8),
+          c.drawRect(Rect.fromLTWH(scr.left + x * dot + 0.4, scr.top + y * 3.8 + 0.4, dot - 0.8, 3.0),
               _p(art[y][x] == '#' ? const Color(0xFF2B3320) : const Color(0xFF8B9960)));
         }
       }
-      // Yön tuşu ve iki düğme
-      c.drawRect(const Rect.fromLTWH(30, 70, 14, 5), _p(_ink));
-      c.drawRect(const Rect.fromLTWH(34.5, 65.5, 5, 14), _p(_ink));
-      c.drawCircle(const Offset(62, 74), 4.5, _p(const Color(0xFFB0303A)));
-      c.drawCircle(const Offset(71, 68), 4.5, _p(const Color(0xFFB0303A)));
-      for (var i = 0; i < 3; i++) {
-        c.drawLine(Offset(54.0 + i * 4, 88), Offset(58.0 + i * 4, 84), _stroke(Colors.black26, 1.2));
+      // Sol: dört yön düğmeleri (ayrık yuvarlaklar); sağ: tek büyük düğme
+      for (final o in const [Offset(16, 44), Offset(16, 60), Offset(8.5, 52), Offset(23.5, 52)]) {
+        c.drawCircle(o + const Offset(0, 1), 4, _p(Colors.black26));
+        c.drawCircle(o, 4, _p(const Color(0xFFFFE066)));
+      }
+      c.drawCircle(const Offset(84, 53), 8.5, _p(Colors.black26));
+      c.drawCircle(const Offset(84, 52), 8.5, _p(const Color(0xFF35D6F6)));
+      c.drawCircle(const Offset(82, 49.5), 3, _p(Colors.white38));
+      for (var i = 0; i < 4; i++) {
+        c.drawCircle(Offset(38.0 + i * 8, 86), 2.4, _p(blockCols[i * 2]));
       }
     case 'b-kum': // Kum blokları: renkli kum yığını, soldan sağa uzanan renk köprüsü, ufalanan parça
       plain(const Color(0xFF1B3F9C), deep);
@@ -591,10 +596,29 @@ void _paintBlokVariant(
   const area = Rect.fromLTWH(16, 6, 68, 68);
   final a = boardRect(area, n, box: box);
   // Dolu hücreler (çeşide göre farklı desen)
+  // Dolu hücre deseni çeşide göre değişir: alt sıralar, köşe, artı, çapraz, kenar sütunları, adacıklar.
+  bool filled(int x, int y) {
+    final k = h(x, y) % 7;
+    final m = n - 1;
+    switch (i % 6) {
+      case 0:
+        return (y >= n - 2 && k < 4) || (y == n - 3 && k < 2);
+      case 1:
+        return (x <= 1 || y >= m - 1) && k < 5;
+      case 2:
+        return ((x - m / 2).abs() < 1 || (y - m / 2).abs() < 1) && k < 5;
+      case 3:
+        return ((x - y).abs() <= 1 || (x + y - m).abs() == 0) && k < 5;
+      case 4:
+        return (x == 0 || x == m || y == m) && k < 5;
+      default:
+        return ((x ~/ 2 + y ~/ 2) % 3 == 0) && k < 4;
+    }
+  }
+
   for (var y = 0; y < n; y++) {
     for (var x = 0; x < n; x++) {
-      final k = h(x, y) % 7;
-      if ((y >= n - 2 && k < 4) || (y == n - 3 && k < 2)) block(cellOf(a, n, x, y, 0.35), Color.lerp(accent, cols[(x + y) % 8], 0.35)!);
+      if (filled(x, y)) block(cellOf(a, n, x, y, 0.35), Color.lerp(accent, cols[(x + y) % 8], 0.35)!);
     }
   }
   final cs = a.width / n;

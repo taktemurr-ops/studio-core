@@ -174,7 +174,8 @@ bool _paintArcade2Cover(Canvas c, GameCover cover, Color seed) {
     case 'a-istila': // İstilacılar: piksel uzaylı sıraları, kalkan siperleri, top
       plain(const Color(0xFF0A0A1F), night);
       stars(10, alpha: 0.4);
-      const alien = ['0010000100', '0001001000', '0011111100', '0110110110', '1111111111', '1011111101', '1010000101', '0001101100'];
+      // Özgün tasarım: kubbeli, tek gözlü, dokunaçlı uzaylı.
+      const alien = ['0001111000', '0011111100', '0110000110', '0110110110', '0111111110', '0011111100', '0101001010', '1001001001'];
       void invader(double ox, double oy, double s, Color col) {
         for (var y = 0; y < alien.length; y++) {
           for (var x = 0; x < 10; x++) {
@@ -492,13 +493,17 @@ bool _paintArcade2Cover(Canvas c, GameCover cover, Color seed) {
       // Bayrak
       c.drawLine(const Offset(88, 82), const Offset(88, 28), _stroke(Colors.white, 1.6));
       c.drawPath(poly(const [Offset(88, 28), Offset(76, 33), Offset(88, 38)]), _p(_red));
-      // Düşman: mantar gövdeli böcek
-      c.drawArc(const Rect.fromLTWH(56, 72, 14, 14), math.pi, math.pi, true, _p(const Color(0xFF8B4513)));
-      c.drawCircle(const Offset(60, 77), 1.2, _p(Colors.white));
-      c.drawCircle(const Offset(66, 77), 1.2, _p(Colors.white));
+      // Düşman: dikenli mor jöle
+      burst(const Offset(63, 77), 6.5, const Color(0xFF9D4EDD));
+      c.drawCircle(const Offset(63, 78), 5, _p(const Color(0xFFC77DFF)));
+      c.drawCircle(const Offset(61, 77), 1.3, _p(Colors.white));
+      c.drawCircle(const Offset(65, 77), 1.3, _p(Colors.white));
+      c.drawCircle(const Offset(61.3, 77.3), 0.6, _p(_ink));
+      c.drawCircle(const Offset(65.3, 77.3), 0.6, _p(_ink));
       // Kahraman zıplıyor
-      person(const Offset(30, 40), 7, const Color(0xFF1D4ED8), lean: 0.2);
-      c.drawRect(const Rect.fromLTWH(26.5, 30, 7, 2.5), _p(_red));
+      person(const Offset(30, 40), 7, const Color(0xFF0F9D8A), lean: 0.2);
+      c.drawLine(const Offset(27, 31.4), const Offset(34, 31.4), _stroke(const Color(0xFFFFD166), 1.6));
+      c.drawLine(const Offset(27, 31.4), const Offset(23.5, 33.5), _stroke(const Color(0xFFFFD166), 1.2));
       _stone(c, const Offset(66, 32), 2.6, gold);
     case 'a-kosates': // Koş ve ateş et: silahlı kahraman, mermi izi, robot düşman, kasalar
       plain(const Color(0xFF3D405B), const Color(0xFF22223B));
