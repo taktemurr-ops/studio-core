@@ -26,6 +26,7 @@ part 'covers_kelime2.dart';
 part 'covers_muzik.dart';
 part 'covers_ozgun.dart';
 part 'covers_ozgun2.dart';
+part 'covers_ozgun3.dart';
 part 'covers_parti.dart';
 part 'covers_simulasyon.dart';
 part 'covers_strateji.dart';
@@ -949,6 +950,7 @@ bool _paintFamilyCover(Canvas c, GameCover cover, Color seed) =>
     _paintBrainCover(c, cover, seed) ||
     _paintOzgunCover(c, cover, seed) ||
     _paintOzgun2Cover(c, cover, seed) ||
+    _paintOzgun3Cover(c, cover, seed) ||
     _paintBilgiCover(c, cover, seed) ||
     _paintMuzikCover(c, cover, seed) ||
     _paintPartiCover(c, cover, seed) ||

@@ -82,7 +82,11 @@ void main() {
     const kinds = [
       'kilimc', 'cinic', 'ebruc', 'tulipc', 'caravanc', 'callic', 'shadowc', 'nbhdc', 'gearc', 'lightc', 'rotworldc', 'paintc',
       'dominoc', 'honeyc', 'foldc', 'aquac', 'stallc', 'starsc', 'trainc', 'soundc', 'trioc', 'mushc', 'sandc',
+      'karagozc', 'hocac', 'mozrestc',
     ];
+    for (final k in const ['karagozc', 'hocac', 'mozrestc']) {
+      expect(coverHasFamilyArt(GameCover(k)), isTrue, reason: k);
+    }
     await tester.pumpWidget(MaterialApp(
       home: SingleChildScrollView(
         child: Wrap(children: [
