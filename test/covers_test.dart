@@ -108,6 +108,10 @@ void main() {
       'wordbombc', 'fivesecc', 'mostlikelyc', // parti
       'simspace', 'simzoo', 'balance', // boşta ve arcade
       'hillclimb', 'kitefight', 'cricketbat', 'crowdgates', 'shuttlecourt', 'kabaddiraid', // 4. tur arcade
+      'ek4grocer', 'ek4village', 'ek4shine', 'ek4reno', // 4. tur boşta
+      'ek4swarm', 'ek4bag', 'ek4bounce', 'ek4siege', // 4. tur strateji
+      'ek4kolam', 'ek4girih', 'ek4batik', 'ek4mini', 'ek4papel', 'ek4henna', // 4. tur özgün
+      'ek4toyhouse', 'ek4vet', 'ek4tales', 'ek4carwash', 'ek4scripts', // 4. tur eğitici
     ];
     // Bilinmeyen tür yedek çizime (etiket metni) düşer; yeni türlerin hiçbiri düşmemeli.
     for (final k in kinds) {
