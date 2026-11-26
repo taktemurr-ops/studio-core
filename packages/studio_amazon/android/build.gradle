@@ -21,5 +21,7 @@ android {
 
 dependencies {
     // Maven Central: https://central.sonatype.com/artifact/com.amazon.device/amazon-appstore-sdk
-    implementation "com.amazon.device:amazon-appstore-sdk:3.0.7"
+    // api: eklenti sınıfı PurchasingListener uygular; uygulamanın
+    // GeneratedPluginRegistrant derlemesi bu türü görmelidir.
+    api "com.amazon.device:amazon-appstore-sdk:3.0.7"
 }
