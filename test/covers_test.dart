@@ -255,4 +255,26 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(CoverArt), findsNWidgets((kart.length + masa.length) * 2));
   });
+
+  testWidgets('4. tur Bilgi, Zihin, Müzik ve Parti kapakları özgün ve tanınmış', (tester) async {
+    const kinds = [
+      'estimc', 'trailmkc', 'flankc', 'rhythmrunc', 'usulc', 'kalimbac', 'melpuzc', 'geniec', 'surveyc',
+      'quizladderc', 'silhouettec', 'cornersc', 'dilemmac', 'onecluec', 'twotruthc',
+    ];
+    expect(kinds.toSet().length, kinds.length);
+    for (final k in kinds) {
+      for (final v in [0, 1, 2, 3]) {
+        expect(coverHasFamilyArt(GameCover(k, v: v)), isTrue, reason: k);
+      }
+    }
+    await tester.pumpWidget(MaterialApp(
+      home: SingleChildScrollView(
+        child: Wrap(children: [
+          for (final k in kinds)
+            for (final v in [0, 1, 2]) CoverArt(cover: GameCover(k, v: v), color: Colors.teal, size: 40),
+        ]),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+  });
 }
