@@ -28,6 +28,7 @@ part 'covers_ozgun.dart';
 part 'covers_ozgun2.dart';
 part 'covers_ozgun3.dart';
 part 'covers_parti.dart';
+part 'covers_ek4o.dart';
 part 'covers_simulasyon.dart';
 part 'covers_strateji.dart';
 part 'covers_word.dart';
@@ -968,7 +969,8 @@ bool _paintFamilyCover(Canvas c, GameCover cover, Color seed) =>
     _paintBulmaca2Cover(c, cover, seed) ||
     _paintBulmaca3Cover(c, cover, seed) ||
     _paintEk4bCover(c, cover, seed) ||
-    _paintEk3MasaCover(c, cover, seed);
+    _paintEk3MasaCover(c, cover, seed) ||
+    _paintEk4oCover(c, cover, seed);
 
 /// Türün özgün bir aile çizimi var mı (yedek etikete düşmüyor mu). Testler için.
 bool coverHasFamilyArt(GameCover cover) {
