@@ -154,4 +154,34 @@ void main() {
       expect(coverHasFamilyArt(GameCover(k)), isTrue, reason: k);
     }
   });
+  testWidgets('eşleştirme ve kelime merkezlerinin oyuna özgü kapakları hatasız ve tanınmış olarak çizilir', (tester) async {
+    const kinds = [
+      // Eşleştir ve Sırala
+      'stacktrayc', 'hexmatchc', 'onetc', 'shooterc', 'stonebubblec', 'samegamec', 'picpairc', 'domsumc', 'hiddenc',
+      'goalpopc', 'cratec', 'yarnc', 'symcolc', 'layoutsc', 'turtlec', 'gemswapc', 'symbolcardc', 'floodc', 'bigtilec',
+      'tiletrayc', 'mergetreec',
+      // Kelime
+      'countdownc', 'fourguessc', 'acrostc', 'wordduelc', 'antonymc', 'spellc', 'cryptoc', 'blankc', 'boggc',
+      'slidecolc', 'wordblockc', 'wordsqc', 'arrowwordc', 'codewordc', 'wordpilec', 'anagramc', 'wordjigc',
+    ];
+    expect(kinds.toSet().length, kinds.length);
+    for (final k in kinds) {
+      for (final v in [0, 1, 2, 3]) {
+        expect(coverHasFamilyArt(GameCover(k, v: v)), isTrue, reason: k);
+        expect(coverHasFamilyArt(GameCover(k, v: v, label: 'Ç')), isTrue, reason: k);
+      }
+    }
+    await tester.pumpWidget(MaterialApp(
+      home: SingleChildScrollView(
+        child: Wrap(children: [
+          for (final k in kinds)
+            for (final v in [0, 1, 2])
+              for (final l in const ['', 'Ç', 'ŞİFRELİKELİME'])
+                CoverArt(cover: GameCover(k, v: v, label: l), color: Colors.purple, size: 40),
+        ]),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CoverArt), findsNWidgets(kinds.length * 9));
+  });
 }

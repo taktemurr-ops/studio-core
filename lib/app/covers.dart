@@ -10,7 +10,9 @@ part 'covers_bilgi_2.dart';
 part 'covers_brain.dart';
 part 'covers_egitici.dart';
 part 'covers_egitici_2.dart';
+part 'covers_eslestirme.dart';
 part 'covers_kart2.dart';
+part 'covers_kelime2.dart';
 part 'covers_muzik.dart';
 part 'covers_ozgun.dart';
 part 'covers_ozgun2.dart';
@@ -942,7 +944,9 @@ bool _paintFamilyCover(Canvas c, GameCover cover, Color seed) =>
     _paintSimulasyonCover(c, cover, seed) ||
     _paintKart2Cover(c, cover, seed) ||
     _paintEgitici2Cover(c, cover, seed) ||
-    _paintBilgi2Cover(c, cover, seed);
+    _paintBilgi2Cover(c, cover, seed) ||
+    _paintEslestirmeCover(c, cover, seed) ||
+    _paintKelime2Cover(c, cover, seed);
 
 /// Türün özgün bir aile çizimi var mı (yedek etikete düşmüyor mu). Testler için.
 bool coverHasFamilyArt(GameCover cover) {
