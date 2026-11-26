@@ -216,4 +216,43 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(CoverArt), findsNWidgets(covers.length * 2));
   });
+
+  testWidgets('kart ve masa merkezlerinin oyuna özgü kapakları hatasız çizilir', (tester) async {
+    const kart = [
+      'kc_klondike', 'kc_spider', 'kc_freecell', 'kc_tripeaks', 'kc_golf', 'kc_yukon', 'kc_scorpion',
+      'kc_forty', 'kc_canfield', 'kc_accordion', 'kc_clock', 'kc_solcesit', 'kc_batak', 'kc_batakcesit',
+      'kc_hearts', 'kc_spades', 'kc_whist', 'kc_ohhell', 'kc_briscola', 'kc_sueca', 'kc_king', 'kc_euchre',
+      'kc_belot', 'kc_klaverjas', 'kc_jass', 'kc_pinokl', 'kc_skat', 'kc_koyun', 'kc_kontrat', 'kc_bezik',
+      'kc_tarok', 'kc_pisti', 'kc_scopa', 'kc_toplam', 'kc_renkesle', 'kc_savas', 'kc_baskan', 'kc_papaz',
+      'kc_balik', 'kc_blof', 'kc_31', 'kc_hafiza', 'kc_gin', 'kc_kartremi', 'kc_konken', 'kc_asamali',
+      'kc_kanasta', 'kc_elayak', 'kc_cribbage', 'kc_durak', 'kc_snap', 'kc_hiz', 'kc_nertz', 'kc_kemps',
+      'kc_kartyolu', 'kc_kartkaresi',
+    ];
+    const masa = [
+      'mc_satranc', 'mc_satranccesit', 'mc_xiangqi', 'mc_janggi', 'mc_shogi', 'mc_damacesit', 'mc_turkdama',
+      'mc_alquerque', 'mc_fanorona', 'mc_dokuztas', 'mc_hnefatafl', 'mc_surakarta', 'mc_halma', 'mc_cindama',
+      'mc_mermer', 'mc_duvar', 'mc_mangalacesit', 'mc_altilibag', 'mc_besleme', 'mc_kapmali', 'mc_hex',
+      'mc_havannah', 'mc_blokus', 'mc_tavlacesit', 'mc_kizma', 'mc_yilan', 'mc_zarbesli', 'mc_farkle',
+      'mc_yalanci', 'mc_ur', 'mc_senet', 'mc_yut', 'mc_emlak', 'mc_yerlesim', 'mc_101okey', 'mc_okeycesit',
+      'mc_mahjongcesit',
+    ];
+    expect(kart.length, 56);
+    expect(masa.length, 37);
+    expect({...kart, ...masa}.length, kart.length + masa.length);
+    for (final k in [...kart, ...masa]) {
+      expect(coverHasFamilyArt(GameCover(k)), isTrue, reason: k);
+    }
+    expect(coverHasFamilyArt(const GameCover('kc_yok')), isFalse);
+    expect(coverHasFamilyArt(const GameCover('mc_yok')), isFalse);
+    await tester.pumpWidget(MaterialApp(
+      home: SingleChildScrollView(
+        child: Wrap(children: [
+          for (final k in [...kart, ...masa])
+            for (final size in [40.0, 96.0]) CoverArt(cover: GameCover(k), color: const Color(0xFF14703A), size: size),
+        ]),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CoverArt), findsNWidgets((kart.length + masa.length) * 2));
+  });
 }
