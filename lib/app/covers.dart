@@ -18,6 +18,7 @@ part 'covers_egitici.dart';
 part 'covers_egitici_2.dart';
 part 'covers_ek3_masa.dart';
 part 'covers_ek4b.dart';
+part 'covers_ek4_bes.dart';
 part 'covers_eslestirme.dart';
 part 'covers_kart2.dart';
 part 'covers_kart3.dart';
@@ -969,6 +970,7 @@ bool _paintFamilyCover(Canvas c, GameCover cover, Color seed) =>
     _paintBulmaca2Cover(c, cover, seed) ||
     _paintBulmaca3Cover(c, cover, seed) ||
     _paintEk4bCover(c, cover, seed) ||
+    _paintEk4BesCover(c, cover, seed) ||
     _paintEk3MasaCover(c, cover, seed) ||
     _paintEk4oCover(c, cover, seed);
 
