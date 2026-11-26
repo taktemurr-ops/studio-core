@@ -795,8 +795,11 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
 
   Widget _hero() {
     final n = hub.allGames.length;
+    // Büyük yazıda başlık ve açıklama kesilmesin: alan yazı boyutuyla büyür.
+    final ts = MediaQuery.textScalerOf(context);
+    final need = ts.scale(48) + (style.heroTitle ? ts.scale(28 * 1.05 * 2) : 0) + 6 + ts.scale(15 * 1.25 * 3) + 12;
     return Container(
-      height: style.heroTitle ? 220 : 200,
+      height: math.max(style.heroTitle ? 220.0 : 200.0, need),
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Stack(children: [
         if (style.heroAsset != null)
