@@ -5,17 +5,52 @@ import 'ads_stub.dart' if (dart.library.io) 'ads_mobile.dart' as ads_impl;
 import 'purchases.dart';
 import 'purchases_stub.dart' if (dart.library.io) 'purchases_mobile.dart' as iap_impl;
 
-/// Uygulamanın dağıtıldığı mağaza.
-///
-/// * [google]: Google Play (AdMob + Google Play Billing).
-/// * [apple]: App Store (AdMob + StoreKit).
-/// * [huawei]: Huawei AppGallery. Huawei cihazlarında Google Mobile Services
-///   yoktur; reklam (Petal Ads) ve satın alma (HMS IAP) `studio_huawei`
-///   paketinden gelir. Paket derlemeye eklenmemişse reklam kapalıdır, satın
-///   alma görünmez; uygulama yine eksiksiz çalışır.
-enum StoreKind { google, apple, huawei }
+part 'store_table.dart';
 
-/// Derleme zamanı mağaza seçimi: `--dart-define=STORE=huawei`.
+/// Reklam sağlayıcısı: AdMob (Google), Petal Ads (Huawei) ya da reklam yok.
+enum AdProvider { admob, petal, none }
+
+/// Bir mağazanın özellikleri. Tek kaynak `tool/stores.json`;
+/// [storeTable] ondan üretilir (tool/gen_store_table.py). Merkezlerin
+/// derleme betiği (tool/store_flavor.py) aynı JSON'u okur: eklenti paketi,
+/// GMS'siz ML seçimi, Maven depoları, yapılandırma gizli değişkeni ve çıktı
+/// dosya adı ([artifactSuffix]) oradan gelir.
+class StoreSpec {
+  final StoreKind kind;
+  final String name;
+  final AdProvider ads;
+  final IapProvider iap;
+
+  /// Derleme Google Play hizmetlerine (GMS) dayanabilir mi? false ise ML
+  /// modelleri APK'ya gömülür, Play hizmetleri sürümleri kullanılmaz.
+  final bool gms;
+
+  /// Mağaza sayfası şablonu (`{package}` yerine paket adı).
+  final String storePage;
+
+  /// Test APK adı eki (`<merkez><ek>.apk`); Google Play için boş.
+  final String artifactSuffix;
+
+  /// AppGallery gibi eklenti gerektiren mağazalarda Dart paketi
+  /// (studio-core/packages/<plugin>); merkez derlemesine yalnızca o mağazada
+  /// eklenir ve `register...()` ile [StoreBackends]'e kaydolur.
+  final String? plugin;
+
+  const StoreSpec({
+    required this.kind,
+    required this.name,
+    required this.ads,
+    required this.iap,
+    required this.gms,
+    required this.storePage,
+    required this.artifactSuffix,
+    required this.plugin,
+  });
+
+  Uri pageFor(String package) => Uri.parse(storePage.replaceAll('{package}', package));
+}
+
+/// Derleme zamanı mağaza seçimi: `--dart-define=STORE=<id>` (bkz. [StoreKind]).
 ///
 /// Verilmezse platformdan çıkarılır (iOS -> apple, diğerleri -> google).
 class StoreFlavor {
@@ -31,31 +66,25 @@ class StoreFlavor {
   @visibleForTesting
   static StoreKind? debugOverride;
 
+  static StoreKind? parse(String id) {
+    for (final k in StoreKind.values) {
+      if (k.name == id) return k;
+    }
+    return null;
+  }
+
   static StoreKind get current {
     final o = debugOverride;
     if (o != null) return o;
-    switch (raw) {
-      case 'huawei':
-        return StoreKind.huawei;
-      case 'apple':
-        return StoreKind.apple;
-      case 'google':
-        return StoreKind.google;
-    }
+    final k = parse(raw);
+    if (k != null) return k;
     return defaultTargetPlatform == TargetPlatform.iOS ? StoreKind.apple : StoreKind.google;
   }
 
+  static StoreSpec get spec => storeTable[current]!;
+
   /// Uygulamanın mağaza sayfası (çapraz tanıtım ve "puan ver" bağlantıları).
-  static Uri storePage(String package, {StoreKind? kind}) {
-    switch (kind ?? current) {
-      case StoreKind.huawei:
-        // AppGallery istemcisi paket adıyla açar (Huawei cihazlarda yüklü).
-        return Uri.parse('appmarket://details?id=$package');
-      case StoreKind.google:
-      case StoreKind.apple:
-        return Uri.parse('https://play.google.com/store/apps/details?id=$package');
-    }
-  }
+  static Uri storePage(String package, {StoreKind? kind}) => storeTable[kind ?? current]!.pageFor(package);
 }
 
 /// Bir mağazanın reklam ve satın alma arka ucu.
@@ -73,35 +102,30 @@ abstract class StoreBackend {
   bool get remotePush => false;
 }
 
-/// Google Play ve App Store: AdMob + `in_app_purchase`.
-class GoogleAppleStoreBackend extends StoreBackend {
-  @override
-  final StoreKind kind;
-  GoogleAppleStoreBackend(this.kind);
+/// Eklentisiz mağazalar için tablo güdümlü arka uç: reklam AdMob ise
+/// AdMob, satın alma Google Play/StoreKit ise `in_app_purchase`; tablodaki
+/// sağlayıcının eklentisi kayıtlı değilse (ör. Petal, HMS) o özellik
+/// kapalıdır ve Google hizmetlerine hiç dokunulmaz.
+class TableStoreBackend extends StoreBackend {
+  final StoreSpec spec;
+  TableStoreBackend(this.spec);
 
   @override
-  AdsService createAds() => ads_impl.createAdsService();
+  StoreKind get kind => spec.kind;
 
   @override
-  PurchaseService createPurchases() => iap_impl.createPurchaseService();
+  AdsService createAds() => spec.ads == AdProvider.admob ? ads_impl.createAdsService() : NoAdsService();
+
+  @override
+  PurchaseService createPurchases() =>
+      (spec.iap == IapProvider.googlePlay || spec.iap == IapProvider.storekit)
+          ? iap_impl.createPurchaseService()
+          : NoPurchaseService();
 }
 
-/// AppGallery derlemesi, HMS eklentisi kayıtlı değilken: Google hizmetlerine
-/// hiç dokunmaz. Reklam yok, satın alma yok (mağaza bölümü gizlenir).
-class GmsFreeFallbackBackend extends StoreBackend {
-  @override
-  StoreKind get kind => StoreKind.huawei;
-
-  @override
-  AdsService createAds() => NoAdsService();
-
-  @override
-  PurchaseService createPurchases() => NoPurchaseService();
-}
-
-/// Etkin arka ucun kaydı. `studio_huawei` paketi AppGallery derlemesinde
-/// `registerHuaweiStore()` ile kendini buraya kaydeder (merkezin
-/// `lib/store_flavor.dart` dosyası, bkz. tool/huawei_flavor.py).
+/// Etkin arka ucun kaydı. Eklentili mağaza paketleri (ör. `studio_huawei`)
+/// o mağazanın derlemesinde kendini buraya kaydeder (merkezin
+/// `lib/store_flavor.dart` dosyası, bkz. merkezlerde tool/store_flavor.py).
 class StoreBackends {
   StoreBackends._();
 
@@ -114,13 +138,11 @@ class StoreBackends {
 
   static bool isRegistered(StoreKind kind) => _registered.containsKey(kind);
 
-  /// Derlemenin mağazasına göre arka uç. AppGallery derlemesinde HMS paketi
-  /// kayıtlı değilse GMS'siz yedek kullanılır (AdMob/Play Billing çağrılmaz).
+  /// Derlemenin mağazasına göre arka uç: kayıtlı eklenti, yoksa tablo
+  /// güdümlü yedek (AppGallery'de HMS paketi yoksa reklam/satın alma kapalı;
+  /// AdMob/Play Billing çağrılmaz).
   static StoreBackend get current {
     final k = StoreFlavor.current;
-    final r = _registered[k];
-    if (r != null) return r;
-    if (k == StoreKind.huawei) return GmsFreeFallbackBackend();
-    return GoogleAppleStoreBackend(k);
+    return _registered[k] ?? TableStoreBackend(storeTable[k]!);
   }
 }
