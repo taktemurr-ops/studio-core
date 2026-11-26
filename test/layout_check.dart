@@ -94,6 +94,9 @@ class ErrorTrap {
   void stop() => FlutterError.onError = _old;
 }
 
+/// Üstte başka bir sayfa açıkken alttaki (geçiş animasyonunda kayan) sayfa.
+bool _behind(Element e) => ModalRoute.isCurrentOf(e) == false;
+
 bool _inScrollable(Element e) {
   var found = false;
   e.visitAncestorElements((a) {
@@ -124,6 +127,7 @@ void checkLayout(WidgetTester tester, LayoutIssues issues, ErrorTrap trap, Strin
 
   // Kesilen metin: satır sınırını aşıp kırpılan ya da kutusuna sığmayan yazı.
   for (final el in find.byType(RichText).evaluate()) {
+    if (_behind(el)) continue;
     final r = el.renderObject;
     if (r is! RenderParagraph || !r.attached || !r.hasSize) continue;
     final text = r.text.toPlainText().trim();
@@ -155,6 +159,7 @@ void checkLayout(WidgetTester tester, LayoutIssues issues, ErrorTrap trap, Strin
       (w is FloatingActionButton && w.onPressed != null) ||
       (w is InkResponse && (w.onTap != null || w.onLongPress != null));
   for (final el in find.byWidgetPredicate(tappable).evaluate()) {
+    if (_behind(el)) continue;
     final r = el.renderObject;
     if (r is! RenderBox || !r.attached || !r.hasSize || r.size.isEmpty) continue;
     if (_inScrollable(el)) continue;
