@@ -53,7 +53,7 @@ service cloud.firestore {
             && r.score is int && r.score >= 0 && r.score < 1000000000
             && r.m in ['t', 's']
             && r.k is int
-            && (r.m == 't' ? r.k == r.ms * 1000 + math.min(r.moves, 999) : r.k == 1000000000 - r.score)
+            && (r.m == 't' ? r.k == r.ms * 1000 + (r.moves < 999 ? r.moves : 999) : r.k == 1000000000 - r.score)
             && r.name is string && r.name.size() <= 16
             && r.avatar is int && r.avatar >= 0 && r.avatar < 100
             && r.at == request.time;

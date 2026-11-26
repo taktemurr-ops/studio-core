@@ -159,9 +159,6 @@ void main() {
     addTearDown(tester.view.reset);
     final services = (await tester.runAsync(_services))!;
     final games = [_game('oyun-a', 'Bloklar', BlockRules()), _game('oyun-duo', 'İkili', _DuoRules())];
-    for (final g in games) {
-      await tester.runAsync(() => services.stateFor(g));
-    }
     var played = 0;
     Future<RoundResult?> fake(AppState st, LevelSpec spec, int players) async {
       played++;
@@ -191,8 +188,9 @@ void main() {
     expect(find.byKey(const ValueKey('tn-pass')), findsOneWidget);
     for (var i = 0; i < 2; i++) {
       await tester.tap(find.byKey(const ValueKey('tn-ready')));
-      await tester.pump(const Duration(milliseconds: 200));
-      await tester.pump(const Duration(milliseconds: 200));
+      for (var k = 0; k < 10; k++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
     }
     expect(played, 2);
     await tester.pump(const Duration(seconds: 1));
@@ -208,9 +206,6 @@ void main() {
     addTearDown(tester.view.reset);
     final services = (await tester.runAsync(_services))!;
     final games = [_game('oyun-g1', 'Bir', _DailyRules()), _game('oyun-g2', 'İki', _DailyRules()), _game('oyun-g3', 'Üç', BlockRules())];
-    for (final g in games) {
-      await tester.runAsync(() => services.stateFor(g));
-    }
     final eligible = GlobalDailyHubPage.eligible(games);
     expect(eligible.map((g) => g.gameId), ['oyun-g1', 'oyun-g2']);
     String? playedDay;
@@ -235,8 +230,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const ValueKey('gd-featured')));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-    await tester.pump(const Duration(milliseconds: 300));
+    for (var k = 0; k < 10; k++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(playedDay, GlobalDaily.utcDay(DateTime.now()));
     final store = GlobalDailyStore.of(services.backend);
     final feat = GlobalDaily.featured(eligible.map((g) => g.gameId), playedDay!)!;
