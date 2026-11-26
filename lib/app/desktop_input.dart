@@ -25,59 +25,46 @@ class StudioScrollBehavior extends MaterialScrollBehavior {
       };
 }
 
-/// "Geri" isteği (Alt+Sol ok, tarayıcı/klavye geri tuşu).
-class StudioBackIntent extends Intent {
-  const StudioBackIntent();
-}
-
 /// [MaterialApp.builder] içinde Navigator'ın üstüne sarılır.
 class DesktopInput extends StatelessWidget {
   final GlobalKey<NavigatorState> navigatorKey;
   final Widget child;
   const DesktopInput({super.key, required this.navigatorKey, required this.child});
 
-  static const Map<ShortcutActivator, Intent> shortcuts = {
-    SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true): StudioBackIntent(),
-    SingleActivator(LogicalKeyboardKey.browserBack): StudioBackIntent(),
-    SingleActivator(LogicalKeyboardKey.goBack): StudioBackIntent(),
-  };
+  /// Geri tuşu mu (Esc, Alt+Sol ok, klavyenin geri tuşu)?
+  static bool isBack(KeyEvent e) {
+    if (e is! KeyDownEvent) return false;
+    final k = e.logicalKey;
+    if (k == LogicalKeyboardKey.escape || k == LogicalKeyboardKey.browserBack || k == LogicalKeyboardKey.goBack) {
+      return true;
+    }
+    return k == LogicalKeyboardKey.arrowLeft && HardwareKeyboard.instance.isAltPressed;
+  }
+
+  bool _pop() {
+    final nav = navigatorKey.currentState;
+    if (nav == null || !nav.canPop()) return false;
+    nav.maybePop();
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final pop = _PopAction(navigatorKey);
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (e) {
-        if (e.kind == PointerDeviceKind.mouse && (e.buttons & kBackMouseButton) != 0) {
-          navigatorKey.currentState?.maybePop();
-        }
+        if (e.kind == PointerDeviceKind.mouse && (e.buttons & kBackMouseButton) != 0) _pop();
       },
-      child: Shortcuts(
-        shortcuts: shortcuts,
-        child: Actions(
-          actions: <Type, Action<Intent>>{
-            DismissIntent: pop,
-            StudioBackIntent: pop,
-          },
-          child: child,
-        ),
+      // Odaktaki öğeden yukarı kabaran tuşlar: oyunun kendi tuşları (ör.
+      // arcade'de Esc = duraklat) önce davranır. Geri dönülecek ekran yoksa
+      // tuş üst katmana (iç içe uygulamada dıştaki Navigator'a) geçer.
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        includeSemantics: false,
+        onKeyEvent: (node, e) => isBack(e) && _pop() ? KeyEventResult.handled : KeyEventResult.ignored,
+        child: child,
       ),
     );
-  }
-}
-
-/// Yalnızca geri dönülecek bir ekran varken etkindir; yoksa tuş üst
-/// katmana (iç içe uygulamada dıştaki Navigator'a) geçer.
-class _PopAction extends Action<Intent> {
-  final GlobalKey<NavigatorState> navigatorKey;
-  _PopAction(this.navigatorKey);
-
-  @override
-  bool isEnabled(Intent intent) => navigatorKey.currentState?.canPop() ?? false;
-
-  @override
-  Object? invoke(Intent intent) {
-    navigatorKey.currentState?.maybePop();
-    return null;
   }
 }
