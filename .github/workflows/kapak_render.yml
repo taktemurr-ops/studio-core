@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     branches: [tmp-kapak-render]
+permissions:
+  contents: write
 jobs:
   render:
     runs-on: ubuntu-latest
@@ -14,7 +16,6 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter test test/zz_kapak_render_test.dart
-      - uses: actions/upload-artifact@v4
-        with:
-          name: render
-          path: render/
+      - run: |
+          git config user.name ci && git config user.email ci@users.noreply.github.com
+          git add -f render/*.png && git commit -m "render [skip ci]" && git push origin HEAD:tmp-kapak-render-out --force
