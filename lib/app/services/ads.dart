@@ -1,7 +1,9 @@
-import 'ads_stub.dart' if (dart.library.io) 'ads_mobile.dart' as impl;
+import 'store_backend.dart';
 
-/// Ad abstraction. Mobile uses Google AdMob (UMP consent included),
-/// Web and tests use a no-op implementation. Load failures are tolerated
+/// Ad abstraction. Google Play / App Store builds use Google AdMob (UMP
+/// consent included), AppGallery builds use Huawei Petal Ads through
+/// `studio_huawei` (see [StoreBackends]); Web and tests use a no-op
+/// implementation. Load failures are tolerated
 /// (doc 12.12) - the game never waits on an ad.
 abstract class AdsService {
   bool get available;
@@ -19,7 +21,7 @@ abstract class AdsService {
 
   int get failures;
 
-  static AdsService create() => impl.createAdsService();
+  static AdsService create() => StoreBackends.current.createAds();
 }
 
 class NoAdsService implements AdsService {

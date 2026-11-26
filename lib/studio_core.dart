@@ -10,3 +10,4 @@ export 'app/covers.dart';
 export 'app/game_api.dart';
 export 'app/hub.dart';
 export 'app/studio_apps.dart';
+export 'app/services/store_backend.dart';

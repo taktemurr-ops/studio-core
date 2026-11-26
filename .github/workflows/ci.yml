@@ -43,3 +43,21 @@ jobs:
           if bad:
               print('::error::koşmayan test dosyaları: ' + ' '.join(bad)); sys.exit(1)
           PY
+
+  # AppGallery (HMS) arka ucu: yalnızca --dart-define=STORE=huawei derlemelerine
+  # eklenen alt paket. Kendi bağımlılıklarıyla (huawei_ads, huawei_iap) denetlenir.
+  huawei-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: packages/studio_huawei
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test --reporter expanded

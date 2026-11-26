@@ -1,4 +1,4 @@
-import 'purchases_stub.dart' if (dart.library.io) 'purchases_mobile.dart' as impl;
+import 'store_backend.dart';
 
 /// Store product shown in the shop.
 class StoreProduct {
@@ -16,7 +16,8 @@ class PurchaseEvent {
   const PurchaseEvent(this.productId, this.purchaseId, this.status, this.verified);
 }
 
-/// Google Play Billing / StoreKit through `in_app_purchase`. No-op on Web.
+/// Google Play Billing / StoreKit through `in_app_purchase`, HMS IAP in
+/// AppGallery builds (see [StoreBackends]). No-op on Web.
 abstract class PurchaseService {
   bool get available;
   List<StoreProduct> get products;
@@ -26,7 +27,7 @@ abstract class PurchaseService {
   Future<void> restore();
   void dispose();
 
-  static PurchaseService create() => impl.createPurchaseService();
+  static PurchaseService create() => StoreBackends.current.createPurchases();
 }
 
 class NoPurchaseService implements PurchaseService {

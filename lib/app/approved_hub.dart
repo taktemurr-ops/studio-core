@@ -1672,7 +1672,7 @@ class _ApprovedHubShellState extends State<ApprovedHubShell> {
                   // Çocuk uygulamasında dış bağlantı ebeveyn kapısının arkasında.
                   final st = _anchor;
                   if (st != null && !await parentalGate(context, st)) return;
-                  await launchUrl(a.playUrl, mode: LaunchMode.externalApplication);
+                  await launchUrl(a.storeUrl, mode: LaunchMode.externalApplication);
                 },
               ),
           ],

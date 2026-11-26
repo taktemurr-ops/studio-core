@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'services/store_backend.dart';
+
 /// Stüdyonun mağazadaki merkez uygulamaları. Her merkezin ana ekranı, kendisi
 /// dışındakileri "Stüdyonun diğer uygulamaları" bölümünde gösterir (yalnızca
 /// Android ve web; iOS'ta başka mağazaya bağlantı verilmez). Yeni bir merkez
@@ -14,7 +16,13 @@ class StudioApp {
   final IconData icon;
   const StudioApp({required this.hubId, required this.package, required this.title, required this.color, required this.icon});
 
-  Uri get playUrl => Uri.parse('https://play.google.com/store/apps/details?id=$package');
+  /// Derlemenin mağazasındaki sayfa: Google Play, AppGallery derlemesinde
+  /// AppGallery (`--dart-define=STORE=huawei`).
+  Uri get storeUrl => StoreFlavor.storePage(package);
+
+  /// Geriye uyum: mağaza sayfası ([storeUrl] ile aynı; AppGallery
+  /// derlemesinde Google Play'e değil AppGallery'ye gider).
+  Uri get playUrl => storeUrl;
 }
 
 const studioApps = <StudioApp>[

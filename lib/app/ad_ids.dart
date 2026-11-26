@@ -21,3 +21,15 @@ class AdIds {
   /// Gerçek kimlikler verildi mi (test kimlikleri değil)?
   static bool get live => !androidInterstitial.startsWith('ca-app-pub-3940256099942544');
 }
+
+/// Huawei Petal Ads (AppGallery derlemesi) reklam yuvaları. Derlemede
+/// `--dart-define=HUAWEI_ADS_INTERSTITIAL=...` / `HUAWEI_ADS_REWARDED=...`
+/// ile verilir (CI'da depo gizli değişkenlerinden). Verilmezse Huawei'nin
+/// herkese açık TEST yuvaları kullanılır: gelir getirmez.
+class HuaweiAdIds {
+  static const interstitial = String.fromEnvironment('HUAWEI_ADS_INTERSTITIAL', defaultValue: 'teste9ih9j0rc3');
+  static const rewarded = String.fromEnvironment('HUAWEI_ADS_REWARDED', defaultValue: 'testx9dtjwj8hp');
+
+  /// Gerçek yuvalar verildi mi (test yuvaları değil)?
+  static bool get live => !interstitial.startsWith('test');
+}
