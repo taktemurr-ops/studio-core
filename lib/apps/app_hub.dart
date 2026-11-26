@@ -9,6 +9,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/material.dart';
@@ -402,6 +403,7 @@ class _AppHubShellState extends State<AppHubShell> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
+        scrollable: true,
         icon: const Icon(Icons.delete_forever_rounded, color: StudioLook.bad, size: 40),
         title: Text(core('delete_data')),
         content: Text(core('delete_confirm')),
@@ -418,8 +420,11 @@ class _AppHubShellState extends State<AppHubShell> {
 
   Widget _hero() {
     final s = AppLook.of(context);
+    // Büyük yazıda başlık ve açıklama kesilmesin: alan yazı boyutuyla büyür.
+    final ts = MediaQuery.textScalerOf(context);
+    final need = ts.scale(48) + ts.scale(24 * 1.05 * 2) + 6 + ts.scale(14 * 1.25 * 3) + 12;
     return Container(
-      height: 190,
+      height: math.max(190.0, need),
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Stack(children: [
         if (s.heroAsset != null)
