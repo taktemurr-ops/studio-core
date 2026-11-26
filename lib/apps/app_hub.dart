@@ -17,6 +17,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app/approved_hub.dart' show ApprovedHubStyle, ApprovedLook;
 import '../app/studio_ui.dart';
+import '../app/desktop_input.dart';
+import '../app/edition.dart';
 import '../app/services/ads.dart';
 import '../app/services/prefs_backend.dart';
 import '../app/services/purchases.dart';
@@ -28,7 +30,8 @@ import 'app_tx.dart';
 import 'app_widgets.dart';
 
 /// Uygulama merkezinin `main()` girişi.
-void bootstrapAppHub(AppHubConfig config) {
+void bootstrapAppHub(AppHubConfig hubConfig) {
+  final config = hubConfig.forPlatform(desktop: Edition.desktop);
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     final backend = await PrefsBackend.create();
@@ -39,6 +42,11 @@ void bootstrapAppHub(AppHubConfig config) {
       purchases: PurchaseService.create(),
     );
     await services.load();
+    if (Edition.desktop) {
+      // Masaüstü sürümü mağazada ücretli tam sürüm: reklamsız ve premium açık.
+      services.entitlements.addAll(Edition.desktopEntitlements);
+      if (services.consent == null) await services.setConsent(false);
+    }
     if (services.consent != null) unawaited(services.startServices());
     runApp(AppHubApp(config: config, services: services));
   }, (error, stack) {
@@ -56,6 +64,8 @@ class AppHubApp extends StatefulWidget {
 }
 
 class _AppHubAppState extends State<AppHubApp> {
+  final _navKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     final s = widget.services;
@@ -81,7 +91,12 @@ class _AppHubAppState extends State<AppHubApp> {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            builder: (context, child) => AppLook(style: style, child: child ?? const SizedBox()),
+            navigatorKey: _navKey,
+            scrollBehavior: const StudioScrollBehavior(),
+            builder: (context, child) => DesktopInput(
+              navigatorKey: _navKey,
+              child: AppLook(style: style, child: child ?? const SizedBox()),
+            ),
             home: s.consent == null
                 ? AppConsentPage(
                     config: widget.config,

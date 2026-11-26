@@ -29,6 +29,8 @@ import '../online/online_service.dart';
 import '../online/online_ui.dart';
 import 'adaptive.dart';
 import 'app_state.dart';
+import 'desktop_input.dart';
+import 'edition.dart';
 import 'game_api.dart';
 import 'global_daily_ui.dart';
 import 'hub.dart';
@@ -274,6 +276,12 @@ void bootstrapApprovedHub(HubConfig hub, ApprovedHubStyle style, {String privacy
       audio: AudioService(),
     );
     await services.loadShared();
+    if (Edition.desktop) {
+      // Masaüstü sürümü mağazada ücretli tam sürüm: reklamsız ve premium açık.
+      services.entitlements = {...services.entitlements, ...Edition.desktopEntitlements};
+      // Reklam ve ölçüm olmadığı için gizlilik (reklam) onayı sorulmaz.
+      if (services.consent == null) await services.setConsent(false);
+    }
     services.registerTransfer(hub.allGames);
     runApp(ApprovedHubApp(hub: hub, style: style, services: services));
     // Çocuk merkezinde (bütün oyunlar kidsMode) çökme raporu da kapalıdır.
@@ -299,6 +307,8 @@ class ApprovedHubApp extends StatefulWidget {
 }
 
 class _ApprovedHubAppState extends State<ApprovedHubApp> with WidgetsBindingObserver {
+  final _navKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
@@ -326,6 +336,9 @@ class _ApprovedHubAppState extends State<ApprovedHubApp> with WidgetsBindingObse
       child: MaterialApp(
         title: widget.hub.localized(widget.hub.title, lang),
         debugShowCheckedModeBanner: false,
+        navigatorKey: _navKey,
+        scrollBehavior: const StudioScrollBehavior(),
+        builder: (context, child) => DesktopInput(navigatorKey: _navKey, child: child ?? const SizedBox.shrink()),
         theme: theme,
         darkTheme: theme,
         themeMode: ThemeMode.dark,

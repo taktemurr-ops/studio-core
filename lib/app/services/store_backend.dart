@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 
+import '../edition.dart';
 import 'ads.dart';
 import 'ads_stub.dart' if (dart.library.io) 'ads_mobile.dart' as ads_impl;
+import 'portal.dart';
 import 'purchases.dart';
 import 'purchases_stub.dart' if (dart.library.io) 'purchases_mobile.dart' as iap_impl;
 
@@ -123,6 +125,33 @@ class TableStoreBackend extends StoreBackend {
           : NoPurchaseService();
 }
 
+/// Masaüstü sürümü (Microsoft Store / Mac App Store): mağazada ücretli tam
+/// sürüm olarak satılır. Reklam ve uygulama içi satın alma yoktur; premium
+/// avantajları [Edition.desktopEntitlements] ile baştan açıktır.
+class DesktopEditionBackend extends StoreBackend {
+  @override
+  StoreKind get kind => StoreFlavor.current;
+
+  @override
+  AdsService createAds() => NoAdsService();
+
+  @override
+  PurchaseService createPurchases() => NoPurchaseService();
+}
+
+/// Web oyun portalı paketi: reklamlar portalın SDK'sından, satın alma yok
+/// (portallar oyun içi satın almaya izin vermez).
+class PortalStoreBackend extends StoreBackend {
+  @override
+  StoreKind get kind => StoreFlavor.current;
+
+  @override
+  AdsService createAds() => PortalAdsService();
+
+  @override
+  PurchaseService createPurchases() => NoPurchaseService();
+}
+
 /// Etkin arka ucun kaydı. Eklentili mağaza paketleri (ör. `studio_huawei`)
 /// o mağazanın derlemesinde kendini buraya kaydeder (merkezin
 /// `lib/store_flavor.dart` dosyası, bkz. merkezlerde tool/store_flavor.py).
@@ -142,6 +171,10 @@ class StoreBackends {
   /// güdümlü yedek (AppGallery'de HMS paketi yoksa reklam/satın alma kapalı;
   /// AdMob/Play Billing çağrılmaz).
   static StoreBackend get current {
+    if (StoreFlavor.debugOverride == null) {
+      if (Edition.portal) return PortalStoreBackend();
+      if (Edition.desktop) return DesktopEditionBackend();
+    }
     final k = StoreFlavor.current;
     return _registered[k] ?? TableStoreBackend(storeTable[k]!);
   }
