@@ -4,8 +4,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 part 'covers_arcade.dart';
+part 'covers_arcade2.dart';
 part 'covers_balance.dart';
 part 'covers_bilgi.dart';
+part 'covers_blok.dart';
 part 'covers_bilgi_2.dart';
 part 'covers_brain.dart';
 part 'covers_egitici.dart';
@@ -931,6 +933,8 @@ void paintCover(Canvas c, GameCover cover, Color seed) {
 /// Aile kapak dosyalarındaki (covers_*.dart) çizimler; tür tanınmazsa false.
 bool _paintFamilyCover(Canvas c, GameCover cover, Color seed) =>
     _paintArcadeCover(c, cover, seed) ||
+    _paintArcade2Cover(c, cover, seed) ||
+    _paintBlokCover(c, cover, seed) ||
     _paintBalanceCover(c, cover, seed) ||
     _paintWordCover(c, cover, seed) ||
     _paintBrainCover(c, cover, seed) ||

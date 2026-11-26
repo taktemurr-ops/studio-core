@@ -184,4 +184,36 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(CoverArt), findsNWidgets(kinds.length * 9));
   });
+
+  testWidgets('arcade ve blok merkezlerinin oyuna özgü kapakları hatasız çizilir', (tester) async {
+    const arcade = [
+      'a-yilan', 'a-yilanio', 'a-uzayatisi', 'a-istila', 'a-asteroit', 'a-raket', 'a-labkov', 'a-isik', 'a-alan',
+      'a-kosu', 'a-dinozor', 'a-kaykay', 'a-ziplama', 'a-kanat', 'a-ucak', 'a-platform', 'a-kosates', 'a-yolgecme',
+      'a-ustten', 'a-park', 'a-dart', 'a-nisan', 'a-galeri', 'a-okculuk', 'a-refleks', 'a-basket', 'a-bowling',
+      'a-golf', 'a-penalti', 'a-futbol', 'a-tenis', 'a-voleybol', 'a-kulekurma', 'a-sapan', 'a-topcu', 'a-egik',
+    ];
+    const blok = [
+      'b-master', 'b-sudoku', 'b-doldurma', 'b-poliomino', 'b-alanbolme', 'b-paket', 'b-dusen', 'b-altigen',
+      'b-altigendusen', 'b-sayili', 'b-retro', 'b-kum', 'b-kaydirma', 'b-kacis', 'b-renkli', 'b-egim', 'b-kup', 'b-kule',
+    ];
+    final covers = [
+      for (final k in [...arcade, ...blok]) GameCover(k),
+      for (var v = 0; v < 20; v++) GameCover('b-cesit', v: v),
+    ];
+    for (final cv in covers) {
+      expect(coverHasFamilyArt(cv), isTrue, reason: '${cv.kind} v${cv.v}');
+    }
+    expect(coverHasFamilyArt(const GameCover('a-yok')), isFalse);
+    expect(coverHasFamilyArt(const GameCover('b-yok')), isFalse);
+    await tester.pumpWidget(MaterialApp(
+      home: SingleChildScrollView(
+        child: Wrap(children: [
+          for (final cv in covers)
+            for (final size in [40.0, 96.0]) CoverArt(cover: cv, color: const Color(0xFF1D4E89), size: size),
+        ]),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CoverArt), findsNWidgets(covers.length * 2));
+  });
 }
