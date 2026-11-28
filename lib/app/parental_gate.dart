@@ -41,37 +41,112 @@ const Map<String, List<String>> kParentalGateTx = {
   'fil': ['Magtanong sa nakatatanda', 'Dapat sumagot ang isang nakatatanda para magpatuloy:', 'Kanselahin'],
 };
 
-/// Simple adult check shown before purchases in kids titles (Google Play
-/// Families / Apple Kids category). Other titles pass straight through.
+/// Adult check shown before purchases, settings and links in kids titles
+/// (Google Play Families / Apple Kids category). The product is TYPED on a
+/// keypad (a random tap passes ~1/90 instead of 1/4); three wrong answers
+/// close the gate. Other titles pass straight through.
 Future<bool> parentalGate(BuildContext context, AppState app) async {
   if (!app.config.kidsMode) return true;
   final r = math.Random();
   final a = 6 + r.nextInt(4), b = 6 + r.nextInt(4);
-  final answer = a * b;
-  final opts = <int>{answer};
-  while (opts.length < 4) {
-    opts.add(answer + (r.nextInt(17) - 8));
-  }
-  final list = opts.toList()..shuffle(r);
   final tx = kParentalGateTx[app.strings.lang] ?? kParentalGateTx['en']!;
   final ok = await showDialog<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(tx[0]),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(tx[1]),
-        const SizedBox(height: 12),
-        Text('$a × $b = ?', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final o in list)
-            OutlinedButton(onPressed: () => Navigator.of(ctx).pop(o == answer), child: Text('$o')),
-        ]),
-      ]),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(tx[2])),
-      ],
-    ),
+    builder: (ctx) => _GateDialog(a: a, b: b, tx: tx),
   );
   return ok ?? false;
+}
+
+class _GateDialog extends StatefulWidget {
+  final int a;
+  final int b;
+  final List<String> tx;
+  const _GateDialog({required this.a, required this.b, required this.tx});
+
+  @override
+  State<_GateDialog> createState() => _GateDialogState();
+}
+
+class _GateDialogState extends State<_GateDialog> {
+  String typed = '';
+  int fails = 0;
+  bool wrong = false;
+
+  void _key(String k) {
+    setState(() {
+      wrong = false;
+      if (k == '<') {
+        if (typed.isNotEmpty) typed = typed.substring(0, typed.length - 1);
+        return;
+      }
+      if (typed.length < 3) typed += k;
+    });
+  }
+
+  void _submit() {
+    if (typed.isEmpty) return;
+    if (int.tryParse(typed) == widget.a * widget.b) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    fails++;
+    if (fails >= 3) {
+      Navigator.of(context).pop(false);
+      return;
+    }
+    setState(() {
+      typed = '';
+      wrong = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget key(String k, {IconData? icon, VoidCallback? onTap}) => Padding(
+          padding: const EdgeInsets.all(4),
+          child: SizedBox(
+            width: 64,
+            height: 52,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
+              onPressed: onTap ?? () => _key(k),
+              child: icon != null ? Icon(icon) : Text(k, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            ),
+          ),
+        );
+    return AlertDialog(
+      title: Text(widget.tx[0]),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(widget.tx[1], textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Text('${widget.a} × ${widget.b} = ${typed.isEmpty ? '?' : typed}',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: wrong ? const Color(0xFFFF5A5A) : null)),
+          ),
+          const SizedBox(height: 12),
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              for (final row in const [
+                ['1', '2', '3'],
+                ['4', '5', '6'],
+                ['7', '8', '9'],
+              ])
+                Row(mainAxisSize: MainAxisSize.min, children: [for (final k in row) key(k)]),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                key('<', icon: Icons.backspace_outlined),
+                key('0'),
+                key('=', icon: Icons.check_rounded, onTap: _submit),
+              ]),
+            ]),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(widget.tx[2])),
+      ],
+    );
+  }
 }
