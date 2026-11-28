@@ -10,6 +10,7 @@ import '../adaptive.dart';
 import '../app_state.dart';
 import '../services/gen_runner_stub.dart' if (dart.library.io) '../services/gen_runner_io.dart';
 import '../game_api.dart';
+import '../parental_gate.dart';
 import '../services/audio.dart';
 import '../services/portal.dart';
 import '../studio_ui.dart';
@@ -305,6 +306,9 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       ),
     );
     if (choice == 'ad') {
+      // Çocuk oyununda reklam yalnız yetişkin onayıyla (ebeveyn kapısı).
+      if (!mounted) return false;
+      if (!await parentalGate(context, app)) return false;
       final ok = await app.watchRewarded();
       if (!ok && mounted) showToast(context, app.t('ad_not_ready'));
       return ok;
@@ -346,7 +350,12 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
         ],
       ),
     );
-    if (choice == 'ad') return app.watchRewarded();
+    if (choice == 'ad') {
+      // Çocuk oyununda reklam yalnız yetişkin onayıyla (ebeveyn kapısı).
+      if (!mounted) return false;
+      if (!await parentalGate(context, app)) return false;
+      return app.watchRewarded();
+    }
     if (choice == 'coins' && app.session.spendCoins(200)) {
       app.changed();
       return true;
@@ -519,6 +528,8 @@ class _ResultSheetState extends State<_ResultSheet> {
                     icon: Icons.ondemand_video_rounded,
                     label: app.t('double_reward'),
                     onPressed: () async {
+                      // Çocuk oyununda reklam yalnız yetişkin onayıyla (ebeveyn kapısı).
+                      if (!await parentalGate(context, app)) return;
                       final ok = await app.watchRewarded();
                       if (!context.mounted) return;
                       if (ok) {
