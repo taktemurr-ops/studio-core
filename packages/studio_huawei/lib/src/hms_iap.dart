@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:huawei_iap/huawei_iap.dart';
 import 'package:studio_core/app/services/purchases.dart';
 import 'package:studio_core/core/monetization.dart';
+
+import 'hms_signature.dart';
 
 /// AppGallery Connect'te tanımlanması gereken ürünler (Google Play ile aynı
 /// kimlikler, bkz. [Products]).
@@ -24,10 +27,15 @@ class HmsProductCatalog {
 ///
 /// Akış Google Play ile aynıdır: ürünler [Products] kimlikleriyle sorulur,
 /// satın alma olayları [PurchaseEvent] olarak `PurchaseLedger`'a iletilir,
-/// tüketilebilir ürünler teslimden sonra tüketilir; teslim edilmemiş
+/// tüketilebilir ürünler teslimden sonra tüketilir; her sipariş AppGallery
+/// IAP ortak anahtarıyla imza doğrulamasından geçer ([HmsSignatureVerifier]); teslim edilmemiş
 /// (tüketilmemiş) siparişler açılışta yeniden teslim edilir. Tüketilemez
 /// ürünler (reklamsız, premium) "geri yükle" ile yeniden etkinleşir.
 class HmsPurchaseService implements PurchaseService {
+  HmsPurchaseService({HmsSignatureVerifier? verifier})
+      : _verifier = verifier ?? HmsSignatureVerifier.fromEnvironment();
+
+  final HmsSignatureVerifier _verifier;
   final Map<String, ProductInfo> _details = {};
   void Function(PurchaseEvent e)? _onEvent;
   bool _available = false;
@@ -74,19 +82,68 @@ class HmsPurchaseService implements PurchaseService {
   Future<void> _redeliverConsumables() async {
     try {
       final owned = await IapClient.obtainOwnedPurchases(OwnedPurchasesReq(priceType: IapClient.IN_APP_CONSUMABLE));
-      final data = owned.inAppPurchaseDataList ?? const <InAppPurchaseData>[];
-      final sigs = owned.inAppSignature ?? const <String>[];
-      for (var i = 0; i < data.length; i++) {
-        await _deliver(data[i], i < sigs.length ? sigs[i] : '', 'purchased');
-      }
+      await _deliverOwned(owned, 'purchased');
     } catch (_) {}
   }
 
-  /// purchaseState 0 = ödendi. Yalnızca ödenmiş siparişler teslim edilir.
-  Future<void> _deliver(InAppPurchaseData d, String signature, String status) async {
+  /// Sahip olunan siparişler: imza, ayrıştırılmış nesneden değil yanıttaki
+  /// ham `inAppPurchaseData` metninden doğrulanır.
+  Future<void> _deliverOwned(OwnedPurchasesResult owned, String status) async {
+    final raw = rawList(owned.rawValue, 'inAppPurchaseDataList');
+    final sigs = owned.inAppSignature ?? const <String>[];
+    for (var i = 0; i < raw.length; i++) {
+      await _deliver(raw[i], i < sigs.length ? sigs[i] : '', status, owned.signatureAlgorithm);
+    }
+  }
+
+  /// Ham imzalı metinler (eklentinin JSON yanıtından).
+  static List<String> rawList(String rawValue, String key) {
+    try {
+      final m = json.decode(rawValue) as Map;
+      final v = m[key];
+      if (v is List) return [for (final x in v) x is String ? x : json.encode(x)];
+    } catch (_) {}
+    return const [];
+  }
+
+  static String rawField(String rawValue, String key) {
+    try {
+      final v = (json.decode(rawValue) as Map)[key];
+      if (v is String) return v;
+      if (v != null) return json.encode(v);
+    } catch (_) {}
+    return '';
+  }
+
+  /// Sipariş doğrulandı mı: imza AppGallery IAP ortak anahtarıyla geçerli,
+  /// ürün bizim, uygulama paketi ve ödeme durumu doğru.
+  bool isVerified(String rawData, String signature, {String? algorithm, String? expectedPackage}) {
+    if (!_verifier.verify(rawData, signature, algorithm: algorithm)) return false;
+    try {
+      final d = InAppPurchaseData.fromJson(rawData);
+      if (!Products.all.contains(d.productId)) return false;
+      if ((d.purchaseToken ?? '').isEmpty) return false;
+      if (d.purchaseState != null && d.purchaseState != 0) return false;
+      if (expectedPackage != null && d.packageName != null && d.packageName != expectedPackage) return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// purchaseState 0 = ödendi. Yalnızca ödenmiş ve imzası doğrulanmış
+  /// siparişler teslim edilir/tüketilir; doğrulanamayan tüketilebilir
+  /// tüketilmez (sonra yeniden teslim edilebilsin).
+  Future<void> _deliver(String raw, String signature, String status, [String? algorithm]) async {
+    final InAppPurchaseData d;
+    try {
+      d = InAppPurchaseData.fromJson(raw);
+    } catch (_) {
+      return;
+    }
     final id = d.productId ?? '';
     if (d.purchaseState != null && d.purchaseState != 0) return;
-    final verified = signature.isNotEmpty && (d.purchaseToken ?? '').isNotEmpty && Products.all.contains(id);
+    final verified = isVerified(raw, signature, algorithm: algorithm);
     _onEvent?.call(PurchaseEvent(id, d.orderId ?? d.purchaseToken ?? '', status, verified));
     if (verified && Products.consumable.contains(id)) {
       try {
@@ -103,8 +160,8 @@ class HmsPurchaseService implements PurchaseService {
       final r = await IapClient.createPurchaseIntent(PurchaseIntentReq(priceType: type, productId: productId));
       switch (r.returnCode) {
         case _ok:
-          final d = r.inAppPurchaseData;
-          if (d != null) await _deliver(d, r.inAppDataSignature ?? '', 'purchased');
+          final raw = rawField(r.rawValue, 'inAppPurchaseData');
+          if (raw.isNotEmpty) await _deliver(raw, r.inAppDataSignature ?? '', 'purchased', r.signatureAlgorithm);
         case _canceled:
           _onEvent?.call(PurchaseEvent(productId, '', 'canceled', false));
         case _owned:
@@ -132,11 +189,7 @@ class HmsPurchaseService implements PurchaseService {
       do {
         final owned = await IapClient.obtainOwnedPurchases(
             OwnedPurchasesReq(priceType: IapClient.IN_APP_NONCONSUMABLE, continuationToken: token));
-        final data = owned.inAppPurchaseDataList ?? const <InAppPurchaseData>[];
-        final sigs = owned.inAppSignature ?? const <String>[];
-        for (var i = 0; i < data.length; i++) {
-          await _deliver(data[i], i < sigs.length ? sigs[i] : '', 'restored');
-        }
+        await _deliverOwned(owned, 'restored');
         token = owned.continuationToken;
       } while (token != null && token.isNotEmpty);
     } catch (_) {}

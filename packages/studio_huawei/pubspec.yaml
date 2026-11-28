@@ -16,6 +16,8 @@ dependencies:
       url: https://github.com/taktemurr-ops/studio-core
   huawei_ads: ^13.4.72
   huawei_iap: ^6.13.0
+  # Satın alma imzası doğrulaması (saf Dart RSA).
+  pointycastle: ">=3.9.1 <5.0.0"
 
 # Yalnızca bu paketin kendi CI denetimi için (bir merkeze bağımlılık olarak
 # eklendiğinde yok sayılır).

@@ -13,6 +13,7 @@ import 'src/hms_iap.dart';
 
 export 'src/hms_ads.dart' show HmsAdsService;
 export 'src/hms_iap.dart' show HmsPurchaseService, HmsProductCatalog;
+export 'src/hms_signature.dart' show HmsSignatureVerifier;
 
 class HuaweiStoreBackend extends StoreBackend {
   @override
