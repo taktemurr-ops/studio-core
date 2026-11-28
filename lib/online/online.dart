@@ -135,6 +135,94 @@ class TableInfo {
 
 enum MatchStatus { waiting, playing, done }
 
+/// Çevrimiçi maç protokolünün sürümü (arka uç düzeni + eşitleme). Oyunun
+/// kendi [GameRules.onlineVersion]'ı ile birlikte masanın sürüm anahtarını
+/// oluşturur ([onlineKey]).
+const kOnlineProtocol = 2;
+
+/// Masanın sürüm anahtarı: yalnızca aynı anahtarlı istemciler aynı masaya oturur.
+String onlineKey(int gameVersion) => '$kOnlineProtocol.$gameVersion';
+
+/// Kodla/listeden katılınan masa başka bir uygulama sürümüyle açılmış.
+class OnlineVersionMismatch implements Exception {
+  final String table, mine;
+  const OnlineVersionMismatch(this.table, this.mine);
+  @override
+  String toString() => 'OnlineVersionMismatch(table: $table, mine: $mine)';
+}
+
+/// Hamle yazılamadı: aynı sıra numarasına başka bir istemci önce yazdı
+/// (eşzamanlı hamle) ya da kurallar reddetti. Bu cihazın durumu masadan
+/// ayrışmış olabilir; masa geçmişten yeniden kurulmalıdır.
+class MoveRejected implements Exception {
+  final int n;
+  final String reason;
+  const MoveRejected(this.n, this.reason);
+  @override
+  String toString() => 'MoveRejected($n, $reason)';
+}
+
+/// Kalp atışı bu kadar eskiyse koltuk kopmuş sayılır.
+const kDropMs = 45000;
+
+/// Bağlantısı kopan insan koltukları. Zaman cihaz saatine göre değil, masadaki
+/// en taze kalp atışına (sunucu saati) göre ölçülür: cihaz saati yanlış olan
+/// ya da kendisi çevrimdışı kalan oyuncu herkesi "kopmuş" sanmaz. 0 değeri
+/// masadan kalkmış (yenik sayılmış) oyuncudur. Değeri bilinmeyen (henüz
+/// sunucuya ulaşmamış) kalp atışı taze sayılır.
+Set<int> droppedSeats(List<Seat> seats, Map<String, int?> beatsMs, int mySeat, {int timeoutMs = kDropMs}) {
+  var ref = 0;
+  for (final v in beatsMs.values) {
+    if (v != null && v > ref) ref = v;
+  }
+  final out = <int>{};
+  for (var i = 0; i < seats.length; i++) {
+    final s = seats[i];
+    if (s.bot || i == mySeat) continue;
+    if (!beatsMs.containsKey(s.uid)) continue;
+    final b = beatsMs[s.uid];
+    if (b == null) continue;
+    if (b <= 0 || ref - b > timeoutMs) out.add(i);
+  }
+  return out;
+}
+
+/// Ev sahibi: kopmamış ilk insan koltuğu (asıl ev sahibi düşerse sıradaki devralır).
+bool hostSeatIs(List<Seat> seats, Set<int> dropped, int mySeat) {
+  for (var i = 0; i < seats.length; i++) {
+    if (!seats[i].bot && !dropped.contains(i)) return i == mySeat;
+  }
+  return false;
+}
+
+/// Dinleyici bağlanana kadar gelenleri biriktiren yayın akışı. Masa ekranı
+/// maç başladıktan biraz sonra açılır; bu arada gelen rakip/bot hamleleri
+/// kaybolmamalı (eskiden kayboluyor, oyun sırası bekleyerek takılıyordu).
+class BufferedBroadcast<T> {
+  final List<T> _buf = [];
+  late final StreamController<T> _ctl = StreamController<T>.broadcast(onListen: _flush);
+
+  Stream<T> get stream => _ctl.stream;
+
+  void _flush() {
+    final l = List<T>.of(_buf);
+    _buf.clear();
+    for (final x in l) {
+      _ctl.add(x);
+    }
+  }
+
+  void add(T x) {
+    if (_ctl.hasListener) {
+      _ctl.add(x);
+    } else {
+      _buf.add(x);
+    }
+  }
+
+  Future<void> close() => _ctl.close();
+}
+
 /// Masadaki sohbet ya da hediye olayı.
 class TableEvent {
   final int seat;
@@ -181,6 +269,22 @@ abstract class OnlineMatch {
   /// Masadaki koltuk sayısı.
   int get size;
 
+  /// Masanın sürüm anahtarı ([onlineKey]); eski masalarda boş.
+  String get version;
+
+  /// Rövanş: maç bittikten sonra bir oyuncunun açtığı yeni masa,
+  /// "koltuk|masaKimliği" (boş = yok). Diğerleri bu masaya
+  /// [OnlineBackend.joinTable] ile oturur.
+  String get next;
+
+  /// Yeni masayı bu maçın rövanşı olarak duyur (bir kez; ilk yazan kazanır).
+  /// Masada kayıtlı rövanşı ("koltuk|masaKimliği") döndürür.
+  Future<String> offerRematch(String matchId);
+
+  /// Bu cihazın gönderdiği bir hamle reddedildi (eşzamanlı hamle, kural):
+  /// masa ekranı maçı geçmişten yeniden kurar.
+  Stream<MoveRejected> get rejections;
+
   /// Kodla kurulan (davetli) masa mı; hızlı eşleşme masaları herkese açık.
   bool get private;
   int get seed;
@@ -203,7 +307,10 @@ abstract class OnlineMatch {
   Future<void> send(String move, {int? asSeat});
   Future<void> say(TableEvent e);
   Future<void> finish(int winner);
-  Future<void> leave();
+
+  /// Masadan kalk. [forfeit]: maç sürerken bilerek çıkıldı; koltuk hemen
+  /// bota geçer (45 sn beklenmez) ve oyuncu geri dönmez.
+  Future<void> leave({bool forfeit = false});
 
   /// Kalp atışı gelmeyen (bağlantısı kopan) koltuklar.
   Set<int> get dropped;
@@ -251,20 +358,25 @@ abstract class OnlineBackend {
   Future<void> saveBlob(String key, String json);
   Future<String?> loadBlob(String key);
 
-  // Maçlar
-  Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true});
-  Future<OnlineMatch?> joinByCode(String code);
-  Future<OnlineMatch> quickMatch(String gameId, int seats, int rating);
+  // Maçlar. [version]: istemcinin sürüm anahtarı ([onlineKey]); farklı
+  // sürümdeki masalar listelenmez, eşleşmez; kodla katılımda
+  // [OnlineVersionMismatch] fırlatılır.
+  Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true, String version = ''});
+  Future<OnlineMatch?> joinByCode(String code, {String version = ''});
+  Future<OnlineMatch> quickMatch(String gameId, int seats, int rating, {String version = ''});
 
-  /// Oyuncu bekleyen herkese açık masalar (en eskisi başta).
-  Future<List<TableInfo>> openTables(String gameId, int seats);
+  /// Oyuncu bekleyen herkese açık masalar (en eskisi başta). Ev sahibi
+  /// gitmiş (kalp atışı eskimiş) masalar listelenmez.
+  Future<List<TableInfo>> openTables(String gameId, int seats, {String version = ''});
 
   /// Listeden seçilen masaya otur (doluysa ya da başladıysa null).
-  Future<OnlineMatch?> joinTable(String matchId);
+  Future<OnlineMatch?> joinTable(String matchId, {String version = ''});
 
   /// Uygulama kapanıp açıldıysa sürmekte olan maça geri dön (oturduğum
   /// koltuk duruyor ve maç bitmemişse). Geçmiş hamleler [OnlineMatch.history].
-  Future<OnlineMatch?> rejoin(String matchId);
+  /// [ended]: bitmiş maç da açılır (ayrışan masayı geçmişten kurmak için:
+  /// bu cihaz çevrimdışıyken maç bittiyse ekran sonuca kadar yeniden oynar).
+  Future<OnlineMatch?> rejoin(String matchId, {bool ended = false});
 
   // Arkadaşa doğrudan davet
   Future<void> sendInvite(String toUid, Invite invite);
@@ -378,6 +490,13 @@ String cleanChat(String text) {
 }
 
 // ---- Bellek içi arka uç (testler ve geliştirme) ---------------------------------------
+//
+// Firestore'daki düzenin ve firestore.rules'un aynısını uygular: hamleler sıra
+// numarasıyla bir kez yazılır (aynı numaraya ikinci yazma reddedilir), yalnızca
+// masadakiler ve yalnızca kendi/bot/kopmuş koltuk adına hamle yazar, kalp
+// atışları sunucu saatiyle tutulur. Çok istemcili testler için ağ benzetimi:
+// gecikme ([MemoryServer.latency]), bağlantı kopması ([MemoryServer.goOffline]:
+// yazmalar sıraya girer, gelenler bekler; [MemoryServer.goOnline] ile akar).
 
 /// Birden çok istemcinin paylaştığı sahte sunucu.
 class MemoryServer {
@@ -393,16 +512,86 @@ class MemoryServer {
   final invites = <String, List<Invite>>{};
   final inviteCtl = StreamController<String>.broadcast();
   final r = math.Random(7);
+
+  /// Sunucu saati (ms); testler sanal saat verebilir.
+  int Function() clock = () => DateTime.now().millisecondsSinceEpoch;
+
+  /// Yazmaların sunucuya ulaşma gecikmesi (koltuk/uid başına da verilebilir).
+  Duration latency = Duration.zero;
+  final latencyOf = <String, Duration>{};
+
+  /// Çevrimdışı istemciler: uid → bağlantının koptuğu an (kalp atışı donar).
+  final offline = <String, int>{};
+  final _held = <String, List<Future<void> Function()>>{};
+  final _wake = StreamController<String>.broadcast();
+
+  /// Reddedilen yazmalar (kural ihlali/çakışma): testler denetler.
+  final rejected = <String>[];
+
+  Duration delayFor(String uid) => latencyOf[uid] ?? latency;
+
+  /// İstemcinin bağlantısı kopar: kalp atışı durur, yazmaları sıraya girer,
+  /// gelen değişiklikler bekletilir.
+  void goOffline(String uid) => offline.putIfAbsent(uid, clock);
+
+  /// Bağlantı geri geldi: bekleyen yazmalar sırayla gönderilir.
+  Future<void> goOnline(String uid) async {
+    offline.remove(uid);
+    final q = _held.remove(uid) ?? const [];
+    for (final w in q) {
+      await w();
+    }
+    _wake.add(uid);
+  }
+
+  Future<void> _write(String uid, Future<void> Function() w) async {
+    if (offline.containsKey(uid)) {
+      _held.putIfAbsent(uid, () => []).add(w);
+      return;
+    }
+    final d = delayFor(uid);
+    if (d > Duration.zero) await Future<void>.delayed(d);
+    if (offline.containsKey(uid)) {
+      _held.putIfAbsent(uid, () => []).add(w);
+      return;
+    }
+    await w();
+  }
+
+  /// Masadaki bir oyuncunun sunucudaki son kalp atışı (0: masadan kalktı).
+  int beatOf(_MemMatchData d, String uid) => d.left.contains(uid) ? 0 : (offline[uid] ?? clock());
+
+  Map<String, int?> beatsOf(_MemMatchData d) => {
+        for (final s in d.seats)
+          if (!s.bot) s.uid: beatOf(d, s.uid),
+      };
+
+  /// Sunucu tarafında koltuk adına yazma izni (firestore.rules `seatOk`).
+  bool seatOk(_MemMatchData d, String uid, int seat) {
+    if (seat < 0 || seat >= d.seats.length) return false;
+    final s = d.seats[seat];
+    if (s.uid == uid || s.bot) return true;
+    final b = beatOf(d, s.uid);
+    return b <= 0 || clock() - b > 40000;
+  }
 }
 
 class _MemMatchData {
-  final String id, gameId, code, hostUid;
+  final String id, gameId, code, hostUid, version;
   final int seed, size;
   final bool private;
   final List<Seat> seats = [];
   MatchStatus status = MatchStatus.waiting;
   int winner = -2;
-  final moves = <(int, String, String)>[]; // seat, move, sender uid
+  String next = '';
+  final left = <String>{};
+
+  /// Hamleler: sıra numarası → (koltuk, hamle, gönderen).
+  final moves = <int, (int, String, String)>{};
+
+  /// Hamlelerin sunucuya ulaşma sırası (dinleyiciler bu sırayla alır).
+  final order = <int>[];
+
   /// Canlı kanal belgeleri (Firestore'daki halkanın aynısı): kimlik → belge.
   final live = <String, LiveDoc>{};
 
@@ -412,7 +601,9 @@ class _MemMatchData {
   final events = <(TableEvent, String)>[];
   final ctl = StreamController<void>.broadcast();
   final int rating;
-  _MemMatchData(this.id, this.gameId, this.code, this.hostUid, this.seed, this.size, this.private, this.rating);
+  final int created;
+  _MemMatchData(this.id, this.gameId, this.code, this.hostUid, this.seed, this.size, this.private, this.rating,
+      this.version, this.created);
 }
 
 class MemoryBackend implements OnlineBackend {
@@ -426,8 +617,7 @@ class MemoryBackend implements OnlineBackend {
 
   @override
   Future<Profile> signIn() async {
-    final p = server.profiles[uid] ??
-        Profile(uid: uid, name: makeName(server.r), code: makeCode(server.r));
+    final p = server.profiles[uid] ?? Profile(uid: uid, name: makeName(server.r), code: makeCode(server.r));
     server.profiles[uid] = p;
     server.codes[p.code] = uid;
     return _me = p;
@@ -485,65 +675,21 @@ class MemoryBackend implements OnlineBackend {
   Seat get _mySeat => Seat(uid, _me!.name, _me!.avatar, _me!.vip);
 
   @override
-  Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true}) async {
+  Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true, String version = ''}) async {
     final id = 'm${server.matches.length + 1}';
     final d = _MemMatchData(id, gameId, makeCode(server.r), uid, server.r.nextInt(1 << 30), seats, private,
-        _me!.ratingFor(gameId));
+        _me!.ratingFor(gameId), version, server.clock());
     d.seats.add(_mySeat);
     server.matches[id] = d;
     return _MemMatch(this, d);
   }
 
-  @override
-  Future<OnlineMatch?> joinByCode(String code) async {
-    for (final d in server.matches.values) {
-      if (d.code == code.toUpperCase() && d.status == MatchStatus.waiting && d.seats.length < d.size) {
-        d.seats.add(_mySeat);
-        if (d.seats.length == d.size) d.status = MatchStatus.playing;
-        d.ctl.add(null);
-        return _MemMatch(this, d);
-      }
-    }
-    return null;
-  }
+  /// Ev sahibi masada mı (kalp atışı taze): eskimiş masalar listelenmez/eşleşmez.
+  bool _hostAlive(_MemMatchData d) =>
+      d.seats.isNotEmpty && server.clock() - server.beatOf(d, d.seats.first.uid) <= kDropMs;
 
-  @override
-  Future<OnlineMatch> quickMatch(String gameId, int seats, int rating) async {
-    for (final d in server.matches.values) {
-      if (!d.private &&
-          d.gameId == gameId &&
-          d.size == seats &&
-          d.status == MatchStatus.waiting &&
-          d.seats.length < seats &&
-          (d.rating - rating).abs() <= 400 &&
-          !(_me!.blocked.contains(d.hostUid))) {
-        d.seats.add(_mySeat);
-        if (d.seats.length == d.size) d.status = MatchStatus.playing;
-        d.ctl.add(null);
-        return _MemMatch(this, d);
-      }
-    }
-    return createMatch(gameId, seats, private: false);
-  }
-
-  @override
-  Future<List<TableInfo>> openTables(String gameId, int seats) async => [
-        for (final d in server.matches.values)
-          if (!d.private &&
-              d.gameId == gameId &&
-              d.size == seats &&
-              d.status == MatchStatus.waiting &&
-              d.seats.length < d.size &&
-              !_me!.blocked.contains(d.hostUid))
-            TableInfo(d.id, d.gameId, d.seats.first.label, d.seats.first.avatar, d.seats.length, d.size, d.rating),
-      ];
-
-  @override
-  Future<OnlineMatch?> joinTable(String matchId) async {
-    final d = server.matches[matchId];
-    if (d == null || d.status != MatchStatus.waiting || d.seats.length >= d.size || d.seats.any((x) => x.uid == uid)) {
-      return null;
-    }
+  OnlineMatch? _sit(_MemMatchData d, String version) {
+    if (d.status != MatchStatus.waiting || d.seats.length >= d.size || d.seats.any((x) => x.uid == uid)) return null;
     d.seats.add(_mySeat);
     if (d.seats.length == d.size) d.status = MatchStatus.playing;
     d.ctl.add(null);
@@ -551,9 +697,65 @@ class MemoryBackend implements OnlineBackend {
   }
 
   @override
-  Future<OnlineMatch?> rejoin(String matchId) async {
+  Future<OnlineMatch?> joinByCode(String code, {String version = ''}) async {
+    for (final d in server.matches.values) {
+      if (d.code == code.trim().toUpperCase() && d.status == MatchStatus.waiting && d.seats.length < d.size) {
+        if (version.isNotEmpty && d.version != version) throw OnlineVersionMismatch(d.version, version);
+        return _sit(d, version);
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<OnlineMatch> quickMatch(String gameId, int seats, int rating, {String version = ''}) async {
+    final l = server.matches.values.toList()..sort((a, b) => a.created.compareTo(b.created));
+    for (final d in l) {
+      if (!d.private &&
+          d.gameId == gameId &&
+          d.size == seats &&
+          d.status == MatchStatus.waiting &&
+          d.seats.length < seats &&
+          d.version == version &&
+          _hostAlive(d) &&
+          (d.rating - rating).abs() <= 400 &&
+          !(_me!.blocked.contains(d.hostUid))) {
+        final m = _sit(d, version);
+        if (m != null) return m;
+      }
+    }
+    return createMatch(gameId, seats, private: false, version: version);
+  }
+
+  @override
+  Future<List<TableInfo>> openTables(String gameId, int seats, {String version = ''}) async => [
+        for (final d in server.matches.values)
+          if (!d.private &&
+              d.gameId == gameId &&
+              d.size == seats &&
+              d.status == MatchStatus.waiting &&
+              d.seats.length < d.size &&
+              d.version == version &&
+              _hostAlive(d) &&
+              !_me!.blocked.contains(d.hostUid))
+            TableInfo(d.id, d.gameId, d.seats.first.label, d.seats.first.avatar, d.seats.length, d.size, d.rating),
+      ];
+
+  @override
+  Future<OnlineMatch?> joinTable(String matchId, {String version = ''}) async {
     final d = server.matches[matchId];
-    if (d == null || d.status != MatchStatus.playing || !d.seats.any((s) => s.uid == uid)) return null;
+    if (d == null) return null;
+    if (version.isNotEmpty && d.version.isNotEmpty && d.version != version) throw OnlineVersionMismatch(d.version, version);
+    return _sit(d, version);
+  }
+
+  @override
+  Future<OnlineMatch?> rejoin(String matchId, {bool ended = false}) async {
+    final d = server.matches[matchId];
+    final okStatus = d != null && (d.status == MatchStatus.playing || (ended && d.status == MatchStatus.done));
+    if (d == null || !okStatus || !d.seats.any((s) => s.uid == uid) || d.left.contains(uid)) {
+      return null;
+    }
     return _MemMatch(this, d, replay: true);
   }
 
@@ -650,11 +852,47 @@ class MemoryBackend implements OnlineBackend {
 class _MemMatch implements OnlineMatch, RealtimeMatch {
   final MemoryBackend b;
   final _MemMatchData d;
-  int _movesSeen = 0, _eventsSeen = 0, _pulsesSeen = 0;
+  int _eventsSeen = 0, _pulsesSeen = 0;
+
+  /// Bu istemcinin bildiği en büyük hamle sıra numarası + 1 (Firestore'daki gibi).
+  int _ply = 0;
+
+  /// Dinleyiciye iletilen hamle sayısı ([_MemMatchData.order] içinde) ve
+  /// görülen en büyük sıra numarası.
+  int _delivered = 0, _maxSeen = -1;
+  bool _closed = false;
   late final StreamController<(int, String)> _pulses = StreamController.broadcast(onListen: _pulseListen);
   final LiveWriter _liveW = LiveWriter();
   late final LiveReader _liveR = LiveReader(b.uid, writer: _liveW);
   bool _liveClosed = false;
+  final _moves = BufferedBroadcast<(int, String)>();
+  final _events = BufferedBroadcast<TableEvent>();
+  final _rejections = StreamController<MoveRejected>.broadcast();
+  late final StreamSubscription<void> _sub;
+  late final StreamSubscription<String> _wakeSub;
+  @override
+  final List<(int, String)> history = [];
+
+  MemoryServer get server => b.server;
+  bool get _offline => server.offline.containsKey(b.uid);
+
+  _MemMatch(this.b, this.d, {bool replay = false}) {
+    if (replay) {
+      final ns = d.moves.keys.toList()..sort();
+      for (final n in ns) {
+        final m = d.moves[n]!;
+        history.add((m.$1, m.$2));
+      }
+      _delivered = d.order.length;
+      _maxSeen = ns.isEmpty ? -1 : ns.last;
+      _ply = _maxSeen + 1;
+      _eventsSeen = d.events.length;
+    }
+    _sub = d.ctl.stream.listen((_) => _pump());
+    _wakeSub = server._wake.stream.listen((u) {
+      if (u == b.uid) _pump();
+    });
+  }
 
   void _pulseListen() {
     for (final p in _liveR.take(d.live.values)) {
@@ -663,37 +901,14 @@ class _MemMatch implements OnlineMatch, RealtimeMatch {
     _pulsesSeen = d.pulses.length;
   }
 
-  @override
-  Stream<(int, String)> get pulses => _pulses.stream;
-
-  @override
-  Future<void> pulse(String data, {int? asSeat}) async {
-    if (_liveClosed) return;
-    final (id, doc) = _liveW.next(asSeat ?? mySeat, data, b.uid, DateTime.now());
-    d.live[id] = doc;
-    d.pulses.add(doc);
-    d.liveWrites++;
-    d.ctl.add(null);
-  }
-
-  late final StreamController<(int, String)> _moves = StreamController.broadcast(onListen: _pump);
-  late final StreamController<TableEvent> _events = StreamController.broadcast(onListen: _pump);
-  late final StreamSubscription<void> _sub;
-  @override
-  final List<(int, String)> history = [];
-
-  _MemMatch(this.b, this.d, {bool replay = false}) {
-    if (replay) {
-      history.addAll([for (final m in d.moves) (m.$1, m.$2)]);
-      _movesSeen = d.moves.length;
-      _eventsSeen = d.events.length;
-    }
-    _sub = d.ctl.stream.listen((_) => _pump());
-  }
-
   void _pump() {
-    while (_movesSeen < d.moves.length) {
-      final m = d.moves[_movesSeen++];
+    if (_closed || _offline) return;
+    // Hamleler sunucuya ulaştıkları sırayla iletilir (Firestore dinleyicisi gibi).
+    while (_delivered < d.order.length) {
+      final n = d.order[_delivered++];
+      final m = d.moves[n]!;
+      if (n > _maxSeen) _maxSeen = n;
+      if (n + 1 > _ply) _ply = n + 1;
       if (m.$3 != b.uid) _moves.add((m.$1, m.$2));
     }
     while (_eventsSeen < d.events.length) {
@@ -708,11 +923,35 @@ class _MemMatch implements OnlineMatch, RealtimeMatch {
   }
 
   @override
+  Stream<(int, String)> get pulses => _pulses.stream;
+
+  @override
+  Future<void> pulse(String data, {int? asSeat}) async {
+    if (_liveClosed) return;
+    final seat = asSeat ?? mySeat;
+    await server._write(b.uid, () async {
+      if (d.status != MatchStatus.playing || !server.seatOk(d, b.uid, seat)) {
+        server.rejected.add('live:${b.uid}:$seat');
+        return;
+      }
+      final (id, doc) = _liveW.next(seat, data, b.uid, DateTime.now());
+      d.live[id] = doc;
+      d.pulses.add(doc);
+      d.liveWrites++;
+      d.ctl.add(null);
+    });
+  }
+
+  @override
   String get id => d.id;
   @override
   String get gameId => d.gameId;
   @override
   String get code => d.code;
+  @override
+  String get version => d.version;
+  @override
+  String get next => d.next;
   @override
   bool get private => d.private;
   @override
@@ -724,7 +963,7 @@ class _MemMatch implements OnlineMatch, RealtimeMatch {
   @override
   String get hostUid => d.hostUid;
   @override
-  bool get isHost => d.hostUid == b.uid;
+  bool get isHost => hostSeatIs(d.seats, dropped, mySeat);
   @override
   List<Seat> get seats => List.unmodifiable(d.seats);
   @override
@@ -736,40 +975,113 @@ class _MemMatch implements OnlineMatch, RealtimeMatch {
   @override
   Stream<TableEvent> get events => _events.stream;
   @override
-  Set<int> get dropped => const {};
+  Stream<MoveRejected> get rejections => _rejections.stream;
+
+  /// Kopmuş koltuklar: bu istemcinin gördüğü kalp atışlarıyla. Çevrimdışıyken
+  /// sunucudaki taze kalp atışlarını göremez (son gördüğü an donar).
+  @override
+  Set<int> get dropped {
+    final beats = server.beatsOf(d);
+    final off = server.offline[b.uid];
+    if (off != null) {
+      for (final k in beats.keys.toList()) {
+        final v = beats[k];
+        if (v != null && v > off) beats[k] = off;
+      }
+    }
+    return droppedSeats(d.seats, beats, mySeat);
+  }
 
   @override
   Future<void> send(String move, {int? asSeat}) async {
-    d.moves.add((asSeat ?? mySeat, move, b.uid));
-    d.ctl.add(null);
+    final seat = asSeat ?? mySeat;
+    final n = _ply++;
+    await server._write(b.uid, () async {
+      String? why;
+      if (!d.seats.any((s) => s.uid == b.uid)) {
+        why = 'member';
+      } else if (d.status != MatchStatus.playing) {
+        why = 'status';
+      } else if (!server.seatOk(d, b.uid, seat)) {
+        why = 'seat';
+      } else if (d.moves.containsKey(n)) {
+        why = 'exists';
+      }
+      if (why != null) {
+        server.rejected.add('move:${b.uid}:$n:$why');
+        // Boşluk bırakma: sıradaki yazma görülen en büyük numaradan sürer.
+        _ply = _maxSeen + 1;
+        _rejections.add(MoveRejected(n, why));
+        return;
+      }
+      d.moves[n] = (seat, move, b.uid);
+      d.order.add(n);
+      if (n > _maxSeen) _maxSeen = n;
+      d.ctl.add(null);
+    });
   }
 
   @override
   Future<void> say(TableEvent e) async {
-    d.events.add((e, b.uid));
-    d.ctl.add(null);
+    await server._write(b.uid, () async {
+      if (e.seat != mySeat) {
+        server.rejected.add('event:${b.uid}:${e.seat}');
+        return;
+      }
+      if (e.kind == 't' && !(server.profiles[b.uid]?.age16 ?? false)) {
+        server.rejected.add('event:${b.uid}:age16');
+        return;
+      }
+      d.events.add((e, b.uid));
+      d.ctl.add(null);
+    });
   }
 
   @override
   Future<void> finish(int winner) async {
-    d.status = MatchStatus.done;
-    d.winner = winner;
-    _liveClosed = true;
-    d.live.clear();
-    d.ctl.add(null);
+    await server._write(b.uid, () async {
+      d.status = MatchStatus.done;
+      d.winner = winner;
+      _liveClosed = true;
+      d.live.clear();
+      d.ctl.add(null);
+    });
   }
 
   @override
-  Future<void> leave() async {
+  Future<String> offerRematch(String matchId) async {
+    await server._write(b.uid, () async {
+      if (d.next.isNotEmpty) return;
+      d.next = '$mySeat|$matchId';
+      d.ctl.add(null);
+    });
+    return d.next;
+  }
+
+  @override
+  Future<void> leave({bool forfeit = false}) async {
+    _closed = true;
     await _sub.cancel();
+    await _wakeSub.cancel();
+    if (forfeit && d.status == MatchStatus.playing) {
+      await server._write(b.uid, () async {
+        d.left.add(b.uid);
+        d.ctl.add(null);
+      });
+    } else if (d.status == MatchStatus.waiting && isHost && d.seats.length == 1) {
+      d.status = MatchStatus.done;
+    }
   }
 
   @override
   Future<void> fillWithBotsAndStart() async {
-    while (d.seats.length < d.size) {
-      d.seats.add(const Seat('', ''));
-    }
-    d.status = MatchStatus.playing;
-    d.ctl.add(null);
+    await server._write(b.uid, () async {
+      if (d.status != MatchStatus.waiting) return;
+      while (d.seats.length < d.size) {
+        d.seats.add(const Seat('', ''));
+      }
+      d.status = MatchStatus.playing;
+      d.ctl.add(null);
+    });
   }
 }

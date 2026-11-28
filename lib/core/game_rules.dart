@@ -40,6 +40,11 @@ abstract class GameRules<P> {
   /// masa [localPlayers] kişiliktir.
   List<int> get onlineSeatChoices => const [];
 
+  /// Çevrimiçi hamle kodlamasının sürümü. Hamle biçimi ya da kurallar
+  /// (geçerli hamle sırası, dağıtım) değişince artırılır: farklı sürümdeki
+  /// istemciler aynı masaya oturmaz (eşitsizlik yerine "uygulamayı güncelle").
+  int get onlineVersion => 1;
+
   /// Günün Bulmacası'na (herkese aynı günlük bulmaca, UTC günü) katılır mı.
   bool get globalDaily => false;
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +6,7 @@ import '../../core/daily.dart';
 import '../../core/game_rules.dart';
 import '../../core/game_session.dart';
 import '../../core/level_plan.dart';
+import '../../core/net_texts.dart';
 import '../../core/telemetry.dart';
 import '../adaptive.dart';
 import '../app_state.dart';
@@ -33,8 +35,22 @@ class PlayScreen extends ConsumerStatefulWidget {
   /// Dışarıdan açılan tek el (Günün Bulmacası, Aile Turnuvası): sonuç
   /// ekranı yerine el bitince [RoundResult] ile kapanır; vazgeçilirse null.
   final bool external;
+
+  /// Çevrimiçi maç: sonuç ekranındaki "Rövanş" (yoksa düğme gösterilmez;
+  /// çevrimiçi maçta "Tekrar" hiç gösterilmez, masa yerelde yeniden başlamaz).
+  final Future<void> Function()? onRematch;
+
+  /// Çevrimiçi maç: sonuç ekranında gösterilecek rövanş daveti ("Ada rövanş istiyor").
+  final ValueListenable<String>? rematchNote;
   const PlayScreen(
-      {super.key, required this.spec, this.resume = false, this.players = 0, this.match, this.external = false});
+      {super.key,
+      required this.spec,
+      this.resume = false,
+      this.players = 0,
+      this.match,
+      this.external = false,
+      this.onRematch,
+      this.rematchNote});
 
   @override
   ConsumerState<PlayScreen> createState() => _PlayScreenState();
@@ -237,11 +253,14 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
               StudioSheetTitle(app.t('pause'), icon: Icons.pause_circle_rounded),
               StudioButton.hot(label: app.t('resume'), onPressed: () => Navigator.pop(c, 'resume')),
               const SizedBox(height: 10),
-              StudioMenuRow(
-                  icon: Icons.refresh_rounded,
-                  color: const Color(0xFF2F7BD9),
-                  label: app.t('restart'),
-                  onTap: () => Navigator.pop(c, 'restart')),
+              // Çevrimiçi maçta baştan başlatma yok: masa herkes için aynı sürer
+              // (yeniden başlatan cihaz masadan ayrışıyordu).
+              if (widget.match == null)
+                StudioMenuRow(
+                    icon: Icons.refresh_rounded,
+                    color: const Color(0xFF2F7BD9),
+                    label: app.t('restart'),
+                    onTap: () => Navigator.pop(c, 'restart')),
               StudioMenuRow(
                   icon: Icons.help_outline_rounded,
                   color: const Color(0xFF7B4FD6),
@@ -279,11 +298,35 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
         showTutorial(context, app);
         break;
       case 'quit':
-        Navigator.pop(context);
+        if (widget.match != null && !await _confirmLeave(app)) break;
+        if (mounted) Navigator.pop(context);
         break;
       default:
         break;
     }
+  }
+
+  /// Çevrimiçi maçtan çıkış onayı (çıkan yenik sayılır, yerine bot oynar).
+  Future<bool> _confirmLeave(AppState app) async {
+    final lang = app.strings.lang;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        key: const ValueKey('leave-match-dialog'),
+        icon: const Icon(Icons.exit_to_app_rounded, color: Color(0xFFE0533D), size: 36),
+        title: Text(netLeaveTitle(lang)),
+        content: Text(netLeaveBody(lang)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(app.t('cancel'))),
+          FilledButton(
+              key: const ValueKey('leave-match-yes'),
+              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE0533D)),
+              onPressed: () => Navigator.pop(c, true),
+              child: Text(netLeaveYes(lang))),
+        ],
+      ),
+    );
+    return ok == true;
   }
 
   // ---- Boosters ------------------------------------------------------------------
@@ -397,7 +440,14 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       enableDrag: false,
       isScrollControlled: true,
       showDragHandle: false,
-      builder: (c) => _ResultSheet(app: app, result: r, outcome: out, spec: _spec),
+      builder: (c) => _ResultSheet(
+          app: app,
+          result: r,
+          outcome: out,
+          spec: _spec,
+          online: widget.match != null,
+          rematch: widget.onRematch != null,
+          rematchNote: widget.rematchNote),
     );
     if (!mounted) return;
     await app.maybeInterstitial(out);
@@ -412,7 +462,14 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
         });
         _generate();
         break;
+      case 'rematch':
+        await widget.onRematch?.call();
+        break;
       case 'retry':
+        if (widget.match != null) {
+          Navigator.pop(context);
+          break;
+        }
         setState(() {
           _finished = false;
           _roundKey++;
@@ -429,7 +486,16 @@ class _ResultSheet extends StatefulWidget {
   final RoundResult result;
   final LevelOutcome outcome;
   final LevelSpec spec;
-  const _ResultSheet({required this.app, required this.result, required this.outcome, required this.spec});
+  final bool online, rematch;
+  final ValueListenable<String>? rematchNote;
+  const _ResultSheet(
+      {required this.app,
+      required this.result,
+      required this.outcome,
+      required this.spec,
+      this.online = false,
+      this.rematch = false,
+      this.rematchNote});
 
   @override
   State<_ResultSheet> createState() => _ResultSheetState();
@@ -554,6 +620,19 @@ class _ResultSheetState extends State<_ResultSheet> {
                 ),
                 const SizedBox(height: 10),
               ],
+              if (widget.rematchNote != null)
+                ValueListenableBuilder<String>(
+                  valueListenable: widget.rematchNote!,
+                  builder: (_, v, __) => v.isEmpty
+                      ? const SizedBox.shrink()
+                      : Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(v,
+                              key: const ValueKey('rematch-note'),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Color(0xFFFFD166), fontWeight: FontWeight.w800)),
+                        ),
+                ),
               Row(children: [
                 Expanded(
                   child: StudioButton(
@@ -563,15 +642,25 @@ class _ResultSheetState extends State<_ResultSheet> {
                     onPressed: () => Navigator.pop(context, 'home'),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: StudioButton(
-                    tone: campaign && r.won ? StudioButtonTone.ghost : StudioButtonTone.play,
-                    icon: Icons.replay_rounded,
-                    label: app.t('retry'),
-                    onPressed: () => Navigator.pop(context, 'retry'),
+                if (!widget.online || widget.rematch) ...[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: widget.online
+                        ? StudioButton(
+                            key: const ValueKey('rematch'),
+                            tone: StudioButtonTone.play,
+                            icon: Icons.replay_rounded,
+                            label: netRematch(app.strings.lang),
+                            onPressed: () => Navigator.pop(context, 'rematch'),
+                          )
+                        : StudioButton(
+                            tone: campaign && r.won ? StudioButtonTone.ghost : StudioButtonTone.play,
+                            icon: Icons.replay_rounded,
+                            label: app.t('retry'),
+                            onPressed: () => Navigator.pop(context, 'retry'),
+                          ),
                   ),
-                ),
+                ],
               ]),
             ]),
           ),

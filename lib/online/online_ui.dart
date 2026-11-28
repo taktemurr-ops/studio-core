@@ -5,6 +5,7 @@ library;
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -14,6 +15,8 @@ import '../app/screens/play.dart';
 import '../app/widgets.dart';
 import '../core/clock.dart';
 import '../core/level_plan.dart';
+import '../core/net_sync.dart';
+import '../core/net_texts.dart';
 import '../core/strings.dart';
 import 'online.dart';
 import 'online_service.dart';
@@ -150,10 +153,21 @@ class OnlineHost {
   }
 }
 
+/// Bu uygulamanın çevrimiçi sürüm anahtarı (aynı anahtarlılar aynı masaya oturur).
+String onlineVersionOf(AppState app) => onlineKey(app.config.rules.onlineVersion);
+
 /// Davetteki kodla masaya oturur.
 Future<void> joinByInvite(BuildContext context, AppState app, String code) async {
   if (!await _ensureOnline(context, app) || !context.mounted) return;
-  final m = await Online.instance.backend!.joinByCode(code).catchError((_) => null);
+  OnlineMatch? m;
+  try {
+    m = await Online.instance.backend!.joinByCode(code, version: onlineVersionOf(app));
+  } on OnlineVersionMismatch {
+    if (context.mounted) showToast(context, netUpdateNeeded(app.strings.lang));
+    return;
+  } catch (_) {
+    m = null;
+  }
   if (!context.mounted) return;
   if (m == null) {
     showToast(context, app.t('code_not_found'));
@@ -198,6 +212,7 @@ class _OnlineLobbyState extends State<OnlineLobby> {
       ? app.config.rules.onlineSeatChoices.first
       : app.config.rules.localPlayers;
   String get gameId => app.config.gameId;
+  String get version => onlineVersionOf(app);
 
   @override
   void initState() {
@@ -206,7 +221,7 @@ class _OnlineLobbyState extends State<OnlineLobby> {
   }
 
   Future<void> _refresh() async {
-    final t = await b.openTables(gameId, seats).catchError((_) => <TableInfo>[]);
+    final t = await b.openTables(gameId, seats, version: version).catchError((_) => <TableInfo>[]);
     final f = await b.friends().catchError((_) => <Profile>[]);
     if (!mounted) return;
     setState(() {
@@ -228,6 +243,8 @@ class _OnlineLobbyState extends State<OnlineLobby> {
       }
       await Navigator.push(context, MaterialPageRoute(builder: (_) => WaitingRoom(app: app, match: m, quick: quick)));
       unawaited(_refresh());
+    } on OnlineVersionMismatch {
+      if (mounted) showToast(context, netUpdateNeeded(app.strings.lang));
     } catch (_) {
       if (mounted) showToast(context, app.t('online_unavailable'));
     } finally {
@@ -283,7 +300,7 @@ class _OnlineLobbyState extends State<OnlineLobby> {
                   style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
                   icon: const Icon(Icons.table_restaurant_rounded),
                   label: Text(app.t('open_table')),
-                  onPressed: _busy ? null : () => _go(() => b.createMatch(gameId, seats, private: _private)),
+                  onPressed: _busy ? null : () => _go(() => b.createMatch(gameId, seats, private: _private, version: version)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -292,7 +309,7 @@ class _OnlineLobbyState extends State<OnlineLobby> {
                   style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
                   icon: const Icon(Icons.bolt),
                   label: Text(app.t('quick_match')),
-                  onPressed: _busy ? null : () => _go(() => b.quickMatch(gameId, seats, rating), quick: true),
+                  onPressed: _busy ? null : () => _go(() => b.quickMatch(gameId, seats, rating, version: version), quick: true),
                 ),
               ),
             ]),
@@ -335,7 +352,7 @@ class _OnlineLobbyState extends State<OnlineLobby> {
                     title: Text(f.name),
                     subtitle: Text(app.t('friend_at_table')),
                     trailing: FilledButton(
-                      onPressed: _busy ? null : () => _go(() => b.joinTable(f.table.split('|').last)),
+                      onPressed: _busy ? null : () => _go(() => b.joinTable(f.table.split('|').last, version: version)),
                       child: Text(app.t('join_table')),
                     ),
                   ),
@@ -365,7 +382,7 @@ class _OnlineLobbyState extends State<OnlineLobby> {
                       Flexible(child: Text(app.t('table_seats', {'n': t.taken, 'm': t.size}), overflow: TextOverflow.ellipsis)),
                     ]),
                     trailing: FilledButton(
-                      onPressed: _busy ? null : () => _go(() => b.joinTable(t.id)),
+                      onPressed: _busy ? null : () => _go(() => b.joinTable(t.id, version: version)),
                       child: Text(app.t('join_table')),
                     ),
                   ),
@@ -387,7 +404,7 @@ class _OnlineLobbyState extends State<OnlineLobby> {
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
-                    onPressed: _busy ? null : () => _go(() => b.joinByCode(_code.text.trim())),
+                    onPressed: _busy ? null : () => _go(() => b.joinByCode(_code.text.trim(), version: version)),
                     child: Text(app.t('join_code')),
                   ),
                 ]),
@@ -429,9 +446,21 @@ class _WaitingRoomState extends State<WaitingRoom> {
     super.initState();
     _sub = m.changes.listen((_) => _check());
     unawaited(Online.instance.setTable('${m.gameId}|${m.id}'));
-    // Hızlı eşleşme (kodu paylaşılmayan masa): kimse beklemesin.
-    _auto = Timer(const Duration(seconds: 15), () {
-      if (widget.quick && m.isHost && m.status == MatchStatus.waiting && !_private) m.fillWithBotsAndStart();
+    // Hızlı eşleşme (kodu paylaşılmayan masa): kimse beklemesin. 15 sn sonra
+    // ve ardından birkaç saniyede bir denetlenir: ev sahibi masadan gittiyse
+    // (eskimiş masaya oturulduysa) ev sahipliği bu cihaza geçer ve masa yine
+    // botlarla başlar (eskiden tek seferlik zamanlayıcı kaçınca sonsuza dek beklenirdi).
+    final opened = DateTime.now();
+    _auto = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      setState(() {}); // kopan ev sahibi: "Botlarla başla" bu cihazda görünsün
+      if (widget.quick &&
+          DateTime.now().difference(opened).inSeconds >= 15 &&
+          m.isHost &&
+          m.status == MatchStatus.waiting &&
+          !_private) {
+        unawaited(m.fillWithBotsAndStart().catchError((Object _) {}));
+      }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _check());
   }
@@ -558,36 +587,144 @@ class OnlineTable extends StatefulWidget {
 
 class _OnlineTableState extends State<OnlineTable> {
   StreamSubscription<TableEvent>? _sub;
+  StreamSubscription<void>? _chg;
+  StreamSubscription<MoveRejected>? _rej;
   final List<(TableEvent, DateTime)> _bubbles = [];
   final Set<int> _muted = {};
   Timer? _tick;
 
-  OnlineMatch get m => widget.match;
+  /// Masa: hamle reddedilince (eşzamanlı hamle) geçmişten yeniden kurulur.
+  late OnlineMatch m = widget.match;
+  late OnlineMatchLink _link = OnlineMatchLink(m);
+  int _gen = 0;
+  bool _resyncing = false;
+  Set<int> _shownDropped = const {};
+  final ValueNotifier<String> _rematchNote = ValueNotifier('');
+  bool _leftMatch = false;
+
   AppState get app => widget.app;
   Profile get me => Online.instance.profile!;
+  String get lang => app.strings.lang;
 
   @override
   void initState() {
     super.initState();
-    _sub = m.events.listen((e) {
-      if (_muted.contains(e.seat) && e.kind != 'g') return;
-      final uid = e.seat < m.seats.length ? m.seats[e.seat].uid : '';
-      if (me.blocked.contains(uid)) return;
-      setState(() => _bubbles.add((e, DateTime.now())));
-    });
+    _attach();
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       final now = DateTime.now();
-      if (_bubbles.any((b) => now.difference(b.$2).inSeconds > 4)) {
-        setState(() => _bubbles.removeWhere((b) => now.difference(b.$2).inSeconds > 4));
+      final d = m.status == MatchStatus.playing ? m.dropped : const <int>{};
+      final stale = _bubbles.any((b) => now.difference(b.$2).inSeconds > 4);
+      if (stale || !setEquals(d, _shownDropped)) {
+        setState(() {
+          _bubbles.removeWhere((b) => now.difference(b.$2).inSeconds > 4);
+          _shownDropped = d;
+        });
       }
     });
   }
 
+  void _attach() {
+    _sub = m.events.listen((e) {
+      if (_muted.contains(e.seat) && e.kind != 'g') return;
+      // Serbest yazı yalnızca 16+ beyan eden oyuncuya gösterilir (16 yaş altı
+      // ve çocuk oyunlarında yabancıların yazdığı metin görünmez).
+      if (e.kind == 't' && (!me.age16 || app.config.kidsMode)) return;
+      final uid = e.seat >= 0 && e.seat < m.seats.length ? m.seats[e.seat].uid : '';
+      if (me.blocked.contains(uid)) return;
+      setState(() => _bubbles.add((e, DateTime.now())));
+    });
+    _chg = m.changes.listen((_) => _onChange());
+    _rej = m.rejections.listen((_) => _resync());
+  }
+
+  Future<void> _detach() async {
+    await _sub?.cancel();
+    await _chg?.cancel();
+    await _rej?.cancel();
+  }
+
+  void _onChange() {
+    if (!mounted) return;
+    final n = m.next;
+    if (n.isNotEmpty) {
+      final p = n.split('|');
+      final seat = p.length == 2 ? int.tryParse(p.first) ?? -1 : -1;
+      if (seat != m.mySeat && seat >= 0 && seat < m.seats.length) {
+        _rematchNote.value = netRematchOffer(lang, m.seats[seat].label);
+      }
+    }
+  }
+
+  /// Bu cihazın hamlesi reddedildi (aynı anda başka bir cihaz o sıraya hamle
+  /// yazdı): masa sunucudaki geçmişten yeniden kurulur, oyun ekranı geçmiş
+  /// hamleleri yeniden oynar. Böylece hiçbir cihaz masadan ayrışmış kalmaz.
+  Future<void> _resync() async {
+    if (_resyncing || !mounted) return;
+    _resyncing = true;
+    showToast(context, netResyncing(lang));
+    final fresh = await Online.instance.backend?.rejoin(m.id, ended: true).catchError((Object _) => null);
+    if (!mounted) return;
+    if (fresh != null) {
+      final old = m;
+      await _detach();
+      unawaited(old.leave());
+      setState(() {
+        m = fresh;
+        _link = OnlineMatchLink(fresh);
+        _gen++;
+      });
+      _attach();
+    }
+    _resyncing = false;
+  }
+
+  /// Rövanş: masada biri açtıysa ona oturulur, yoksa aynı büyüklükte yeni
+  /// (davetli) masa açılıp duyurulur; diğerleri sonuç ekranında daveti görür.
+  Future<void> _rematch() async {
+    final b = Online.instance.backend;
+    if (b == null) return;
+    final version = onlineVersionOf(app);
+    try {
+      var target = m.next.split('|').last;
+      OnlineMatch? nm;
+      if (target.isEmpty) {
+        final created = await b.createMatch(m.gameId, m.size, private: true, version: version);
+        final won = await m.offerRematch(created.id);
+        if (won.split('|').last == created.id) {
+          nm = created;
+        } else {
+          await created.leave();
+          target = won.split('|').last;
+        }
+      }
+      nm ??= await b.joinTable(target, version: version);
+      if (!mounted) return;
+      if (nm == null) {
+        showToast(context, app.t('code_not_found'));
+        Navigator.pop(context);
+        return;
+      }
+      final next = nm;
+      await Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => WaitingRoom(app: app, match: next)));
+    } catch (_) {
+      if (mounted) showToast(context, app.t('online_unavailable'));
+    }
+  }
+
   @override
   void dispose() {
-    _sub?.cancel();
+    _detach();
     _tick?.cancel();
-    m.leave();
+    _rematchNote.dispose();
+    // Maç sürerken masadan kalkan oyuncu yenik sayılır (lig puanı düşer) ve
+    // koltuğu hemen bota geçer; maç bittiyse yalnızca dinleme kapanır.
+    final forfeit = m.status == MatchStatus.playing && !_leftMatch && !_link.finished;
+    if (forfeit) {
+      _leftMatch = true;
+      unawaited(_link.forfeit().catchError((Object _) {}));
+    } else {
+      unawaited(m.leave().catchError((Object _) {}));
+    }
     super.dispose();
   }
 
@@ -607,8 +744,46 @@ class _OnlineTableState extends State<OnlineTable> {
 
   @override
   Widget build(BuildContext context) {
+    final dropped = _shownDropped.where((i) => i < m.seats.length).toList()..sort();
     return Stack(children: [
-      PlayScreen(spec: widget.spec, match: OnlineMatchLink(m)),
+      PlayScreen(
+        key: ValueKey('online-play-$_gen'),
+        spec: widget.spec,
+        match: _link,
+        onRematch: _rematch,
+        rematchNote: _rematchNote,
+      ),
+      // Bağlantı göstergesi: bağlantısı kopan oyuncunun yerine bot oynuyor.
+      if (dropped.isNotEmpty)
+        Positioned(
+          top: MediaQuery.paddingOf(context).top + kToolbarHeight + 4,
+          left: 12,
+          right: 12,
+          child: IgnorePointer(
+            child: Center(
+              child: Container(
+                key: const ValueKey('net-dropped'),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.65),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.wifi_off_rounded, color: Color(0xFFFFD166), size: 18),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      netNoteText(lang, NetNote.botPlaying, dropped.map((i) => m.seats[i].label).join(', ')),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        ),
       // Balonlar altta, ipucu düğmesinin üstünde: üstteki hedef/sıra satırını kapatmaz.
       Positioned(
         bottom: MediaQuery.paddingOf(context).bottom + 84,

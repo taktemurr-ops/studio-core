@@ -8,9 +8,9 @@
 ///   saves/{uid}/blobs/{key}     bulut kayıt
 ///   boards/{board}/scores/{uid} skor tabloları
 ///   daily/{board}/results/{uid} Günün Bulmacası sonuçları (günün ilk sonucu; değiştirilemez)
-///   matches/{id}                maç (oyun, koltuklar, tohum, durum, kalp atışları)
-///   matches/{id}/moves/{n}      hamleler (n: sıra numarası)
-///   matches/{id}/events/{auto}  sohbet ve hediyeler
+///   matches/{id}                maç (oyun, koltuklar, tohum, durum, kalp atışları, sürüm v, rövanş next; TTL: expireAt)
+///   matches/{id}/moves/{n}      hamleler (n: sıra numarası; aynı n'ye ikinci yazma reddedilir; TTL: expireAt)
+///   matches/{id}/events/{auto}  sohbet ve hediyeler (TTL: expireAt)
 ///   matches/{id}/live/{s}_{k}   gerçek zamanlı kanal: koltuk s'nin k. halka yuvası (üzerine yazılır, TTL: expireAt)
 ///   matchCodes/{code}           masa kodu → maç kimliği (kodla katılım; özel maçlar listelenemez, TTL: expireAt)
 ///   transfers/{code}            telefon değişimi (12 karakter kod, TTL: expireAt)
@@ -162,8 +162,11 @@ class FirebaseBackend implements OnlineBackend {
 
   Map<String, Object?> get _mySeat => {'uid': uid, 'name': _me?.name ?? '', 'avatar': _me?.avatar ?? 0, 'vip': _me?.vip ?? false};
 
+  /// Masa ömrü: TTL ilkesi (matches.expireAt) terk edilmiş masaları siler.
+  static const matchTtl = Duration(days: 1);
+
   @override
-  Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true}) async {
+  Future<OnlineMatch> createMatch(String gameId, int seats, {bool private = true, String version = ''}) async {
     final ref = db.collection('matches').doc();
     // Masa kodu benzersiz olsun: kodla katılım matchCodes/{kod} üzerinden.
     String code;
@@ -183,6 +186,8 @@ class FirebaseBackend implements OnlineBackend {
       'rating': _me?.ratingFor(gameId) ?? 1000,
       'created': FieldValue.serverTimestamp(),
       'beats': {uid: FieldValue.serverTimestamp()},
+      if (version.isNotEmpty) 'v': version,
+      'expireAt': Timestamp.fromDate(DateTime.now().add(matchTtl)),
     });
     await db.collection('matchCodes').doc(code).set({
       'match': ref.id,
@@ -192,11 +197,13 @@ class FirebaseBackend implements OnlineBackend {
     return _FsMatch.open(this, ref);
   }
 
-  Future<OnlineMatch?> _join(DocumentReference<Map<String, dynamic>> ref) async {
+  Future<OnlineMatch?> _join(DocumentReference<Map<String, dynamic>> ref, {String version = ''}) async {
     final ok = await db.runTransaction<bool>((t) async {
       final s = await t.get(ref);
       final d = s.data();
       if (d == null || d['status'] != 'waiting') return false;
+      final tv = d['v'] as String? ?? '';
+      if (version.isNotEmpty && tv != version) throw OnlineVersionMismatch(tv, version);
       final seats = List<Map<String, dynamic>>.from((d['seats'] as List).map((e) => Map<String, dynamic>.from(e as Map)));
       if (seats.length >= (d['size'] as num).toInt() || seats.any((x) => x['uid'] == uid)) return false;
       seats.add(Map<String, dynamic>.from(_mySeat));
@@ -212,17 +219,26 @@ class FirebaseBackend implements OnlineBackend {
   }
 
   @override
-  Future<OnlineMatch?> joinByCode(String code) async {
+  Future<OnlineMatch?> joinByCode(String code, {String version = ''}) async {
     final c = code.trim().toUpperCase();
     if (!RegExp(r'^[A-Z0-9]{4,12}$').hasMatch(c)) return null;
     final s = await db.collection('matchCodes').doc(c).get();
     final id = s.data()?['match'];
     if (id is! String || id.isEmpty) return null;
-    return _join(db.collection('matches').doc(id));
+    return _join(db.collection('matches').doc(id), version: version);
+  }
+
+  /// Ev sahibinin kalp atışı taze mi (bekleyen masalar 15 sn'de bir atar).
+  /// Listede sunucu saati yok: cihaz saatine göre geniş payla (90 sn) bakılır.
+  static bool hostAlive(Map<String, dynamic> j, DateTime now) {
+    final host = j['host'];
+    final b = ((j['beats'] as Map?) ?? const {})[host];
+    if (b is! Timestamp) return true;
+    return now.difference(b.toDate()).inSeconds.abs() <= 90;
   }
 
   @override
-  Future<List<TableInfo>> openTables(String gameId, int seats) async {
+  Future<List<TableInfo>> openTables(String gameId, int seats, {String version = ''}) async {
     final q = await db
         .collection('matches')
         .where('gameId', isEqualTo: gameId)
@@ -234,9 +250,11 @@ class FirebaseBackend implements OnlineBackend {
         .get();
     final blocked = _me?.blocked ?? const <String>{};
     final out = <TableInfo>[];
+    final now = DateTime.now();
     for (final d in q.docs) {
       final j = d.data();
       if (blocked.contains(j['host'])) continue;
+      if ((j['v'] as String? ?? '') != version || !hostAlive(j, now)) continue;
       final seats0 = (j['seats'] as List?) ?? const [];
       if (seats0.isEmpty || seats0.length >= seats) continue;
       final h = Seat.fromJson(Map<String, dynamic>.from(seats0.first as Map));
@@ -246,13 +264,18 @@ class FirebaseBackend implements OnlineBackend {
   }
 
   @override
-  Future<OnlineMatch?> joinTable(String matchId) => _join(db.collection('matches').doc(matchId));
+  Future<OnlineMatch?> joinTable(String matchId, {String version = ''}) =>
+      _join(db.collection('matches').doc(matchId), version: version);
 
   @override
-  Future<OnlineMatch?> rejoin(String matchId) async {
+  Future<OnlineMatch?> rejoin(String matchId, {bool ended = false}) async {
     final ref = db.collection('matches').doc(matchId);
     final d = (await ref.get()).data();
-    if (d == null || d['status'] != 'playing' || !((d['uids'] as List?) ?? const []).contains(uid)) return null;
+    final okStatus = d != null && (d['status'] == 'playing' || (ended && d['status'] == 'done'));
+    if (d == null || !okStatus || !((d['uids'] as List?) ?? const []).contains(uid)) return null;
+    // Masadan bilerek kalkan (yenik sayılan) oyuncu geri dönmez.
+    final beat = ((d['beats'] as Map?) ?? const {})[uid];
+    if (beat is Timestamp && beat.millisecondsSinceEpoch <= 0) return null;
     return _FsMatch.open(this, ref, replay: true);
   }
 
@@ -276,7 +299,7 @@ class FirebaseBackend implements OnlineBackend {
   Future<void> deleteInvite(String id) => db.collection('users').doc(uid).collection('invites').doc(id).delete();
 
   @override
-  Future<OnlineMatch> quickMatch(String gameId, int seats, int rating) async {
+  Future<OnlineMatch> quickMatch(String gameId, int seats, int rating, {String version = ''}) async {
     final q = await db
         .collection('matches')
         .where('gameId', isEqualTo: gameId)
@@ -287,13 +310,16 @@ class FirebaseBackend implements OnlineBackend {
         .limit(10)
         .get();
     final blocked = _me?.blocked ?? const <String>{};
+    final now = DateTime.now();
     for (final d in q.docs) {
-      final r = (d.data()['rating'] as num?)?.toInt() ?? 1000;
-      if ((r - rating).abs() > 400 || blocked.contains(d.data()['host'])) continue;
-      final m = await _join(d.reference);
+      final j = d.data();
+      final r = (j['rating'] as num?)?.toInt() ?? 1000;
+      if ((r - rating).abs() > 400 || blocked.contains(j['host'])) continue;
+      if ((j['v'] as String? ?? '') != version || !hostAlive(j, now)) continue;
+      final m = await _join(d.reference, version: version).catchError((Object _) => null);
       if (m != null) return m;
     }
-    return createMatch(gameId, seats, private: false);
+    return createMatch(gameId, seats, private: false, version: version);
   }
 
   @override
@@ -382,13 +408,17 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
   final DocumentReference<Map<String, dynamic>> ref;
   Map<String, dynamic> _d = {};
   final _changes = StreamController<void>.broadcast();
-  final _moves = StreamController<(int, String)>.broadcast();
-  final _events = StreamController<TableEvent>.broadcast();
+  final _moves = BufferedBroadcast<(int, String)>();
+  final _events = BufferedBroadcast<TableEvent>();
+  final _rejections = StreamController<MoveRejected>.broadcast();
   final List<StreamSubscription<Object?>> _subs = [];
   Timer? _beat;
 
   /// Bu istemcinin gördüğü ya da gönderdiği hamle sayısı (sıra numarası).
   int _ply = 0;
+
+  /// Sunucuda görülen en büyük hamle sıra numarası.
+  int _maxSeen = -1;
 
   /// Geri dönüşte yeniden oynanacak hamleler; bunların sıra numarasının
   /// altındakiler canlı akışta tekrar verilmez.
@@ -409,6 +439,7 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
       }
       m._replayed = m.history.length;
       m._ply = m.history.length;
+      m._maxSeen = m.history.length - 1;
       // Geri döndüğümüzü hemen bildir: ev sahibi koltuğumuzu bota bırakmasın.
       unawaited(ref.update({'beats.${b.uid}': FieldValue.serverTimestamp()}).catchError((_) {}));
     }
@@ -422,7 +453,9 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
         final x = c.doc.data()!;
         final n = (x['n'] as num).toInt();
         if (n >= m._ply) m._ply = n + 1;
+        if (!c.doc.metadata.hasPendingWrites && n > m._maxSeen) m._maxSeen = n;
         if (n < m._replayed) continue;
+        // Bekleyen (henüz sunucuya ulaşmamış) belge kendi yazdığımızdır.
         if (x['by'] != b.uid) m._moves.add(((x['seat'] as num).toInt(), x['move'] as String));
       }
     }));
@@ -433,9 +466,13 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
         m._events.add(TableEvent((x['seat'] as num).toInt(), x['kind'] as String, x['value'] as String, (x['to'] as num?)?.toInt() ?? -1));
       }
     }));
-    m._beat = Timer.periodic(const Duration(seconds: 15), (_) => ref.update({'beats.${b.uid}': FieldValue.serverTimestamp()}));
+    m._beat = Timer.periodic(const Duration(seconds: 15),
+        (_) => ref.update({'beats.${b.uid}': FieldValue.serverTimestamp()}).catchError((Object _) {}));
     return m;
   }
+
+  /// Hamle/olay belgelerinin TTL'i (masa belgesiyle aynı ömür).
+  Timestamp get _expire => Timestamp.fromDate(DateTime.now().add(FirebaseBackend.matchTtl));
 
   @override
   String get id => ref.id;
@@ -443,6 +480,22 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
   String get gameId => _d['gameId'] as String? ?? '';
   @override
   String get code => _d['code'] as String? ?? '';
+  @override
+  String get version => _d['v'] as String? ?? '';
+  @override
+  String get next => _d['next'] as String? ?? '';
+  @override
+  Stream<MoveRejected> get rejections => _rejections.stream;
+
+  @override
+  Future<String> offerRematch(String matchId) => b.db.runTransaction<String>((t) async {
+        final s = await t.get(ref);
+        final cur = s.data()?['next'] as String? ?? '';
+        if (cur.isNotEmpty) return cur;
+        final v = '$mySeat|$matchId';
+        t.update(ref, {'next': v});
+        return v;
+      });
   @override
   bool get private => _d['private'] == true;
   @override
@@ -458,14 +511,7 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
 
   /// Ev sahibi: kopmamış ilk insan koltuğu (asıl ev sahibi düşerse sıradaki devralır).
   @override
-  bool get isHost {
-    final s = seats;
-    final gone = dropped;
-    for (var i = 0; i < s.length; i++) {
-      if (!s[i].bot && !gone.contains(i)) return i == mySeat;
-    }
-    return false;
-  }
+  bool get isHost => hostSeatIs(seats, dropped, mySeat);
 
   @override
   MatchStatus get status => switch (_d['status']) {
@@ -480,28 +526,36 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
   @override
   Stream<TableEvent> get events => _events.stream;
 
-  /// 45 saniyedir kalp atışı gelmeyen insan koltukları.
+  /// Kalp atışı masadaki en tazesinden 45 saniye geri kalan insan koltukları
+  /// (sunucu saatine göre; bkz. [droppedSeats]).
   @override
   Set<int> get dropped {
     final beats = (_d['beats'] as Map?) ?? const {};
-    final now = DateTime.now();
-    final s = seats;
-    return {
-      for (var i = 0; i < s.length; i++)
-        if (!s[i].bot && i != mySeat && beats[s[i].uid] is Timestamp && now.difference((beats[s[i].uid] as Timestamp).toDate()).inSeconds > 45) i
-    };
+    return droppedSeats(seats, {
+      for (final e in beats.entries) '${e.key}': e.value is Timestamp ? (e.value as Timestamp).millisecondsSinceEpoch : null,
+    }, mySeat);
   }
 
+  /// Hamle yazar. Aynı sıra numarasına başka bir istemci önce yazdıysa
+  /// (eşzamanlı hamle) ya da kurallar reddettiyse hata fırlatılmaz:
+  /// [rejections] akışına düşer, masa ekranı maçı geçmişten yeniden kurar.
   @override
   Future<void> send(String move, {int? asSeat}) async {
     final n = _ply++;
-    await ref.collection('moves').doc(n.toString().padLeft(6, '0')).set({
-      'n': n,
-      'seat': asSeat ?? mySeat,
-      'move': move,
-      'by': b.uid,
-      'ts': FieldValue.serverTimestamp(),
-    });
+    try {
+      await ref.collection('moves').doc(n.toString().padLeft(6, '0')).set({
+        'n': n,
+        'seat': asSeat ?? mySeat,
+        'move': move,
+        'by': b.uid,
+        'ts': FieldValue.serverTimestamp(),
+        'expireAt': _expire,
+      });
+    } on FirebaseException catch (e) {
+      // Boşluk bırakma: sıradaki yazma sunucuda görülen en büyük numaradan sürer.
+      _ply = _maxSeen + 1;
+      _rejections.add(MoveRejected(n, e.code));
+    }
   }
 
   // ---- gerçek zamanlı kanal (matches/{id}/live, bkz. live_ring.dart) ----
@@ -555,7 +609,8 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
   @override
   Future<void> say(TableEvent e) async {
     _events.add(e); // kendi mesajını hemen göster
-    await ref.collection('events').add({'seat': e.seat, 'kind': e.kind, 'value': e.value, 'to': e.to, 'by': b.uid, 'ts': FieldValue.serverTimestamp()});
+    await ref.collection('events').add(
+        {'seat': e.seat, 'kind': e.kind, 'value': e.value, 'to': e.to, 'by': b.uid, 'ts': FieldValue.serverTimestamp(), 'expireAt': _expire});
   }
 
   @override
@@ -566,23 +621,32 @@ class _FsMatch implements OnlineMatch, RealtimeMatch {
   }
 
   @override
-  Future<void> leave() async {
+  Future<void> leave({bool forfeit = false}) async {
     _beat?.cancel();
     for (final s in _subs) {
       await s.cancel();
     }
-    if (status == MatchStatus.waiting && isHost && seats.length == 1) {
-      await ref.update({'status': 'done'});
+    if (forfeit && status == MatchStatus.playing) {
+      // Kalp atışı 0: koltuk hemen bota geçer, kurallar da bu koltuk adına
+      // diğerlerinin (ev sahibinin) hamle yazmasına izin verir.
+      await ref.update({'beats.${b.uid}': Timestamp.fromMillisecondsSinceEpoch(0)}).catchError((Object _) {});
+    } else if (status == MatchStatus.waiting && isHost && seats.length == 1) {
+      await ref.update({'status': 'done'}).catchError((Object _) {});
     }
   }
 
   @override
   Future<void> fillWithBotsAndStart() async {
-    final s = [for (final x in seats) x.toJson()];
-    final size = (_d['size'] as num?)?.toInt() ?? s.length;
-    while (s.length < size) {
-      s.add(const Seat('', '').toJson());
-    }
-    await ref.update({'seats': s, 'status': 'playing'});
+    // İşlem içinde: bu arada biri oturduysa onun koltuğu korunur.
+    await b.db.runTransaction((t) async {
+      final d = (await t.get(ref)).data();
+      if (d == null || d['status'] != 'waiting') return;
+      final s = [for (final x in (d['seats'] as List? ?? const [])) Map<String, dynamic>.from(x as Map)];
+      final size = (d['size'] as num?)?.toInt() ?? s.length;
+      while (s.length < size) {
+        s.add(const Seat('', '').toJson());
+      }
+      t.update(ref, {'seats': s, 'status': 'playing'});
+    });
   }
 }

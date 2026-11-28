@@ -54,6 +54,15 @@ const profile = (uid, extra = {}) => ({
   ...extra,
 });
 
+// İki kişilik süren maç: A koltuk 0, B koltuk 1 (kalp atışları taze).
+const playing2 = (extra = {}) => waitingMatch(A, {
+  status: 'playing',
+  seats: [{ uid: A, name: 'Host', avatar: 1, vip: false }, { uid: B, name: 'Bob', avatar: 0, vip: false }],
+  uids: [A, B],
+  beats: { [A]: Timestamp.now(), [B]: Timestamp.now() },
+  ...extra,
+});
+
 const waitingMatch = (host, extra = {}) => ({
   gameId: 'okey',
   size: 2,
@@ -300,7 +309,7 @@ describe('maçlar (matches)', () => {
   });
 
   it('hamleler: yalnızca masadakiler, değiştirilemez', async () => {
-    await seed((s) => setDoc(doc(s, 'matches', 'm1'), waitingMatch(A, { uids: [A, B], status: 'playing' })));
+    await seed((s) => setDoc(doc(s, 'matches', 'm1'), playing2()));
     const mv = { n: 0, seat: 0, move: 'e2e4', by: A, ts: serverTimestamp() };
     await assertSucceeds(setDoc(doc(db(A), 'matches', 'm1', 'moves', '000000'), mv));
     await assertFails(setDoc(doc(db(A), 'matches', 'm1', 'moves', '000000'), { ...mv, move: 'e2e5' }));
@@ -313,7 +322,7 @@ describe('maçlar (matches)', () => {
   });
 
   it('canlı halka (live): koltuk/yuva adı, boyut ve expireAt', async () => {
-    await seed((s) => setDoc(doc(s, 'matches', 'm1'), waitingMatch(A, { uids: [A, B], status: 'playing' })));
+    await seed((s) => setDoc(doc(s, 'matches', 'm1'), playing2()));
     const live = { seat: 1, seq: 3, d: 'xy', by: B, expireAt: inHours(2) };
     await assertSucceeds(setDoc(doc(db(B), 'matches', 'm1', 'live', '1_3'), live));
     await assertFails(setDoc(doc(db(B), 'matches', 'm1', 'live', '0_3'), live));
@@ -328,11 +337,11 @@ describe('maçlar (matches)', () => {
 
   it('sohbet ve hediye olayları (events)', async () => {
     await seed(async (s) => {
-      await setDoc(doc(s, 'matches', 'm1'), waitingMatch(A, { uids: [A, B], status: 'playing' }));
+      await setDoc(doc(s, 'matches', 'm1'), playing2());
       await setDoc(doc(s, 'users', A), profile(A, { age16: true }));
       await setDoc(doc(s, 'users', B), profile(B, { age16: false }));
     });
-    const ev = (by, kind, value) => ({ seat: 0, kind, value, to: -1, by, ts: serverTimestamp() });
+    const ev = (by, kind, value) => ({ seat: by === A ? 0 : 1, kind, value, to: -1, by, ts: serverTimestamp() });
     const events = (uid) => collection(db(uid), 'matches', 'm1', 'events');
     await assertSucceeds(addDoc(events(A), ev(A, 't', 'iyi oyun')));
     await assertFails(addDoc(events(A), ev(A, 't', 'x'.repeat(121))));
@@ -341,6 +350,8 @@ describe('maçlar (matches)', () => {
     await assertSucceeds(addDoc(events(B), { ...ev(B, 'g', 'rose'), to: 0 }));
     await assertFails(addDoc(events(B), ev(B, 'x', 'hack')));
     await assertFails(addDoc(events(B), ev(A, 'p', 'msg_gg')));
+    // Başkasının koltuğu adına sohbet yazılamaz.
+    await assertFails(addDoc(events(B), { ...ev(B, 'p', 'msg_gg'), seat: 0 }));
     await assertFails(addDoc(events(C), ev(C, 'p', 'msg_gg')));
   });
 });

@@ -267,14 +267,21 @@ class OnlineMatchLink implements MatchLink, RealtimeLink {
   List<(int, String)> get history => m.history;
   @override
   Future<void> send(String move, {int? asSeat}) => m.send(move, asSeat: asSeat);
-  @override
-  Future<void> finish(int winner, {bool? iWon}) async {
-    await m.finish(winner);
+  /// Maç sürerken masadan bilerek kalkıldı: yenik sayılır (lig puanı düşer),
+  /// koltuk hemen bota geçer, yarım kalan maç bir daha sorulmaz.
+  Future<void> forfeit() async {
+    if (finished) return m.leave();
+    finished = true;
+    await m.leave(forfeit: true);
     unawaited(Online.instance.setActive(''));
-    // Lig puanı: rakiplerin ortalamasına göre Elo.
+    final ratings = await _opponentRatings();
+    await Online.instance.applyResult(m.gameId, ratings, 0);
+  }
+
+  Future<List<int>> _opponentRatings() async {
     final b = Online.instance.backend;
-    if (b == null) return;
     final ratings = <int>[];
+    if (b == null) return ratings;
     for (var i = 0; i < m.seats.length; i++) {
       final s = m.seats[i];
       if (i == m.mySeat) continue;
@@ -285,6 +292,21 @@ class OnlineMatchLink implements MatchLink, RealtimeLink {
       final p = await b.profileOf(s.uid).catchError((_) => null);
       ratings.add(p?.ratingFor(m.gameId) ?? 1000);
     }
+    return ratings;
+  }
+
+  /// Bu cihaz maç sonucunu bildirdi mi (masadan çıkış artık yenilgi değildir).
+  bool finished = false;
+
+  @override
+  Future<void> finish(int winner, {bool? iWon}) async {
+    if (finished) return;
+    finished = true;
+    await m.finish(winner);
+    unawaited(Online.instance.setActive(''));
+    // Lig puanı: rakiplerin ortalamasına göre Elo.
+    if (Online.instance.backend == null) return;
+    final ratings = await _opponentRatings();
     final score = winner < 0 ? 0.5 : ((iWon ?? winner == m.mySeat) ? 1.0 : 0.0);
     await Online.instance.applyResult(m.gameId, ratings, score);
   }

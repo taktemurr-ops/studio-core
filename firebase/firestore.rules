@@ -126,13 +126,28 @@ service cloud.firestore {
       return request.resource.data.get('beats', {}).diff(resource.data.get('beats', {})).affectedKeys()
                .hasOnly([request.auth.uid]);
     }
+    // Koltuk kaydı: {uid, name, avatar, vip}; ad en çok 16 karakter.
+    function validSeat(s) {
+      return s is map && s.keys().hasOnly(['uid', 'name', 'avatar', 'vip'])
+          && s.uid is string && str(s.name, 16)
+          && optInt(s, 'avatar', 0, 1000) && optBool(s, 'vip');
+    }
+    // Bot koltuğu (OnlineMatch.fillWithBotsAndStart'ın yazdığı biçim).
+    function botSeats() { return [{'uid': '', 'name': '', 'avatar': 0, 'vip': false}]; }
+    // Masa/hamle/olay belgelerinin TTL alanı: en çok 2 gün sonrası.
+    function okExpire(d) {
+      return !('expireAt' in d) || (d.expireAt is timestamp && d.expireAt <= request.time + duration.value(2, 'd'));
+    }
     function validNewMatch() {
       let d = request.resource.data;
       return d.keys().hasOnly(['gameId', 'size', 'seed', 'code', 'private', 'host', 'status', 'seats',
-                               'uids', 'rating', 'created', 'beats'])
+                               'uids', 'rating', 'created', 'beats', 'v', 'expireAt'])
           && d.host == request.auth.uid
           && d.uids == [request.auth.uid]
           && d.seats is list && d.seats.size() == 1 && d.seats[0].uid == request.auth.uid
+          && validSeat(d.seats[0])
+          && optStr(d, 'v', 32)
+          && okExpire(d)
           && d.status == 'waiting'
           && d.size is int && d.size >= 1 && d.size <= 16
           && str(d.gameId, 64) && str(d.code, 12)
@@ -141,19 +156,31 @@ service cloud.firestore {
           && nowStamp(d.created)
           && d.beats.keys().hasOnly([request.auth.uid]);
     }
-    // Masadakiler: kalp atışı (yalnız kendi), botla doldurma, bitirme.
-    // Koltuklar yalnızca sona eklenir; ev sahibi, oyun, tohum, kod değişmez;
-    // bitmiş maç yeniden açılmaz.
+    // Kendi kalp atışı: sunucu saati ya da 0 (masadan bilerek kalktı, yenik).
+    function myBeatOk() {
+      let b = request.resource.data.get('beats', {});
+      return !(request.auth.uid in b) || b[request.auth.uid] == request.time
+          || b[request.auth.uid] == timestamp.value(0)
+          || (request.auth.uid in resource.data.get('beats', {})
+              && b[request.auth.uid] == resource.data.beats[request.auth.uid]);
+    }
+    // Masadakiler: kalp atışı (yalnız kendi), botla doldurma, bitirme, rövanş.
+    // Koltuklar yalnızca sona ve yalnızca bot olarak eklenir (insan koltuğu
+    // yalnızca kendisi katılarak eklenir); ev sahibi, oyun, tohum, kod
+    // değişmez; bitmiş maç yeniden açılmaz; rövanş masası bir kez yazılır.
     function memberUpdate() {
       let o = resource.data;
       let n = request.resource.data;
-      return n.diff(o).affectedKeys().hasOnly(['seats', 'status', 'winner', 'beats'])
+      return n.diff(o).affectedKeys().hasOnly(['seats', 'status', 'winner', 'beats', 'next'])
           && beatsOnlyMine()
+          && myBeatOk()
           && n.status in ['waiting', 'playing', 'done']
           && (o.status != 'done' || n.status == 'done')
           && n.seats is list && n.seats.size() >= o.seats.size() && n.seats.size() <= o.size
           && n.seats[0:o.seats.size()] == o.seats
-          && (!('winner' in n) || n.winner is int);
+          && n.seats[o.seats.size():n.seats.size()].hasOnly(botSeats())
+          && (!('winner' in n) || n.winner is int)
+          && (!('next' in n.diff(o).affectedKeys()) || (!('next' in o) && str(n.next, 64)));
     }
     // Katılma: bekleyen masaya, kendi koltuğunu sona ekleyerek.
     function joinUpdate() {
@@ -166,7 +193,9 @@ service cloud.firestore {
           && n.seats is list && n.seats.size() == k + 1 && k + 1 <= o.size
           && n.seats[0:k] == o.seats
           && n.seats[k].uid == request.auth.uid
+          && validSeat(n.seats[k])
           && beatsOnlyMine()
+          && myBeatOk()
           && (n.status == 'waiting' || (n.status == 'playing' && k + 1 == o.size));
     }
     // Günün Bulmacası (lib/core/global_daily.dart): tablo = {oyun}[-{dil}]_{YYYY-AA-GG} (UTC günü).
@@ -200,6 +229,19 @@ service cloud.firestore {
                     && validDaily();
       allow update, delete: if false;
     }
+    // Koltuk adına yazma (hamle, canlı halka): kendi koltuğu, bot koltuğu ya da
+    // bağlantısı kopan (kalp atışı 40 sn'den eski ya da 0 = masadan kalktı)
+    // koltuk. Yalnızca süren maçta. Ev sahibi bot ve kopanlar adına oynar;
+    // başka bir oyuncunun yerine hamle yazılamaz.
+    function seatOk(m, seat) {
+      return m.status == 'playing'
+          && seat is int && seat >= 0 && seat < m.seats.size()
+          && (m.seats[seat].uid == request.auth.uid
+              || m.seats[seat].uid == ''
+              || !(m.seats[seat].uid in m.beats)
+              || m.beats[m.seats[seat].uid] == timestamp.value(0)
+              || request.time > m.beats[m.seats[seat].uid] + duration.value(40, 's'));
+    }
     match /matches/{id} {
       // Maç kimliği tahmin edilemez: tek tek okunur. Listeleme yalnızca herkese
       // açık masalar (lobi, hızlı eşleşme) ya da oturulan masalar için.
@@ -213,15 +255,18 @@ service cloud.firestore {
       match /moves/{mv} {
         allow read: if signedIn();
         // Hamleler değiştirilemez ve silinemez.
+        // Belge adı sıra numarasıdır (6 basamak): aynı numaraya ikinci yazma
+        // (eşzamanlı hamle) güncelleme sayılır ve reddedilir.
         allow create: if member(id)
                       && mv.matches('^[0-9]{6}$')
-                      && request.resource.data.keys().hasOnly(['n', 'seat', 'move', 'by', 'ts'])
+                      && request.resource.data.keys().hasOnly(['n', 'seat', 'move', 'by', 'ts', 'expireAt'])
                       && request.resource.data.by == request.auth.uid
                       && request.resource.data.n is int && request.resource.data.n >= 0
-                      && request.resource.data.seat is int && request.resource.data.seat >= 0
-                      && request.resource.data.seat < 16
+                      && int(mv) == request.resource.data.n
+                      && seatOk(matchDoc(id), request.resource.data.seat)
                       && str(request.resource.data.move, 4000)
-                      && nowStamp(request.resource.data.ts);
+                      && nowStamp(request.resource.data.ts)
+                      && okExpire(request.resource.data);
       }
       // Gerçek zamanlı oyunlar (lib/online/live_ring.dart): koltuk başına
       // {koltuk}_{yuva} adlı en çok 10 belgelik halka; yuvaların üzerine yazılır.
@@ -240,7 +285,7 @@ service cloud.firestore {
               && d.expireAt is timestamp && d.expireAt <= request.time + duration.value(1, 'd');
         }
         allow read: if signedIn();
-        allow create, update: if member(id) && validLive();
+        allow create, update: if member(id) && validLive() && seatOk(matchDoc(id), request.resource.data.seat);
         allow delete: if member(id);
       }
       // Masa sohbeti ve hediyeler. Serbest metin ('t') yalnızca profilinde 16+
@@ -249,10 +294,14 @@ service cloud.firestore {
       match /events/{e} {
         allow read: if signedIn();
         allow create: if member(id)
-                      && request.resource.data.keys().hasOnly(['seat', 'kind', 'value', 'to', 'by', 'ts'])
+                      && request.resource.data.keys().hasOnly(['seat', 'kind', 'value', 'to', 'by', 'ts', 'expireAt'])
                       && request.resource.data.by == request.auth.uid
                       && request.resource.data.kind in ['p', 't', 'g']
                       && request.resource.data.seat is int
+                      && request.resource.data.seat >= 0
+                      && request.resource.data.seat < matchDoc(id).seats.size()
+                      && matchDoc(id).seats[request.resource.data.seat].uid == request.auth.uid
+                      && okExpire(request.resource.data)
                       && optInt(request.resource.data, 'to', -1, 16)
                       && str(request.resource.data.value, request.resource.data.kind == 't' ? 120 : 64)
                       && (request.resource.data.kind != 't'

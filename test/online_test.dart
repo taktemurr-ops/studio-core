@@ -22,11 +22,17 @@ void main() {
 
       final got = <(int, String)>[];
       final sub = mb.moves.listen(got.add);
+      final rejected = <MoveRejected>[];
+      final rs = ma.rejections.listen(rejected.add);
       await ma.send('42');
+      // Bağlı bir rakibin yerine hamle yazılamaz (kurallar: seatOk).
       await ma.send('7', asSeat: 1);
+      await mb.send('8');
       await Future<void>.delayed(Duration.zero);
-      expect(got, [(0, '42'), (1, '7')]);
+      expect(got, [(0, '42')]);
+      expect(rejected.single.reason, 'seat');
       await sub.cancel();
+      await rs.cancel();
     });
 
     test('maça geri dönüş: geçmiş hamleler (kendi hamlelerimiz dahil) sırayla gelir', () async {
