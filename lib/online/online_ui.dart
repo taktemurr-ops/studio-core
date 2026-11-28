@@ -169,11 +169,12 @@ Future<void> joinByInvite(BuildContext context, AppState app, String code) async
     m = null;
   }
   if (!context.mounted) return;
-  if (m == null) {
+  final joined = m;
+  if (joined == null) {
     showToast(context, app.t('code_not_found'));
     return;
   }
-  await Navigator.push(context, MaterialPageRoute(builder: (_) => WaitingRoom(app: app, match: m)));
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => WaitingRoom(app: app, match: joined)));
 }
 
 /// Süren bir maçın masasını açar (geri dönüşte geçmiş hamleler yeniden oynanır).
