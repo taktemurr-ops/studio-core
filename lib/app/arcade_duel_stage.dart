@@ -67,6 +67,10 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
   bool _overSent = false;
   int _overAt = -1;
 
+  /// Ev sahibi: maçın başladığı an (ms). Rakip bağlanana dek (en çok 6 sn)
+  /// beklenir, ardından 3-2-1 geri sayımı; bu sürede simülasyon durur.
+  int _goAt = -1;
+
   late final int me;
   late final int side; // 0 alt, 1 üst
   MatchLink? get link => widget.ctx.match;
@@ -185,6 +189,16 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
   }
 
   void _hostFrame(double dt, int now) {
+    if (_goAt < 0 && (link == null || sync.heardAt(1 - me) != null || now > 6000)) {
+      _goAt = now + (link == null ? 0 : 3000);
+      if (_goAt > now) widget.ctx.sfx(Sfx.tap);
+    }
+    if (_goAt < 0 || now < _goAt) {
+      // Geri sayım: masa donuk, canlılık için durum yine yayınlanır.
+      sync.publish(0, encodeNums(_duel.netState()), now);
+      _show(_duel.netState());
+      return;
+    }
     _acc += math.min(dt, 0.1);
     var steps = 0;
     while (_acc >= kDt && steps < 6 && !sim.over) {
@@ -207,6 +221,17 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
     }
     _show(_duel.netState());
     if (_duel.duelWinner >= 0 && _overAt >= 0 && now - _overAt > 600) _finish(_duel.duelWinner);
+  }
+
+  /// Maç öncesi katman metni (boşsa katman yok).
+  String _preText(int now) {
+    if (_ended) return '';
+    if (sync.isHost) {
+      if (_goAt < 0) return netNoteText(widget.ctx.lang, NetNote.waiting);
+      if (now < _goAt) return '${((_goAt - now) / 1000).ceil()}';
+      return '';
+    }
+    return view.ticks == 0 ? netNoteText(widget.ctx.lang, NetNote.waiting) : '';
   }
 
   void _guestFrame(int now) {
@@ -282,6 +307,7 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
       ]),
     );
     final note = netNoteText(ctx.lang, _notes.note, _notes.seat >= 0 ? ctx.seatName(_notes.seat) : '');
+    final pre = _preText(_now);
     return ColoredBox(
       color: StudioLook.of(context).base,
       child: Column(children: [
@@ -317,10 +343,31 @@ class _ArcadeDuelStageState extends State<ArcadeDuelStage> with SingleTickerProv
                 _panStart = null;
               },
               onPointerCancel: (_) => _down = false,
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: _DuelPainter(view, widget.paint, palette, _scale, _origin, view.ticks / 60.0),
-              ),
+              child: Stack(children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    size: Size.infinite,
+                    painter: _DuelPainter(view, widget.paint, palette, _scale, _origin, view.ticks / 60.0),
+                  ),
+                ),
+                if (pre.isNotEmpty)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(24),
+                        child: Text(pre,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: pre.length <= 2 ? 96 : 24,
+                                fontWeight: FontWeight.w900,
+                                shadows: const [Shadow(blurRadius: 12, color: Colors.black54)])),
+                      ),
+                    ),
+                  ),
+              ]),
             );
           }),
         ),
