@@ -12,6 +12,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:studio_core/app/turn_clock.dart';
 import 'package:studio_core/core/net_sync.dart';
 import 'package:studio_core/core/net_texts.dart';
 import 'package:studio_core/online/online.dart';
@@ -440,6 +441,33 @@ void main() {
       expect(netLeaveTitle('ar'), isNot(netLeaveTitle('en')));
       expect(netTurnLeft('tr', 12), 'Sıra sende: 12 sn');
       expect(netTurnLeft('ar', 12), contains('12'));
+    });
+  });
+
+  group('sıra süresi (TurnClock)', () {
+    testWidgets('süre dolunca bir kez zaman aşımı; oyuncu oynarsa iptal; üst üste 3 kez dolunca beklemez', (tester) async {
+      var fired = 0, changes = 0;
+      final c = TurnClock(() => changes++, seconds: 5);
+      c.start(() => fired++);
+      expect(c.left, 5);
+      await tester.pump(const Duration(seconds: 3));
+      expect(c.left, 2);
+      c.stop(byPlayer: true);
+      await tester.pump(const Duration(seconds: 10));
+      expect(fired, 0);
+      for (var i = 0; i < 3; i++) {
+        c.start(() => fired++);
+        await tester.pump(const Duration(seconds: 6));
+      }
+      expect(fired, 3);
+      expect(c.timeouts, 3);
+      c.start(() => fired++);
+      await tester.pump(Duration.zero);
+      expect(fired, 4, reason: 'uzun süredir yok: hemen oynanır');
+      c.stop(byPlayer: true);
+      expect(c.timeouts, 0);
+      expect(changes, greaterThan(0));
+      c.dispose();
     });
   });
 }

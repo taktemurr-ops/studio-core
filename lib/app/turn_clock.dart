@@ -22,7 +22,13 @@ class TurnClock {
   static int autoAfter = 3;
 
   final VoidCallback onChange;
-  TurnClock(this.onChange);
+
+  /// Bu saatin sıra süresi (verilmezse [seconds]); ör. kelime tahtasında daha uzun.
+  final int? ownSeconds;
+  TurnClock(this.onChange, {int? seconds}) : ownSeconds = seconds;
+
+  /// Geçerli sıra süresi.
+  int get total => ownSeconds ?? seconds;
 
   Timer? _timer;
   int _left = 0;
@@ -40,7 +46,7 @@ class TurnClock {
   void start(VoidCallback onTimeout) {
     stop();
     final token = ++_token;
-    _left = _timeouts >= autoAfter ? 0 : seconds;
+    _left = _timeouts >= autoAfter ? 0 : total;
     if (_left <= 0) {
       // Uzun süredir yok: bir sonraki karede oyna.
       _timer = Timer(Duration.zero, () {
@@ -90,7 +96,7 @@ class TurnTimerChip extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!clock.running) return const SizedBox.shrink();
     final left = clock.left;
-    final f = TurnClock.seconds <= 0 ? 0.0 : (left / TurnClock.seconds).clamp(0.0, 1.0);
+    final f = clock.total <= 0 ? 0.0 : (left / clock.total).clamp(0.0, 1.0);
     final hot = left <= 10;
     final color = hot ? const Color(0xFFE0533D) : const Color(0xFF2E9E62);
     return Semantics(
