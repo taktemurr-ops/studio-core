@@ -30,6 +30,9 @@ import 'package:studio_core/app/studio_look.dart';
 import 'package:studio_core/apps/apps.dart';
 import 'package:studio_core/core/save_store.dart';
 import 'package:studio_core/core/telemetry.dart';
+import 'package:studio_core/online/online.dart' as net;
+import 'package:studio_core/online/online_service.dart';
+import 'package:studio_core/online/online_ui.dart';
 
 import 'layout_check.dart';
 import 'sample_rules.dart';
@@ -185,5 +188,51 @@ void main() {
           .push(MaterialPageRoute<void>(builder: (_) => AppToolPage(config: c, tool: c.tools.first, services: s, lang: lang)));
     });
     expect(issues.items.where((i) => i.startsWith('SORUN|uygulama_merkezi|') || i.startsWith('SORUN|arac_sayfasi|')).toList(), isEmpty);
+  });
+
+  // Çevrimiçi ekranlar: lobi (masalar, hızlı eşleşme, kod) ve bekleme odası
+  // (masa kodu, yuvarlak masada oyuncu adları/avatarlar, boş koltuklar).
+  testWidgets('çevrimiçi lobi ve bekleme odası tüm boyutlarda', (tester) async {
+    final s = (await tester.runAsync(_services))!;
+    final st = (await tester.runAsync(() => s.stateFor(_game())))!;
+    st.startup = null;
+    st.save.ageGateDone = true;
+    st.save.adConsent = 'denied';
+    final server = net.MemoryServer();
+    final me = net.MemoryBackend(server, 'ben'), guest = net.MemoryBackend(server, 'misafir'), host2 = net.MemoryBackend(server, 'ev');
+    final m = (await tester.runAsync(() async {
+      Online.instance.useBackend(me);
+      final p = await me.signIn();
+      p.name = 'UzunAdlıOyuncu99';
+      p.terms = 99;
+      Online.instance.profile = p;
+      (await guest.signIn()).name = 'نسر ذهبي جدا';
+      await host2.signIn();
+      // Lobide listelenen herkese açık bir masa.
+      await host2.createMatch('oyun-blok', 4, private: false, version: net.onlineKey(1));
+      final t = await me.createMatch('oyun-blok', 4, version: net.onlineKey(1));
+      await guest.joinByCode(t.code, version: net.onlineKey(1));
+      return t;
+    }))!;
+    final screens = <String, Widget Function()>{
+      'cevrimici_lobi': () => OnlineLobby(app: st),
+      'bekleme_odasi': () => WaitingRoom(app: st, match: m),
+    };
+    for (final e in screens.entries) {
+      await sweep(tester, issues, e.key, skip: _phoneLandscape, (lang) async {
+        st.save.language = lang;
+        await tester.pumpWidget(ProviderScope(
+          overrides: [appStateProvider.overrideWith((ref) => st)],
+          child: fresh(StudioLookScope(look: _hubStyle.look, child: GameApp(state: st))),
+        ));
+        await tester.pump(const Duration(milliseconds: 100));
+        final home = find.byType(HomeScreen);
+        if (home.evaluate().isEmpty) return;
+        Navigator.of(tester.element(home), rootNavigator: true).push(MaterialPageRoute<void>(builder: (_) => e.value()));
+      });
+      expect(issues.items.where((i) => i.startsWith('SORUN|${e.key}|')).toList(), isEmpty);
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 4));
   });
 }
