@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:pointycastle/asn1.dart';
 import 'package:pointycastle/export.dart';
 
 /// HMS IAP satın alma imzası doğrulaması.
