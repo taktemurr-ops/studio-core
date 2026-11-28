@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'covers.dart';
+import 'hub_gallery.dart';
 export 'covers.dart' show GameCover, CoverArt;
 import '../core/game_session.dart';
 import '../core/monetization.dart';
@@ -552,7 +553,15 @@ class _HubHomeState extends State<HubHome> {
       ));
       widget.services.active = null;
       state.onPaused(); // flush saves when returning to the list
+    } catch (error, stack) {
+      debugPrint('Hub game launch failed: $error\\n$stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Oyun açılamadı. Lütfen tekrar deneyin.')),
+        );
+      }
     } finally {
+      widget.services.active = null;
       if (mounted) setState(() => _opening = null);
     }
   }
@@ -578,6 +587,38 @@ class _HubHomeState extends State<HubHome> {
       for (final g in group?.games ?? hub.games)
         (g.gameId, g.title, g.tagline, g.seedColor, g.icon, () => _open(g), false),
     ];
+    if (hub.hubId.startsWith('merkez-')) {
+      return HubGallery(
+        hubId: hub.hubId,
+        title: hub.localized(group?.title ?? hub.title, lang),
+        subtitle: hub.localized(group?.tagline ?? hub.tagline, lang),
+        openingId: _opening,
+        isGroup: group != null,
+        totalGames: group?.games.length ?? hub.allGames.length,
+        favoriteGames: [
+          for (final g in hub.allGames)
+            HubGalleryItem(
+              id: g.gameId,
+              title: hub.localized(g.title, lang),
+              subtitle: hub.localized(g.tagline, lang),
+              color: g.seedColor,
+              icon: g.icon,
+              cover: hub.coverFor(g.gameId),
+              group: false,
+              open: () => _open(g),
+            ),
+        ],
+        games: [
+          for (final (id, title, tagline, color, icon, onTap, isGroup) in entries)
+            HubGalleryItem(
+              id: id, title: hub.localized(title, lang),
+              subtitle: tagline.length == 1 ? tagline.first : hub.localized(tagline, lang),
+              color: color, icon: icon, cover: hub.coverFor(id),
+              group: isGroup, open: onTap,
+            ),
+        ],
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(hub.localized(group?.title ?? hub.title, lang)),
