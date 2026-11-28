@@ -75,6 +75,12 @@ class _ArcadeStageState extends State<ArcadeStage>
   int _boosters = 0;
   int _lastSave = 0;
 
+  /// Can kaybında kısa ekran sarsıntısı (kalan kare sayısı).
+  int _shake = 0;
+
+  /// Oyun sayfasının üstünde başka bir sayfa açık mı (build'de güncellenir).
+  bool _covered = false;
+
   // live input state
   bool _down = false;
   double _px = -1, _py = -1;
@@ -148,6 +154,14 @@ class _ArcadeStageState extends State<ArcadeStage>
     final dt = _last == Duration.zero ? 0.0 : (now - _last).inMicroseconds / 1e6;
     _last = now;
     if (!_started || _paused || _ended || _asking) return;
+    // Üstte başka bir sayfa/pencere (duraklatma menüsü, reklam, ayarlar)
+    // açıldıysa oyun arkada akmaz: duraklatılır, dönünce dokunarak sürer.
+    if (_covered) {
+      setState(() => _paused = true);
+      _persist();
+      return;
+    }
+    if (_shake > 0) _shake--;
     _acc += math.min(dt, 0.1);
     var steps = 0;
     while (_acc >= kDt && steps < 6) {
@@ -162,13 +176,15 @@ class _ArcadeStageState extends State<ArcadeStage>
       final livesBefore = sim.lives;
       sim.tick(input);
       final fx = widget.sound?.call(sim);
+      final hurt = sim.lives < livesBefore;
       if (fx != null) {
         ctx.sfx(fx);
-      } else if (sim.lives < livesBefore) {
+      } else if (hurt) {
         ctx.sfx(Sfx.lose);
       } else if (sim.score > scoreBefore + 40) {
         ctx.sfx(Sfx.combo);
       }
+      if (hurt && !ctx.reducedMotion) _shake = 14;
       if (sim.over) break;
     }
     if (sim.ticks - _lastSave > 120) _persist();
@@ -238,6 +254,13 @@ class _ArcadeStageState extends State<ArcadeStage>
 
   Offset _toWorld(Offset p) => (p - _origin) / _scale;
 
+  /// Sarsıntı kayması (ekran pikseli); azalan genlikli titreşim.
+  Offset _shakeOffset() {
+    if (_shake <= 0) return Offset.zero;
+    final a = _shake * 0.6;
+    return Offset(math.sin(_shake * 2.3) * a, math.cos(_shake * 1.7) * a * 0.6);
+  }
+
   void _pointer(Offset local) {
     final w = _toWorld(local);
     _px = clampD(w.dx, 0, kWorldW);
@@ -287,6 +310,7 @@ class _ArcadeStageState extends State<ArcadeStage>
 
   @override
   Widget build(BuildContext context) {
+    _covered = ModalRoute.of(context)?.isCurrent == false;
     final palette = ArcadePalette(ctx.pieceColors, ctx.background, ctx.colorBlind, ctx.reducedMotion);
     final lives = sim.meta.zen ? '∞' : '${sim.lives}';
     final time = sim.meta.timeLimit > 0
@@ -356,7 +380,8 @@ class _ArcadeStageState extends State<ArcadeStage>
                   children: [
                     Positioned.fill(
                       child: CustomPaint(
-                        painter: _StagePainter(sim, widget.paint, palette, _scale, _origin, sim.ticks / 60.0),
+                        painter: _StagePainter(sim, widget.paint, palette, _scale,
+                            _origin + _shakeOffset(), sim.ticks / 60.0),
                       ),
                     ),
                     if (!_started || _paused)
