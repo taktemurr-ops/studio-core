@@ -178,7 +178,7 @@ service cloud.firestore {
           && (o.status != 'done' || n.status == 'done')
           && n.seats is list && n.seats.size() >= o.seats.size() && n.seats.size() <= o.size
           && n.seats[0:o.seats.size()] == o.seats
-          && n.seats[o.seats.size():n.seats.size()].hasOnly(botSeats())
+          && (n.seats.size() == o.seats.size() || n.seats[o.seats.size():n.seats.size()].hasOnly(botSeats()))
           && (!('winner' in n) || n.winner is int)
           && (!('next' in n.diff(o).affectedKeys()) || (!('next' in o) && str(n.next, 64)));
     }
